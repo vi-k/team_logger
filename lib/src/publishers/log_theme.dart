@@ -237,12 +237,12 @@ final class LogTheme {
   static const _dimErrorColor = ansi.Color256.rgb311;
   static const _dimCriticalColor = ansi.Color256.rgb313;
 
-  static const _superDimVerboseColor = ansi.Color256.gray5;
-  static const _superDimDebugColor = ansi.Color256.gray5;
-  static const _superDimInfoColor = ansi.Color256.rgb012;
-  static const _superDimWarningColor = ansi.Color256.rgb210;
-  static const _superDimErrorColor = ansi.Color256.rgb200;
-  static const _superDimCriticalColor = ansi.Color256.rgb202;
+  // static const _superDimVerboseColor = ansi.Color256.gray5;
+  // static const _superDimDebugColor = ansi.Color256.gray5;
+  // static const _superDimInfoColor = ansi.Color256.rgb012;
+  // static const _superDimWarningColor = ansi.Color256.rgb210;
+  // static const _superDimErrorColor = ansi.Color256.rgb200;
+  // static const _superDimCriticalColor = ansi.Color256.rgb202;
 
   // static const _punctuationColor = ansi.Color256.rgb045;
   static const _punctuationColor = ansi.Color256.rgb023;
@@ -280,14 +280,14 @@ final class LogTheme {
     error: ansi.Style(foreground: _dimErrorColor),
     critical: ansi.Style(foreground: _dimCriticalColor),
   );
-  static const _superDimDefaultStyle = LogStyle(
-    verbose: ansi.Style(foreground: _superDimVerboseColor),
-    debug: ansi.Style(foreground: _superDimDebugColor),
-    info: ansi.Style(foreground: _superDimInfoColor),
-    warning: ansi.Style(foreground: _superDimWarningColor),
-    error: ansi.Style(foreground: _superDimErrorColor),
-    critical: ansi.Style(foreground: _superDimCriticalColor),
-  );
+  // static const _superDimDefaultStyle = LogStyle(
+  //   verbose: ansi.Style(foreground: _superDimVerboseColor),
+  //   debug: ansi.Style(foreground: _superDimDebugColor),
+  //   info: ansi.Style(foreground: _superDimInfoColor),
+  //   warning: ansi.Style(foreground: _superDimWarningColor),
+  //   error: ansi.Style(foreground: _superDimErrorColor),
+  //   critical: ansi.Style(foreground: _superDimCriticalColor),
+  // );
   static const _tagDefaultStyle = LogStyle(
     verbose: ansi.Style(foreground: _tagColor),
     debug: ansi.Style(foreground: _tagColor),
@@ -363,8 +363,6 @@ final class LogTheme {
     dataName: LogStyle.defaultStyle,
     dataKey: _activeDefaultStyle,
     dataIndex: _dimDefaultStyle,
-    // dataIndex: _superDimDefaultStyle,
-    // dataIndex: _tagDefaultStyle,
     dataValue: _normalDefaultStyle,
     dataUnits: _dimDefaultStyle,
     dataDim: _dimDefaultStyle,
