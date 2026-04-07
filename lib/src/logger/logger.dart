@@ -80,10 +80,9 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
 
   String get path => _lazyPath.value;
 
-  Logger withAddedName(Object name) => Logger._sub(this, name, copyPath: true);
+  Logger withName(Object name) => Logger._sub(this, name, copyPath: false);
 
-  Logger withChangedName(Object name) =>
-      Logger._sub(this, name, copyPath: false);
+  Logger withAddedName(Object name) => Logger._sub(this, name, copyPath: true);
 
   @override
   void registerLevels() {

@@ -164,8 +164,8 @@ void f() {
     },
   );
 
-  final networkLog = log.withChangedName('network');
-  final eventLog = log.withChangedName('events').withAddedName('polling');
+  final networkLog = log.withName('network');
+  final eventLog = log.withName('events').withAddedName('polling');
 
   for (var i = 0; i < 1; i++) {
     for (final level in LogLevels.values) {
