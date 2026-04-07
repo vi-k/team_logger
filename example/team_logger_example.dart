@@ -173,16 +173,19 @@ void f() {
 
       networkLog[level].log(
         'POST https://test-api.tezapp.org/[b]locations/address-by-point[/b]',
-        data: LoggableMultiData({
-          'HEADERS': postHeaders,
-          'BODY': postBody,
-        }),
+        data: LoggableMultiData(
+          {
+            'HEADERS': postHeaders,
+            'BODY': postBody,
+          },
+          collectionMaxCount: 2,
+        ),
         tags: ['post', 'api'],
       );
       networkLog[level].log(
         '[ok][[200]][/ok] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
         tags: ['response', 'api'],
-        data: succesResponse,
+        data: LoggableObject(succesResponse, collectionMaxCount: 2),
       );
       // log[level].log(
       //   '[error][[500]][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
@@ -287,7 +290,7 @@ final class LoggableTest with Loggable {
     ..prop('speed', speed, units: 'm/s')
     ..prop('distance', distance, units: 'm')
     ..prop('createdAt', createdAt)
-    ..list('points', points, maxCount: 2)
+    ..list('points', points, maxCount: 2, units: '@')
     ..prop('destinations', destinations);
 }
 

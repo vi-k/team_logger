@@ -1,6 +1,5 @@
 import '../log_pre_formatters/log_pre_formatter.dart';
 import '../loggable/loggable.dart';
-import '../loggable/loggable_multi_data.dart';
 import '../logger/log.dart';
 import '../publishers/log_theme.dart';
 import 'constraints.dart';
@@ -45,16 +44,7 @@ final class _LogMessageFormatter implements LogMessageFormatter {
     final dataTheme = theme.toDataTheme(log.level);
     final data = switch (log.data) {
       null => '',
-      LoggableMultiData(:final data) =>
-        '${theme.colon(log)} ${data.entries.map((e) {
-          final value = Loggable.objectToString(
-            e.value,
-            theme: dataTheme,
-            preformat: format,
-          );
-          return '${dataTheme.title('[${e.key}]')} $value';
-        }).join(', ')}',
-      final Object data => '${theme.colon(log)} ${Loggable.objectToString(
+      final data => '${theme.colon(log)} ${Loggable.objectToString(
           data,
           theme: dataTheme,
           preformat: format,

@@ -40,9 +40,12 @@ final class LoggableData {
     String Function(
       T value,
       int level,
-      String Function(String)? conver,
+      String Function(String)? convert,
       LogDataTheme theme,
     )? convert,
+    int? collectionMaxCount,
+    int? collectionMaxLength,
+    bool? showIndexes,
     String? units,
   }) {
     assert(!props.any((e) => e.name == name));
@@ -54,6 +57,9 @@ final class LoggableData {
         showName: showName,
         view: view,
         convert: convert,
+        collectionMaxCount: collectionMaxCount,
+        collectionMaxLength: collectionMaxLength,
+        showIndexes: showIndexes,
         units: units,
       ),
     );
@@ -80,8 +86,8 @@ final class LoggableData {
     List<T> list, {
     bool showName = true,
     int? maxCount,
-    int? maxSize,
-    bool showCount = true,
+    int? maxLength,
+    bool? showIndexes,
     String? units,
   }) {
     prop<List<T>>(
@@ -94,8 +100,8 @@ final class LoggableData {
         preformat: preformat,
         theme: theme,
         maxCount: maxCount,
-        maxLength: maxSize,
-        showIndexes: showCount,
+        maxLength: maxLength,
+        showIndexes: showIndexes,
         units: units,
       ),
       units: units,
@@ -107,8 +113,8 @@ final class LoggableData {
     Set<T> set, {
     bool showName = true,
     int? maxCount,
-    int? maxSize,
-    bool showCount = true,
+    int? maxLength,
+    bool? showIndexes,
     String? units,
   }) {
     prop<Set<T>>(
@@ -121,8 +127,8 @@ final class LoggableData {
         preformat: preformat,
         theme: theme,
         maxCount: maxCount,
-        maxLength: maxSize,
-        showIndexes: showCount,
+        maxLength: maxLength,
+        showIndexes: showIndexes,
         units: units,
       ),
       units: units,
@@ -134,8 +140,8 @@ final class LoggableData {
     Iterable<T> iterable, {
     bool showName = true,
     int? maxCount,
-    int? maxSize,
-    bool showCountIfPossible = true,
+    int? maxLength,
+    bool? showIndexes,
     String? units,
   }) {
     prop<Iterable<T>>(
@@ -148,8 +154,8 @@ final class LoggableData {
         preformat: preformat,
         theme: theme,
         maxCount: maxCount,
-        maxLength: maxSize,
-        showIndexes: showCountIfPossible,
+        maxLength: maxLength,
+        showIndexes: showIndexes,
         units: units,
       ),
       units: units,
@@ -164,8 +170,8 @@ final class LoggableData {
     String end = ')',
     int? length,
     int? maxCount,
-    int? maxSize,
-    bool showCount = true,
+    int? maxLength,
+    bool? showIndexes,
     String? units,
   }) {
     prop<Iterable<T>>(
@@ -179,8 +185,8 @@ final class LoggableData {
         preformat: preformat,
         theme: theme,
         maxCount: maxCount,
-        maxLength: maxSize,
-        showIndexes: showCount,
+        maxLength: maxLength,
+        showIndexes: showIndexes,
         units: units,
       ),
       units: units,
@@ -191,6 +197,10 @@ final class LoggableData {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int level = 0,
     String Function(String value)? valueFormat,
+    int? collectionMaxCount,
+    int? collectionMaxLength,
+    bool? showIndexes,
+    String? units,
   }) {
     final level2str = theme.level(level).call;
 
@@ -203,6 +213,10 @@ final class LoggableData {
           theme: theme,
           level: level,
           preformat: valueFormat,
+          collectionMaxCount: collectionMaxCount,
+          collectionMaxLength: collectionMaxLength,
+          showIndexes: showIndexes,
+          units: units,
         );
 
     return '${_type.showName ? name2str() : ''}'
@@ -220,7 +234,10 @@ final class Prop<T extends Object?> {
   final T value;
   final String? view;
   final bool showName;
-  final String units;
+  final int? collectionMaxCount;
+  final int? collectionMaxLength;
+  final bool? showIndexes;
+  final String? units;
   final String Function(
     T value,
     int level,
@@ -234,13 +251,20 @@ final class Prop<T extends Object?> {
     this.showName = true,
     this.view,
     this.convert,
-    String? units,
-  }) : units = units ?? '';
+    this.collectionMaxCount,
+    this.collectionMaxLength,
+    this.showIndexes,
+    this.units,
+  });
 
   String toLogString({
     int level = 0,
     String Function(String value)? preformat,
     LogDataTheme theme = LogDataTheme.noColorsTheme,
+    int? collectionMaxCount,
+    int? collectionMaxLength,
+    bool? showIndexes,
+    String? units,
   }) {
     String name2str() => theme.key(preformat?.call(name) ?? name);
 
@@ -251,10 +275,13 @@ final class Prop<T extends Object?> {
           level: level + 1,
           preformat: preformat,
           theme: theme,
+          collectionMaxCount: this.collectionMaxCount ?? collectionMaxCount,
+          collectionMaxLength: this.collectionMaxLength ?? collectionMaxLength,
+          showIndexes: this.showIndexes ?? showIndexes,
+          units: this.units ?? units,
         );
 
-    return '${showName ? '${name2str()}: ' : ''}$valueStr'
-        '${Loggable.units2str(units, preformat, theme)}';
+    return '${showName ? '${name2str()}: ' : ''}$valueStr';
   }
 
   @override
@@ -324,57 +351,27 @@ final class LoggableMap<T extends Object?> extends LoggableData {
         );
 }
 
-final class LoggableList<T extends Object?> extends LoggableData {
-  final String? units;
-
-  LoggableList(
-    List<T> list, {
-    int? maxCount,
-    int? maxSize,
-    bool showCount = true,
-    this.units,
+final class LoggableObject<T extends Object?> extends LoggableData {
+  LoggableObject(
+    T obj, {
+    int? collectionMaxCount,
+    int? collectionMaxLength,
+    bool? showIndexes,
+    String? units,
   }) : super._(
           ClassProp(
-            List<T>,
+            T,
             showName: false,
             showParentheses: false,
           ),
         ) {
-    this.list<T>(
-      'list',
-      list,
+    prop<T>(
+      'obj',
+      obj,
       showName: false,
-      maxCount: maxCount,
-      maxSize: maxSize,
-      showCount: showCount,
-      units: units,
-    );
-  }
-}
-
-final class LoggableSet<T extends Object?> extends LoggableData {
-  final String? units;
-
-  LoggableSet(
-    Set<T> set, {
-    int? maxCount,
-    int? maxSize,
-    bool showCount = true,
-    this.units,
-  }) : super._(
-          ClassProp(
-            Set<T>,
-            showName: false,
-            showParentheses: false,
-          ),
-        ) {
-    this.set<T>(
-      'set',
-      set,
-      showName: false,
-      maxCount: maxCount,
-      maxSize: maxSize,
-      showCount: showCount,
+      collectionMaxCount: collectionMaxCount,
+      collectionMaxLength: collectionMaxLength,
+      showIndexes: showIndexes,
       units: units,
     );
   }

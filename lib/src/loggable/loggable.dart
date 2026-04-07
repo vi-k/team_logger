@@ -2,8 +2,11 @@ import 'package:ansi_escape_codes/extensions.dart';
 import 'package:meta/meta.dart';
 
 import 'log_data_theme.dart';
+import 'loggable_multi_data.dart';
 
 part 'loggable_data.dart';
+
+const defaultShowIndexes = true;
 
 /// Вспомогательный класс, помогающий получить описание класса для логирования
 ///
@@ -23,19 +26,8 @@ mixin Loggable {
     return data;
   }
 
-  String toLogString({
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
-    int level = 0,
-    String Function(String value)? valueFormat,
-  }) =>
-      logClassInfo().toLogString(
-        theme: theme,
-        level: level,
-        valueFormat: valueFormat,
-      );
-
   @override
-  String toString() => toLogString();
+  String toString() => logClassInfo().toLogString();
 
   static String objectToString(
     Object? obj, {
@@ -44,15 +36,20 @@ mixin Loggable {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int? collectionMaxCount,
     int? collectionMaxLength,
-    bool showIndexes = true,
+    bool? showIndexes,
     String? units,
   }) {
+    showIndexes ??= defaultShowIndexes;
+
     String obj2str(Object? obj) => objectToString(
           obj,
           level: level + 1,
           preformat: preformat,
           theme: theme,
+          collectionMaxCount: collectionMaxCount,
+          collectionMaxLength: collectionMaxLength,
           showIndexes: showIndexes,
+          units: units,
         );
 
     String units2str() => Loggable.units2str(units, preformat, theme);
@@ -63,7 +60,7 @@ mixin Loggable {
         final key => obj2str(key),
       };
 
-      return '${theme.key(key)}: ${theme.value(obj2str(e.value))}';
+      return '${theme.key(key)}: ${theme.value(obj2str(e.value))}${units2str()}';
     }
 
     return switch (obj) {
@@ -102,13 +99,36 @@ mixin Loggable {
       Map<Object?, Object?>() => '${theme.level(level)('{')}'
           '${obj.entries.map(map2str).join(', ')}'
           '${theme.level(level)('}')}',
-      Loggable(:final toLogString) ||
-      LoggableData(:final toLogString) =>
-        toLogString(
+      Loggable() => obj.logClassInfo().toLogString(
+            theme: theme,
+            level: level,
+            valueFormat: preformat,
+            collectionMaxCount: collectionMaxCount,
+            collectionMaxLength: collectionMaxLength,
+            showIndexes: showIndexes,
+            units: units,
+          ),
+      LoggableData() => obj.toLogString(
           theme: theme,
           level: level,
           valueFormat: preformat,
+          collectionMaxCount: collectionMaxCount,
+          collectionMaxLength: collectionMaxLength,
+          showIndexes: showIndexes,
+          units: units,
         ),
+      LoggableMultiData() => obj.data.entries.map((e) {
+          final value = Loggable.objectToString(
+            e.value,
+            theme: theme,
+            preformat: preformat,
+            collectionMaxCount: obj.collectionMaxCount ?? collectionMaxCount,
+            collectionMaxLength: obj.collectionMaxLength ?? collectionMaxLength,
+            showIndexes: obj.showIndexes ?? showIndexes,
+            units: obj.units ?? units,
+          );
+          return '${theme.title('[${e.key}]')} $value';
+        }).join(', '),
       _ => '${preformat?.call(obj.toString()) ?? obj}${units2str()}',
     };
   }
@@ -125,7 +145,7 @@ mixin Loggable {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int? maxCount,
     int? maxLength,
-    bool showIndexes = true,
+    bool? showIndexes,
     String? units,
   }) =>
       efficientLengthIterableToString(
@@ -153,7 +173,7 @@ mixin Loggable {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int? maxCount,
     int? maxLength,
-    bool showIndexes = true,
+    bool? showIndexes,
     String? units,
   }) =>
       efficientLengthIterableToString(
@@ -187,7 +207,7 @@ mixin Loggable {
     String end = ')',
     int? maxCount,
     int? maxLength,
-    bool showIndexes = true,
+    bool? showIndexes,
     String? units,
   }) {
     assert(maxCount == null || maxCount >= 2);
@@ -195,11 +215,15 @@ mixin Loggable {
     assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
 
+    showIndexes ??= defaultShowIndexes;
+
     String obj2str(Object? obj) => objectToString(
           obj,
           level: level + 1,
           preformat: preformat,
           theme: theme,
+          collectionMaxCount: maxCount,
+          collectionMaxLength: maxLength,
           showIndexes: showIndexes,
           units: units,
         );
@@ -302,17 +326,21 @@ mixin Loggable {
     String end = ')',
     int? maxCount,
     int? maxLength,
-    bool showIndexes = true,
+    bool? showIndexes,
     String? units,
   }) {
     assert(maxCount == null || maxCount >= 2);
     assert(maxLength == null || maxLength > 0);
+
+    showIndexes ??= defaultShowIndexes;
 
     String obj2str(Object? obj) => objectToString(
           obj,
           level: level + 1,
           preformat: preformat,
           theme: theme,
+          collectionMaxCount: maxCount,
+          collectionMaxLength: maxLength,
           showIndexes: showIndexes,
           units: units,
         );

@@ -2,8 +2,18 @@ import 'loggable.dart';
 
 final class LoggableMultiData {
   final Map<String, Object?> data;
+  final int? collectionMaxCount;
+  final int? collectionMaxLength;
+  final bool? showIndexes;
+  final String? units;
 
-  const LoggableMultiData(this.data);
+  const LoggableMultiData(
+    this.data, {
+    this.collectionMaxCount,
+    this.collectionMaxLength,
+    this.showIndexes,
+    this.units,
+  });
 
   @override
   String toString({
