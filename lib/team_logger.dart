@@ -22,7 +22,7 @@ export 'src/log_pre_formatters/log_pre_formatter.dart';
 export 'src/log_pre_formatters/multi_log_pre_formatter.dart';
 export 'src/loggable/log_data_theme.dart';
 export 'src/loggable/loggable.dart';
-export 'src/loggable/multi_data.dart';
+export 'src/loggable/loggable_multi_data.dart';
 export 'src/logger/log.dart';
 export 'src/logger/log_levels.dart';
 export 'src/logger/logger.dart';

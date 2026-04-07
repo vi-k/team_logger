@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
-import 'package:ansi_escape_codes/ansi_escape_codes.dart';
 import 'package:ansi_escape_codes/extensions.dart';
 import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
@@ -58,8 +56,8 @@ void f() {
                 'signal': const BbCodeFormat.colorize(
                   LogStyle.oneForAll(
                     ansi.Style(
-                      foreground: Color256.rgb055,
-                      background: Color256.rgb011,
+                      foreground: ansi.Color256.rgb055,
+                      background: ansi.Color256.rgb011,
                     ),
                   ),
                 ),
@@ -175,7 +173,10 @@ void f() {
 
       networkLog[level].log(
         'POST https://test-api.tezapp.org/[b]locations/address-by-point[/b]',
-        data: MultiData({'HEADERS': postHeaders, 'BODY': postBody}),
+        data: LoggableMultiData({
+          'HEADERS': postHeaders,
+          'BODY': postBody,
+        }),
         tags: ['post', 'api'],
       );
       networkLog[level].log(

@@ -1,9 +1,9 @@
 import 'loggable.dart';
 
-final class MultiData {
+final class LoggableMultiData {
   final Map<String, Object?> data;
 
-  const MultiData(this.data);
+  const LoggableMultiData(this.data);
 
   @override
   String toString({
