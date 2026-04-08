@@ -1,5 +1,4 @@
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
-import 'package:ansi_escape_codes/extensions.dart';
 import 'package:team_logger/team_logger.dart';
 
 extension AnsiStringExtensions on String {

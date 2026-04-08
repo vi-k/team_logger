@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ansi_escape_codes/extensions.dart';
 import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
 
@@ -185,11 +184,11 @@ void f() {
         tags: ['response', 'api'],
         data: LoggableObject(succesResponse, collectionMaxCount: 2),
       );
-      // log[level].log(
-      //   '[error][[500]][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
-      //   tags: ['response', 'api'],
-      //   data: errorResponse,
-      // );
+      log[level].log(
+        '[error][[500]][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
+        tags: ['response', 'api'],
+        data: errorResponse,
+      );
     }
   }
 
@@ -271,7 +270,7 @@ void f() {
                   [
                     [
                       [
-                        [123]
+                        [123],
                       ]
                     ]
                   ]
