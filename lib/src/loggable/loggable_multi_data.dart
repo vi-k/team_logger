@@ -4,6 +4,7 @@ final class LoggableMultiData {
   final Map<String, Object?> data;
   final int? collectionMaxCount;
   final int? collectionMaxLength;
+  final bool? showCount;
   final bool? showIndexes;
   final String? units;
 
@@ -11,6 +12,7 @@ final class LoggableMultiData {
     this.data, {
     this.collectionMaxCount,
     this.collectionMaxLength,
+    this.showCount,
     this.showIndexes,
     this.units,
   });

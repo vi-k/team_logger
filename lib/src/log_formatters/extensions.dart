@@ -98,7 +98,7 @@ final class AnsiStyled with Loggable {
   void collectLoggableData(LoggableData data) {
     data
       ..showName = false
-      ..showParentheses = false
+      ..showBrackets = false
       ..prop('string', string, showName: false, view: '"${style(string)}"');
   }
 }

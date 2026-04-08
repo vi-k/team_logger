@@ -1,6 +1,5 @@
 import '../logger/log.dart';
-import '../publishers/log_style.dart';
-import '../publishers/log_theme.dart';
+import '../theme/log_theme.dart';
 import 'log_pre_formatter.dart';
 
 final class BbCodeLogPreFormatter implements LogPreFormatter {

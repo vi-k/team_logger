@@ -1,6 +1,5 @@
 import '../logger/log.dart';
-import '../publishers/log_style.dart';
-import '../publishers/log_theme.dart';
+import '../theme/log_theme.dart';
 import 'constraints.dart';
 import 'log_formatter.dart';
 import 'text_align.dart';

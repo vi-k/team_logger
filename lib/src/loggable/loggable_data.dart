@@ -32,9 +32,9 @@ final class LoggableData {
     _type = _type.copyWith(showName: value);
   }
 
-  bool get showParentheses => _type.showParentheses;
-  set showParentheses(bool value) {
-    _type = _type.copyWith(showParentheses: value);
+  bool get showBrackets => _type.showBrackets;
+  set showBrackets(bool value) {
+    _type = _type.copyWith(showBrackets: value);
   }
 
   void prop<T extends Object?>(
@@ -50,6 +50,7 @@ final class LoggableData {
     )? convert,
     int? collectionMaxCount,
     int? collectionMaxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
     int levelCorrection = 0,
@@ -65,6 +66,7 @@ final class LoggableData {
         convert: convert,
         collectionMaxCount: collectionMaxCount,
         collectionMaxLength: collectionMaxLength,
+        showCount: showCount,
         showIndexes: showIndexes,
         units: units,
         levelCorrection: levelCorrection,
@@ -94,10 +96,12 @@ final class LoggableData {
     String Function(String value)? valueFormat,
     int? collectionMaxCount,
     int? collectionMaxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
   }) {
-    final level2str = theme.level(level).call;
+    final brackets = theme.bracketStyle(level);
+    final content = theme.punctuationStyle(level);
 
     String name2str() {
       final name = _type.view ?? _type.value.toString();
@@ -110,14 +114,15 @@ final class LoggableData {
           preformat: valueFormat,
           collectionMaxCount: collectionMaxCount,
           collectionMaxLength: collectionMaxLength,
+          showCount: showCount,
           showIndexes: showIndexes,
           units: units,
         );
 
     return '${_type.showName ? name2str() : ''}'
-        '${level2str(_type.openingParenthesis)}'
-        '${props.map(prop2str).join(', ')}'
-        '${level2str(_type.closingParenthesis)}';
+        '${brackets(_type.openingBracket)}'
+        '${props.map(prop2str).join(content(', '))}'
+        '${brackets(_type.closingBracket)}';
   }
 
   @override
@@ -131,6 +136,7 @@ final class Prop<T extends Object?> {
   final bool showName;
   final int? collectionMaxCount;
   final int? collectionMaxLength;
+  final bool? showCount;
   final bool? showIndexes;
   final String? units;
   final String Function(
@@ -149,6 +155,7 @@ final class Prop<T extends Object?> {
     this.convert,
     this.collectionMaxCount,
     this.collectionMaxLength,
+    this.showCount,
     this.showIndexes,
     this.units,
     this.levelCorrection = 0,
@@ -160,9 +167,12 @@ final class Prop<T extends Object?> {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int? collectionMaxCount,
     int? collectionMaxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
   }) {
+    final content = theme.punctuationStyle(level);
+
     String name2str() => theme.key(preformat?.call(name) ?? name);
 
     final valueStr = view ??
@@ -174,11 +184,12 @@ final class Prop<T extends Object?> {
           theme: theme,
           collectionMaxCount: this.collectionMaxCount ?? collectionMaxCount,
           collectionMaxLength: this.collectionMaxLength ?? collectionMaxLength,
+          showCount: this.showCount ?? showCount,
           showIndexes: this.showIndexes ?? showIndexes,
           units: this.units ?? units,
         );
 
-    return '${showName ? '${name2str()}: ' : ''}$valueStr';
+    return '${showName ? '${name2str()}${content(':')} ' : ''}$valueStr';
   }
 
   @override
@@ -186,35 +197,35 @@ final class Prop<T extends Object?> {
 }
 
 final class TypeProp extends Prop<Type> {
-  final bool showParentheses;
-  final String _openingParenthesis;
-  final String _closingParenthesis;
+  final bool showBrackets;
+  final String _openingBracket;
+  final String _closingBracket;
 
   const TypeProp(
     Type type, {
     String? name,
     super.showName = true,
-    this.showParentheses = true,
-    String? openingParenthesis,
-    String? closingParenthesis,
-  })  : _openingParenthesis = openingParenthesis ?? '(',
-        _closingParenthesis = closingParenthesis ?? ')',
+    this.showBrackets = true,
+    String? openingBrackets,
+    String? closingBrackets,
+  })  : _openingBracket = openingBrackets ?? '(',
+        _closingBracket = closingBrackets ?? ')',
         super('type', type, view: name);
 
-  String get openingParenthesis => showParentheses ? _openingParenthesis : '';
+  String get openingBracket => showBrackets ? _openingBracket : '';
 
-  String get closingParenthesis => showParentheses ? _closingParenthesis : '';
+  String get closingBracket => showBrackets ? _closingBracket : '';
 
   TypeProp copyWith({
     String? name,
     bool? showName,
-    bool? showParentheses,
+    bool? showBrackets,
   }) =>
       TypeProp(
         value,
         name: name ?? view,
         showName: showName ?? this.showName,
-        showParentheses: showParentheses ?? this.showParentheses,
+        showBrackets: showBrackets ?? this.showBrackets,
       );
 }
 
@@ -223,18 +234,18 @@ final class LoggableWrap<T extends Object?> extends LoggableData {
     T value, {
     String? name,
     bool showName = true,
-    bool showParentheses = true,
-    String? openingParenthesis,
-    String? closingParenthesis,
+    bool showBrackets = true,
+    String? openingBrackets,
+    String? closingBrackets,
   })  : assert(value is! Loggable),
         super._(
           TypeProp(
             value.runtimeType,
             name: name,
             showName: showName,
-            showParentheses: showParentheses,
-            openingParenthesis: openingParenthesis,
-            closingParenthesis: closingParenthesis,
+            showBrackets: showBrackets,
+            openingBrackets: openingBrackets,
+            closingBrackets: closingBrackets,
           ),
         );
 }
@@ -245,8 +256,8 @@ final class LoggableMap<T extends Object?> extends LoggableData {
           TypeProp(
             Map<String, T>,
             showName: false,
-            openingParenthesis: '{',
-            closingParenthesis: '}',
+            openingBrackets: '{',
+            closingBrackets: '}',
           ),
         );
 }
@@ -256,15 +267,17 @@ final class LoggableObject<T extends Object?> extends LoggableData {
     T obj, {
     int? collectionMaxCount,
     int? collectionMaxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
-  }) : super._(TypeProp(T, showName: false, showParentheses: false)) {
+  }) : super._(TypeProp(T, showName: false, showBrackets: false)) {
     prop<T>(
       'obj',
       obj,
       showName: false,
       collectionMaxCount: collectionMaxCount,
       collectionMaxLength: collectionMaxLength,
+      showCount: showCount,
       showIndexes: showIndexes,
       units: units,
       levelCorrection: -1,

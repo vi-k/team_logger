@@ -21,6 +21,7 @@ void f() {
     // padding: '.',
     // paddingStyle: const LogStyle.oneForAll(ansi.rgb012),
     // maxLength: 140,
+    showIndexes: false,
     maxLines: 20,
     // maxLines: 1,
   );
@@ -251,50 +252,40 @@ void f() {
     ],
   };
 
-  const level = LogLevels.info;
-  log.v('json', data: LoggableObject(json, collectionMaxCount: 3));
-  log.d('json', data: LoggableObject(json, collectionMaxCount: 3));
-  log[level].log('json', data: LoggableObject(json, collectionMaxCount: 3));
-  log[level].log(
-    'list',
-    data: LoggableObject(json['active_cities'], collectionMaxCount: 3),
-  );
-  const list = [
-    [
-      [
+  log.v('json', data: LoggableObject(json, collectionMaxCount: 2));
+  log.d('json', data: LoggableObject(json, collectionMaxCount: 2));
+  log.i('json', data: LoggableObject(json, collectionMaxCount: 2));
+
+  List<Object?> list(List<Object?> value) => [
         [
           [
             [
               [
                 [
                   [
-                    [
-                      [
-                        [123],
-                      ]
-                    ]
+                    value,
                   ]
                 ]
               ]
             ]
           ]
         ]
-      ]
-    ]
-  ];
-  log.v('list2', data: list);
-  log.d('list2', data: list);
-  log.i('list2', data: list);
-  log.w('list2', data: list);
-  log.e('list2', data: list);
-  log.critical('list2', data: list);
+      ];
 
-  print(theme);
-  log.d('Theme', data: theme);
+  for (final l in LogLevels.values) {
+    log[l].log('list', data: LoggableObject(list([123])));
+  }
+  for (final l in LogLevels.values) {
+    log[l].log(
+      'list',
+      data: LoggableObject(list([123, 234, 345, 456]), collectionMaxCount: 3),
+    );
+  }
 
-  log.d('NoColors', data: LogStyle.noColors);
-  log.d('TerminalColors', data: LogStyle.terminalColors);
-  log.d('DataTheme', data: theme.toDataTheme(LogLevels.info));
+  log.d('LogTheme', data: theme);
+  // log.d('Verbose LogDataTheme', data: theme.toDataTheme(LogLevels.verbose));
+  log.d('Debug LogDataTheme', data: theme.toDataTheme(LogLevels.debug));
+  log.d('Info LogDataTheme', data: theme.toDataTheme(LogLevels.info));
 }
 
 final class LoggableTest with Loggable {
@@ -382,9 +373,6 @@ final class MyLogTimeAndPathFormatter implements LogTimeFormatter {
       log,
       theme,
       ['$localTimeStr $realTimeStr $pathStr'],
-      // theme.maxLines == 1
-      //     ? ['$localTimeStr $realTimeStr $pathStr']
-      //     : [pathStr, localTimeStr, realTimeStr],
       constraints: constraints.restrict(maxWidth),
     );
   }

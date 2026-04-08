@@ -1,12 +1,10 @@
 import 'package:ansi_escape_codes/extensions.dart';
 import 'package:meta/meta.dart';
 
-import 'log_data_theme.dart';
+import '../theme/log_theme.dart';
 import 'loggable_multi_data.dart';
 
 part 'loggable_data.dart';
-
-const defaultShowIndexes = true;
 
 /// Вспомогательный класс, помогающий получить описание класса для логирования
 ///
@@ -36,10 +34,15 @@ mixin Loggable {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int? collectionMaxCount,
     int? collectionMaxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
   }) {
-    showIndexes ??= defaultShowIndexes;
+    showCount ??= theme.showCount;
+    showIndexes ??= theme.showIndexes;
+
+    final brackets = theme.bracketStyle(level);
+    final content = theme.punctuationStyle(level);
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -48,6 +51,7 @@ mixin Loggable {
           theme: theme,
           collectionMaxCount: collectionMaxCount,
           collectionMaxLength: collectionMaxLength,
+          showCount: showCount,
           showIndexes: showIndexes,
           units: units,
         );
@@ -60,7 +64,8 @@ mixin Loggable {
         final key => obj2str(key),
       };
 
-      return '${theme.key(key)}: ${theme.value(obj2str(e.value))}${units2str()}';
+      return '${theme.key(key)}${content(':')}'
+          ' ${theme.value(obj2str(e.value))}${units2str()}';
     }
 
     return switch (obj) {
@@ -73,6 +78,7 @@ mixin Loggable {
           theme: theme,
           maxCount: collectionMaxCount,
           maxLength: collectionMaxLength,
+          showCount: showCount,
           showIndexes: showIndexes,
           units: units,
         ),
@@ -83,6 +89,7 @@ mixin Loggable {
           theme: theme,
           maxCount: collectionMaxCount,
           maxLength: collectionMaxLength,
+          showCount: showCount,
           showIndexes: showIndexes,
           units: units,
         ),
@@ -96,15 +103,16 @@ mixin Loggable {
           showIndexes: showIndexes,
           units: units,
         ),
-      Map<Object?, Object?>() => '${theme.level(level)('{')}'
-          '${obj.entries.map(map2str).join(', ')}'
-          '${theme.level(level)('}')}',
+      Map<Object?, Object?>() => '${brackets('{')}'
+          '${obj.entries.map(map2str).join(content(', '))}'
+          '${brackets('}')}',
       Loggable() => obj.logClassInfo().toLogString(
             theme: theme,
             level: level,
             valueFormat: preformat,
             collectionMaxCount: collectionMaxCount,
             collectionMaxLength: collectionMaxLength,
+            showCount: showCount,
             showIndexes: showIndexes,
             units: units,
           ),
@@ -114,6 +122,7 @@ mixin Loggable {
           valueFormat: preformat,
           collectionMaxCount: collectionMaxCount,
           collectionMaxLength: collectionMaxLength,
+          showCount: showCount,
           showIndexes: showIndexes,
           units: units,
         ),
@@ -124,11 +133,12 @@ mixin Loggable {
             preformat: preformat,
             collectionMaxCount: obj.collectionMaxCount ?? collectionMaxCount,
             collectionMaxLength: obj.collectionMaxLength ?? collectionMaxLength,
+            showCount: obj.showCount ?? showCount,
             showIndexes: obj.showIndexes ?? showIndexes,
             units: obj.units ?? units,
           );
           return '${theme.title('[${e.key}]')} $value';
-        }).join(', '),
+        }).join(content(', ')),
       _ => '${preformat?.call(obj.toString()) ?? obj}${units2str()}',
     };
   }
@@ -145,6 +155,7 @@ mixin Loggable {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int? maxCount,
     int? maxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
   }) =>
@@ -157,6 +168,7 @@ mixin Loggable {
         end: ']',
         maxCount: maxCount,
         maxLength: maxLength,
+        showCount: showCount,
         showIndexes: showIndexes,
         units: units,
       );
@@ -173,6 +185,7 @@ mixin Loggable {
     LogDataTheme theme = LogDataTheme.noColorsTheme,
     int? maxCount,
     int? maxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
   }) =>
@@ -185,6 +198,7 @@ mixin Loggable {
         end: '}',
         maxCount: maxCount,
         maxLength: maxLength,
+        showCount: showCount,
         showIndexes: showIndexes,
         units: units,
       );
@@ -207,6 +221,7 @@ mixin Loggable {
     String end = ')',
     int? maxCount,
     int? maxLength,
+    bool? showCount,
     bool? showIndexes,
     String? units,
   }) {
@@ -215,7 +230,13 @@ mixin Loggable {
     assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
 
-    showIndexes ??= defaultShowIndexes;
+    showIndexes ??= theme.showIndexes;
+    showCount ??= theme.showCount;
+
+    final brackets = theme.bracketStyle(level);
+    final description = theme.descriptionStyle(level);
+    final content = theme.punctuationStyle(level);
+    final delimiter = content(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -224,39 +245,52 @@ mixin Loggable {
           theme: theme,
           collectionMaxCount: maxCount,
           collectionMaxLength: maxLength,
+          showCount: showCount,
           showIndexes: showIndexes,
           units: units,
         );
 
-    String index2str(int index) => theme.index(_index2str(index));
+    String index2str(int index) => description(_index2str(index));
 
-    var buf = StringBuffer(theme.level(level)(start));
+    String indexedObj2str(int index, Object? obj) =>
+        '${index2str(index)}${obj2str(obj)}';
+
+    final count = iterable.length;
+    var buf = StringBuffer(brackets(start));
+    var startLength = start.length;
+    if (count > 1 && showCount) {
+      final prefix = '(n=$count) ';
+      startLength += prefix.length;
+      buf.write(description(prefix));
+    }
 
     if (maxLength == null && maxCount == null) {
       buf.write(
-        showIndexes
+        showIndexes && count > 1
             ? iterable.indexed
-                .map((e) => '${index2str(e.$1)}${obj2str(e.$2)}')
-                .join(', ')
-            : iterable.map(obj2str).join(', '),
+                .map((e) => indexedObj2str(e.$1, e.$2))
+                .join(delimiter)
+            : iterable.map(obj2str).join(delimiter),
       );
     } else {
-      final count = iterable.length;
       final iterator = iterable.iterator;
 
       if (iterator.moveNext()) {
-        // Первый выводим всегда.
-        final first = showIndexes
-            ? '${index2str(0)}${obj2str(iterator.current)}'
-            : obj2str(iterator.current);
-        buf.write(first);
+        if (count == 1) {
+          // Единственный выводим без индекса.
+          buf.write(obj2str(iterator.current));
+        } else if (count > 1) {
+          // Первый выводим всегда.
+          final first = showIndexes
+              ? indexedObj2str(0, iterator.current)
+              : obj2str(iterator.current);
+          buf.write(first);
 
-        if (count > 1) {
           // Последний, если есть, тоже выводим всегда.
           final last = showIndexes
-              ? '${index2str(count - 1)}${obj2str(iterator.current)}'
-              : obj2str(iterator.current);
-          var length = start.length +
+              ? indexedObj2str(count - 1, iterable.last)
+              : obj2str(iterable.last);
+          var length = startLength +
               first.lengthWithoutEscapeCodes +
               2 +
               theme.ellipsis.length +
@@ -267,9 +301,10 @@ mixin Loggable {
           maxCount ??= count;
           (StringBuffer, int)? copy;
 
-          while (index < maxCount - 1 && iterator.moveNext()) {
+          while (index < maxCount - 1 && index < count - 1) {
+            iterator.moveNext();
             final item = showIndexes
-                ? '${index2str(index)}${obj2str(iterator.current)}'
+                ? indexedObj2str(index, iterator.current)
                 : obj2str(iterator.current);
             length += 2 + item.lengthWithoutEscapeCodes;
             if (maxLength != null && length > maxLength) {
@@ -281,7 +316,7 @@ mixin Loggable {
             }
 
             buf
-              ..write(', ')
+              ..write(delimiter)
               ..write(item);
             index++;
           }
@@ -292,18 +327,18 @@ mixin Loggable {
             }
 
             buf
-              ..write(', ')
-              ..write(theme.ellipsis);
+              ..write(delimiter)
+              ..write(content(theme.ellipsis));
           }
 
           buf
-            ..write(', ')
+            ..write(delimiter)
             ..write(last);
         }
       }
     }
 
-    buf.write(theme.level(level)(end));
+    buf.write(brackets(end));
 
     return buf.toString();
   }
@@ -332,7 +367,12 @@ mixin Loggable {
     assert(maxCount == null || maxCount >= 2);
     assert(maxLength == null || maxLength > 0);
 
-    showIndexes ??= defaultShowIndexes;
+    showIndexes ??= theme.showIndexes;
+
+    final brackets = theme.bracketStyle(level);
+    final description = theme.descriptionStyle(level);
+    final content = theme.punctuationStyle(level);
+    final delimiter = content(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -345,70 +385,82 @@ mixin Loggable {
           units: units,
         );
 
-    String index2str(int index) => theme.index(_index2str(index));
+    String index2str(int index) => description(_index2str(index));
 
-    var buf = StringBuffer(theme.level(level)(start));
+    String indexedObj2str(int index, Object? obj) =>
+        '${index2str(index)}${obj2str(obj)}';
+
+    var buf = StringBuffer(brackets(start));
 
     if (maxLength == null && maxCount == null) {
       buf.write(
         showIndexes
             ? iterable.indexed
-                .map((e) => '${index2str(e.$1)}${obj2str(e.$2)}')
-                .join(', ')
-            : iterable.map(obj2str).join(', '),
+                .map((e) => indexedObj2str(e.$1, e.$2))
+                .join(delimiter)
+            : iterable.map(obj2str).join(delimiter),
       );
     } else {
       final iterator = iterable.iterator;
 
       if (iterator.moveNext()) {
-        // Первый выводим всегда.
-        final first = showIndexes
-            ? '${index2str(0)}${obj2str(iterator.current)}'
-            : obj2str(iterator.current);
-        buf.write(first);
+        final firstItem = iterator.current;
+        var hasNext = iterator.moveNext();
 
-        var index = 1;
-        var length = start.length +
-            first.lengthWithoutEscapeCodes +
-            2 +
-            theme.ellipsis.length +
-            end.length;
-        var truncated = false;
-        (StringBuffer, int)? copy;
+        if (!hasNext) {
+          // Единственный выводим без индекса.
+          buf.write(obj2str(firstItem));
+        } else {
+          // Первый выводим всегда.
+          final first =
+              showIndexes ? indexedObj2str(0, firstItem) : obj2str(firstItem);
+          buf.write(first);
 
-        while ((maxCount == null || index < maxCount) && iterator.moveNext()) {
-          final item = showIndexes
-              ? '${index2str(index)}${obj2str(iterator.current)}'
-              : obj2str(iterator.current);
-          length += 2 + item.lengthWithoutEscapeCodes;
-          if (maxLength != null && length > maxLength) {
-            if (length - 2 - theme.ellipsis.length > maxLength) {
-              truncated = true;
-              break;
-            } else {
-              copy ??= (StringBuffer(buf.toString()), index);
+          var index = 1;
+          var length = start.length +
+              first.lengthWithoutEscapeCodes +
+              2 +
+              theme.ellipsis.length +
+              end.length;
+          var truncated = false;
+          (StringBuffer, int)? copy;
+
+          while ((maxCount == null || index < maxCount) && hasNext) {
+            final item = showIndexes
+                ? indexedObj2str(index, iterator.current)
+                : obj2str(iterator.current);
+            length += 2 + item.lengthWithoutEscapeCodes;
+            if (maxLength != null && length > maxLength) {
+              if (length - 2 - theme.ellipsis.length > maxLength) {
+                truncated = true;
+                break;
+              } else {
+                copy ??= (StringBuffer(buf.toString()), index);
+              }
             }
+
+            buf
+              ..write(delimiter)
+              ..write(item);
+            index++;
+
+            hasNext = iterator.moveNext();
           }
 
-          buf
-            ..write(', ')
-            ..write(item);
-          index++;
-        }
+          if (truncated || iterator.moveNext()) {
+            if (copy != null) {
+              (buf, index) = copy;
+            }
 
-        if (truncated || iterator.moveNext()) {
-          if (copy != null) {
-            (buf, index) = copy;
+            buf
+              ..write(delimiter)
+              ..write(content(theme.ellipsis));
           }
-
-          buf
-            ..write(', ')
-            ..write(theme.ellipsis);
         }
       }
     }
 
-    buf.write(theme.level(level)(end));
+    buf.write(brackets(end));
 
     return buf.toString();
   }

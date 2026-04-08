@@ -2,10 +2,12 @@ import 'package:ansi_escape_codes/extensions.dart';
 import 'package:ansi_escape_codes/style.dart' as ansi;
 
 import '../log_formatters/extensions.dart';
-import '../loggable/log_data_theme.dart';
 import '../loggable/loggable.dart';
 import '../logger/log.dart';
-import 'log_style.dart';
+import '../logger/log_levels.dart';
+
+part 'log_data_theme.dart';
+part 'log_style.dart';
 
 final class LogTheme with Loggable {
   final LogStyle normal;
@@ -21,10 +23,13 @@ final class LogTheme with Loggable {
   final LogStyle dataTitle;
   final LogStyle dataName;
   final LogStyle dataKey;
-  final LogStyle dataIndex;
   final LogStyle dataValue;
   final LogStyle dataUnits;
-  final List<LogStyle> dataLevels;
+  final List<LogStyle> dataBrackets;
+  final List<LogStyle> dataDescription;
+  final List<LogStyle> dataPunctuation;
+  final bool showCount;
+  final bool showIndexes;
   final LogStyle punctuation;
   final LogPunctuation colon;
   final LogPunctuation ellipsis;
@@ -48,10 +53,13 @@ final class LogTheme with Loggable {
     LogStyle? dataTitle,
     LogStyle? dataName,
     LogStyle? dataKey,
-    LogStyle? dataIndex,
     LogStyle? dataValue,
     LogStyle? dataUnits,
-    List<LogStyle>? dataLevels,
+    List<LogStyle>? dataBrackets,
+    List<LogStyle>? dataDescription,
+    List<LogStyle>? dataPunctuation,
+    this.showCount = true,
+    this.showIndexes = true,
     LogStyle? punctuation,
     String colon = ':',
     LogStyle? colonStyle,
@@ -132,10 +140,11 @@ final class LogTheme with Loggable {
         dataTitle = dataTitle ?? LogStyle.noColors,
         dataName = dataName ?? LogStyle.noColors,
         dataKey = dataKey ?? LogStyle.noColors,
-        dataIndex = dataIndex ?? LogStyle.noColors,
         dataValue = dataValue ?? LogStyle.noColors,
         dataUnits = dataUnits ?? LogStyle.noColors,
-        dataLevels = dataLevels ?? [LogStyle.noColors],
+        dataBrackets = dataBrackets ?? [LogStyle.noColors],
+        dataDescription = dataDescription ?? [LogStyle.noColors],
+        dataPunctuation = dataPunctuation ?? [LogStyle.noColors],
         punctuation = punctuation ?? LogStyle.noColors,
         assert(!colon.ansiHasEscapeCodes),
         colon = LogPunctuation(colon, style: colonStyle ?? punctuation),
@@ -163,10 +172,13 @@ final class LogTheme with Loggable {
     required this.dataTitle,
     required this.dataName,
     required this.dataKey,
-    required this.dataIndex,
     required this.dataValue,
     required this.dataUnits,
-    required this.dataLevels,
+    required this.dataBrackets,
+    required this.dataDescription,
+    required this.dataPunctuation,
+    required this.showCount,
+    required this.showIndexes,
     required this.punctuation,
     required this.colon,
     required this.ellipsis,
@@ -190,10 +202,13 @@ final class LogTheme with Loggable {
     dataTitle: LogStyle.noColors,
     dataName: LogStyle.noColors,
     dataKey: LogStyle.noColors,
-    dataIndex: LogStyle.noColors,
     dataValue: LogStyle.noColors,
     dataUnits: LogStyle.noColors,
-    dataLevels: [LogStyle.noColors],
+    dataBrackets: [LogStyle.noColors],
+    dataDescription: [LogStyle.noColors],
+    dataPunctuation: [LogStyle.noColors],
+    showCount: true,
+    showIndexes: true,
     punctuation: LogStyle.noColors,
     colon: LogPunctuation(':'),
     ellipsis: LogPunctuation('…'),
@@ -356,31 +371,76 @@ final class LogTheme with Loggable {
     ),
     dataName: LogStyle.noColors,
     dataKey: _activeStyle,
-    dataIndex: _dimStyle,
     dataValue: _normalStyle,
     dataUnits: _dimStyle,
-    dataLevels: [
+    dataBrackets: [
       LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb320, bold: true),
-        debug: ansi.Style(foreground: ansi.Color256.rgb430, bold: true),
+        verbose: ansi.Style(foreground: ansi.Color256.rgb310, bold: true),
+        debug: ansi.Style(foreground: ansi.Color256.rgb420, bold: true),
         ansi.Style(foreground: ansi.Color256.rgb530, bold: true),
       ),
       LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb230, bold: true),
+        verbose: ansi.Style(foreground: ansi.Color256.rgb130, bold: true),
         debug: ansi.Style(foreground: ansi.Color256.rgb240, bold: true),
         ansi.Style(foreground: ansi.Color256.rgb350, bold: true),
       ),
       LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb024, bold: true),
+        verbose: ansi.Style(foreground: ansi.Color256.rgb023, bold: true),
         debug: ansi.Style(foreground: ansi.Color256.rgb034, bold: true),
         ansi.Style(foreground: ansi.Color256.rgb045, bold: true),
       ),
       LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb224, bold: true),
-        debug: ansi.Style(foreground: ansi.Color256.rgb325, bold: true),
+        verbose: ansi.Style(foreground: ansi.Color256.rgb213, bold: true),
+        debug: ansi.Style(foreground: ansi.Color256.rgb324, bold: true),
         ansi.Style(foreground: ansi.Color256.rgb425, bold: true),
       ),
     ],
+    dataDescription: [
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb310),
+        debug: ansi.Style(foreground: ansi.Color256.rgb310),
+        ansi.Style(foreground: ansi.Color256.rgb420),
+      ),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb130),
+        debug: ansi.Style(foreground: ansi.Color256.rgb130),
+        ansi.Style(foreground: ansi.Color256.rgb240),
+      ),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb023),
+        debug: ansi.Style(foreground: ansi.Color256.rgb023),
+        ansi.Style(foreground: ansi.Color256.rgb034),
+      ),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb213),
+        debug: ansi.Style(foreground: ansi.Color256.rgb213),
+        ansi.Style(foreground: ansi.Color256.rgb324),
+      ),
+    ],
+    dataPunctuation: [
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb310),
+        debug: ansi.Style(foreground: ansi.Color256.rgb420),
+        ansi.Style(foreground: ansi.Color256.rgb530),
+      ),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb130),
+        debug: ansi.Style(foreground: ansi.Color256.rgb240),
+        ansi.Style(foreground: ansi.Color256.rgb350),
+      ),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb023),
+        debug: ansi.Style(foreground: ansi.Color256.rgb034),
+        ansi.Style(foreground: ansi.Color256.rgb045),
+      ),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb213),
+        debug: ansi.Style(foreground: ansi.Color256.rgb324),
+        ansi.Style(foreground: ansi.Color256.rgb425),
+      ),
+    ],
+    showCount: true,
+    showIndexes: true,
     punctuation: _punctuationStyle,
     colon: LogPunctuation(':', style: _punctuationStyle),
     ellipsis: LogPunctuation('…', style: _punctuationStyle),
@@ -404,10 +464,13 @@ final class LogTheme with Loggable {
     LogStyle? dataTitle,
     LogStyle? dataName,
     LogStyle? dataKey,
-    LogStyle? dataIndex,
     LogStyle? dataValue,
     LogStyle? dataUnits,
-    List<LogStyle>? dataLevels,
+    List<LogStyle>? dataBrackets,
+    List<LogStyle>? dataDescription,
+    List<LogStyle>? dataPunctuation,
+    bool? showCount,
+    bool? showIndexes,
     LogStyle? punctuation,
     String? colon,
     LogStyle? colonStyle,
@@ -436,10 +499,13 @@ final class LogTheme with Loggable {
       dataTitle: dataTitle ?? this.dataTitle,
       dataName: dataName ?? this.dataName,
       dataKey: dataKey ?? this.dataKey,
-      dataIndex: dataIndex ?? this.dataIndex,
       dataValue: dataValue ?? this.dataValue,
       dataUnits: dataUnits ?? this.dataUnits,
-      dataLevels: dataLevels ?? this.dataLevels,
+      dataBrackets: dataBrackets ?? this.dataBrackets,
+      dataDescription: dataDescription ?? this.dataDescription,
+      dataPunctuation: dataPunctuation ?? this.dataPunctuation,
+      showCount: showCount ?? this.showCount,
+      showIndexes: showIndexes ?? this.showIndexes,
       punctuation: punctuation ?? this.punctuation,
       colon: colon == null && colonStyle == null
           ? this.colon
@@ -458,84 +524,88 @@ final class LogTheme with Loggable {
     );
   }
 
-  LogDataTheme toDataTheme(int level) => LogDataTheme(
+  LogDataTheme toDataTheme(int level) => LogDataTheme._(
         title: dataTitle[level],
         name: dataName[level],
         key: dataKey[level],
-        index: dataIndex[level],
         value: dataValue[level],
         units: dataUnits[level],
-        levels: dataLevels.map((s) => s[level]).toList(),
-        ellipsis: ellipsis.toAnsiStyled(level),
+        brackets: dataBrackets.map((s) => s[level]).toList(),
+        description: dataDescription.map((s) => s[level]).toList(),
+        punctuation: dataPunctuation.map((s) => s[level]).toList(),
+        showCount: showCount,
+        showIndexes: showIndexes,
+        ellipsis: ellipsis.string,
       );
 
   @override
   void collectLoggableData(LoggableData data) {
     data
-          ..prop('normal', normal)
-          ..prop('bold', bold)
-          ..prop('dim', dim)
-          ..prop('superDim', superDim)
-          ..prop('sequenceNum', sequenceNum)
-          ..prop('levelName', levelName)
-          ..prop('time', time)
-          ..prop('path', path)
-          ..prop('tags', tags)
-          ..prop('controlCodes', controlCodes)
-          ..prop('dataTitle', dataTitle)
-          ..prop('dataName', dataName)
-          ..prop('dataKey', dataKey)
-          ..prop('dataIndex', dataIndex)
-          ..prop('dataValue', dataValue)
-          ..prop('dataUnits', dataUnits)
-          ..prop('dataLevels', dataLevels)
-          ..prop('punctuation', punctuation)
-          ..prop('colon', colon)
-          ..prop('ellipsis', ellipsis)
-          ..prop('lineBreak', lineBreak)
-          ..prop('padding', padding)
-          ..prop('maxLength', maxLength)
-          ..prop('maxLines', maxLines)
-        //
-        ;
+      ..prop('normal', normal)
+      ..prop('bold', bold)
+      ..prop('dim', dim)
+      ..prop('superDim', superDim)
+      ..prop('sequenceNum', sequenceNum)
+      ..prop('levelName', levelName)
+      ..prop('time', time)
+      ..prop('path', path)
+      ..prop('tags', tags)
+      ..prop('controlCodes', controlCodes)
+      ..prop('dataTitle', dataTitle)
+      ..prop('dataName', dataName)
+      ..prop('dataKey', dataKey)
+      ..prop('dataValue', dataValue)
+      ..prop('dataUnits', dataUnits)
+      ..prop('dataBrackets', dataBrackets)
+      ..prop('dataDescription', dataDescription)
+      ..prop('dataPunctuation', dataPunctuation)
+      ..prop('showCount', showCount)
+      ..prop('showIndexes', showIndexes)
+      ..prop('punctuation', punctuation)
+      ..prop('colon', colon)
+      ..prop('ellipsis', ellipsis)
+      ..prop('lineBreak', lineBreak)
+      ..prop('padding', padding)
+      ..prop('maxLength', maxLength)
+      ..prop('maxLines', maxLines);
   }
 }
 
 final class LogPunctuation with Loggable {
-  final String _string;
+  final String string;
   final LogStyle style;
 
   const LogPunctuation(
-    this._string, {
+    this.string, {
     LogStyle? style,
   }) : style = style ?? LogStyle.noColors;
 
-  bool get isEmpty => _string.isEmpty;
+  bool get isEmpty => string.isEmpty;
 
-  bool get isNotEmpty => _string.isNotEmpty;
+  bool get isNotEmpty => string.isNotEmpty;
 
-  int get length => _string.length;
+  int get length => string.length;
 
-  String call(Log log) => style[log.level](_string);
+  String call(Log log) => style[log.level](string);
 
   LogPunctuation copyWith({
     String? string,
     LogStyle? style,
   }) =>
       LogPunctuation(
-        string ?? _string,
+        string ?? this.string,
         style: style ?? this.style,
       );
 
-  AnsiStyled toAnsiStyled(int level) => AnsiStyled(_string, style[level]);
+  AnsiStyled toAnsiStyled(int level) => AnsiStyled(string, style[level]);
 
   @override
-  String toString() => '$LogPunctuation($_string)';
+  String toString() => '$LogPunctuation($string)';
 
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..prop('string', _string, showName: false)
+      ..prop('string', string, showName: false)
       ..prop('style', style);
   }
 }

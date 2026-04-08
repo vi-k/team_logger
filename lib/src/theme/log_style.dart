@@ -1,7 +1,4 @@
-import 'package:ansi_escape_codes/style.dart' as ansi;
-
-import '../loggable/loggable.dart';
-import '../logger/log_levels.dart';
+part of 'log_theme.dart';
 
 final class LogStyle with Loggable {
   final ansi.Style verbose;
@@ -84,7 +81,7 @@ final class LogStyle with Loggable {
     if (this == LogStyle.noColors) {
       data
         ..name = '$LogStyle.noColors'
-        ..showParentheses = false;
+        ..showBrackets = false;
       return;
     }
 

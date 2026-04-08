@@ -7,7 +7,7 @@ import '../log_formatters/log_divider.dart';
 import '../log_formatters/log_formatter.dart';
 import '../logger/log.dart';
 import '../logger/log_levels.dart';
-import 'log_theme.dart';
+import '../theme/log_theme.dart';
 
 final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogTheme theme;
