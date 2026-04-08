@@ -3,13 +3,15 @@ import 'package:ansi_escape_codes/style.dart' as ansi;
 
 import '../log_formatters/extensions.dart';
 import '../loggable/log_data_theme.dart';
+import '../loggable/loggable.dart';
 import '../logger/log.dart';
 import 'log_style.dart';
 
-final class LogTheme {
+final class LogTheme with Loggable {
   final LogStyle normal;
   final LogStyle bold;
   final LogStyle dim;
+  final LogStyle superDim;
   final LogStyle sequenceNum;
   final LogStyle levelName;
   final LogStyle time;
@@ -22,12 +24,7 @@ final class LogTheme {
   final LogStyle dataIndex;
   final LogStyle dataValue;
   final LogStyle dataUnits;
-  final LogStyle dataDim;
-  final LogStyle dataLevel0;
-  final LogStyle dataLevel1;
-  final LogStyle dataLevel2;
-  final LogStyle dataLevel3;
-  final LogStyle dataLevelN;
+  final List<LogStyle> dataLevels;
   final LogStyle punctuation;
   final LogPunctuation colon;
   final LogPunctuation ellipsis;
@@ -37,9 +34,10 @@ final class LogTheme {
   final int? maxLines;
 
   LogTheme({
-    required this.normal,
+    this.normal = LogStyle.terminalColors,
     LogStyle? bold,
     LogStyle? dim,
+    LogStyle? superDim,
     LogStyle? sequenceNum,
     LogStyle? levelName,
     LogStyle? time,
@@ -53,12 +51,7 @@ final class LogTheme {
     LogStyle? dataIndex,
     LogStyle? dataValue,
     LogStyle? dataUnits,
-    LogStyle? dataDim,
-    LogStyle? dataLevel0,
-    LogStyle? dataLevel1,
-    LogStyle? dataLevel2,
-    LogStyle? dataLevel3,
-    LogStyle? dataLevelN,
+    List<LogStyle>? dataLevels,
     LogStyle? punctuation,
     String colon = ':',
     LogStyle? colonStyle,
@@ -89,8 +82,17 @@ final class LogTheme {
               error: normal.error.dim,
               critical: normal.critical.dim,
             ),
+        superDim = superDim ??
+            normal.copyWith(
+              verbose: normal.verbose.dim,
+              debug: normal.debug.dim,
+              info: normal.info.dim,
+              warning: normal.warning.dim,
+              error: normal.error.dim,
+              critical: normal.critical.dim,
+            ),
         sequenceNum = sequenceNum ??
-            const LogStyle.oneForAll(
+            const LogStyle.only(
               ansi.Style(foreground: _tagColor),
             ),
         levelName = levelName ??
@@ -120,26 +122,21 @@ final class LogTheme {
                 foreground: ansi.Color256.gray0,
               ),
             ),
-        time = time ?? LogStyle.defaultStyle,
-        path = path ?? LogStyle.defaultStyle,
+        time = time ?? LogStyle.noColors,
+        path = path ?? LogStyle.noColors,
         tags = tags ??
-            const LogStyle.oneForAll(
+            const LogStyle.only(
               ansi.Style(foreground: _tagColor),
             ),
-        controlCodes = controlCodes ?? LogStyle.defaultStyle,
-        dataTitle = dataTitle ?? LogStyle.defaultStyle,
-        dataName = dataName ?? LogStyle.defaultStyle,
-        dataKey = dataKey ?? LogStyle.defaultStyle,
-        dataIndex = dataIndex ?? LogStyle.defaultStyle,
-        dataValue = dataValue ?? LogStyle.defaultStyle,
-        dataUnits = dataUnits ?? LogStyle.defaultStyle,
-        dataDim = dataDim ?? LogStyle.defaultStyle,
-        dataLevel0 = dataLevel0 ?? LogStyle.defaultStyle,
-        dataLevel1 = dataLevel1 ?? LogStyle.defaultStyle,
-        dataLevel2 = dataLevel2 ?? LogStyle.defaultStyle,
-        dataLevel3 = dataLevel3 ?? LogStyle.defaultStyle,
-        dataLevelN = dataLevelN ?? LogStyle.defaultStyle,
-        punctuation = punctuation ?? LogStyle.defaultStyle,
+        controlCodes = controlCodes ?? LogStyle.noColors,
+        dataTitle = dataTitle ?? LogStyle.noColors,
+        dataName = dataName ?? LogStyle.noColors,
+        dataKey = dataKey ?? LogStyle.noColors,
+        dataIndex = dataIndex ?? LogStyle.noColors,
+        dataValue = dataValue ?? LogStyle.noColors,
+        dataUnits = dataUnits ?? LogStyle.noColors,
+        dataLevels = dataLevels ?? [LogStyle.noColors],
+        punctuation = punctuation ?? LogStyle.noColors,
         assert(!colon.ansiHasEscapeCodes),
         colon = LogPunctuation(colon, style: colonStyle ?? punctuation),
         assert(!ellipsis.ansiHasEscapeCodes),
@@ -156,6 +153,7 @@ final class LogTheme {
     required this.normal,
     required this.bold,
     required this.dim,
+    required this.superDim,
     required this.sequenceNum,
     required this.levelName,
     required this.time,
@@ -168,12 +166,7 @@ final class LogTheme {
     required this.dataIndex,
     required this.dataValue,
     required this.dataUnits,
-    required this.dataDim,
-    required this.dataLevel0,
-    required this.dataLevel1,
-    required this.dataLevel2,
-    required this.dataLevel3,
-    required this.dataLevelN,
+    required this.dataLevels,
     required this.punctuation,
     required this.colon,
     required this.ellipsis,
@@ -184,28 +177,24 @@ final class LogTheme {
   });
 
   static const LogTheme noColorsTheme = LogTheme._raw(
-    normal: LogStyle.defaultStyle,
-    bold: LogStyle.defaultStyle,
-    dim: LogStyle.defaultStyle,
-    sequenceNum: LogStyle.defaultStyle,
-    levelName: LogStyle.defaultStyle,
-    time: LogStyle.defaultStyle,
-    path: LogStyle.defaultStyle,
-    tags: LogStyle.defaultStyle,
-    controlCodes: LogStyle.defaultStyle,
-    dataTitle: LogStyle.defaultStyle,
-    dataName: LogStyle.defaultStyle,
-    dataKey: LogStyle.defaultStyle,
-    dataIndex: LogStyle.defaultStyle,
-    dataValue: LogStyle.defaultStyle,
-    dataUnits: LogStyle.defaultStyle,
-    dataDim: LogStyle.defaultStyle,
-    dataLevel0: LogStyle.defaultStyle,
-    dataLevel1: LogStyle.defaultStyle,
-    dataLevel2: LogStyle.defaultStyle,
-    dataLevel3: LogStyle.defaultStyle,
-    dataLevelN: LogStyle.defaultStyle,
-    punctuation: LogStyle.defaultStyle,
+    normal: LogStyle.noColors,
+    bold: LogStyle.noColors,
+    dim: LogStyle.noColors,
+    superDim: LogStyle.noColors,
+    sequenceNum: LogStyle.noColors,
+    levelName: LogStyle.noColors,
+    time: LogStyle.noColors,
+    path: LogStyle.noColors,
+    tags: LogStyle.noColors,
+    controlCodes: LogStyle.noColors,
+    dataTitle: LogStyle.noColors,
+    dataName: LogStyle.noColors,
+    dataKey: LogStyle.noColors,
+    dataIndex: LogStyle.noColors,
+    dataValue: LogStyle.noColors,
+    dataUnits: LogStyle.noColors,
+    dataLevels: [LogStyle.noColors],
+    punctuation: LogStyle.noColors,
     colon: LogPunctuation(':'),
     ellipsis: LogPunctuation('…'),
     lineBreak: LogPunctuation('-'),
@@ -218,37 +207,38 @@ final class LogTheme {
 
   static const _normalVerboseColor = ansi.Color256.gray7;
   static const _normalDebugColor = ansi.Color256.gray11;
-  static const _normalInfoColor = ansi.Color256.rgb234;
+  static const _normalInfoColor = ansi.Color256.rgb233;
   static const _normalWarningColor = ansi.Color256.rgb430;
   static const _normalErrorColor = ansi.Color256.rgb411;
   static const _normalCriticalColor = ansi.Color256.rgb414;
 
   static const _activeVerboseColor = ansi.Color256.gray10;
   static const _activeDebugColor = ansi.Color256.gray15;
-  static const _activeInfoColor = ansi.Color256.rgb345;
+  static const _activeInfoColor = ansi.Color256.rgb344;
   static const _activeWarningColor = ansi.Color256.rgb540;
   static const _activeErrorColor = ansi.Color256.rgb511;
   static const _activeCriticalColor = ansi.Color256.rgb515;
 
   static const _dimVerboseColor = ansi.Color256.gray5;
   static const _dimDebugColor = ansi.Color256.gray8;
-  static const _dimInfoColor = ansi.Color256.rgb123;
+  static const _dimInfoColor = ansi.Color256.rgb122;
   static const _dimWarningColor = ansi.Color256.rgb320;
   static const _dimErrorColor = ansi.Color256.rgb311;
   static const _dimCriticalColor = ansi.Color256.rgb313;
 
-  // static const _superDimVerboseColor = ansi.Color256.gray5;
-  // static const _superDimDebugColor = ansi.Color256.gray5;
-  // static const _superDimInfoColor = ansi.Color256.rgb012;
-  // static const _superDimWarningColor = ansi.Color256.rgb210;
-  // static const _superDimErrorColor = ansi.Color256.rgb200;
-  // static const _superDimCriticalColor = ansi.Color256.rgb202;
+  static const _superDimVerboseColor = ansi.Color256.gray4;
+  static const _superDimDebugColor = ansi.Color256.gray4;
+  static const _superDimInfoColor = ansi.Color256.rgb011;
+  static const _superDimWarningColor = ansi.Color256.rgb210;
+  static const _superDimErrorColor = ansi.Color256.rgb200;
+  static const _superDimCriticalColor = ansi.Color256.rgb202;
 
-  // static const _punctuationColor = ansi.Color256.rgb045;
-  static const _punctuationColor = ansi.Color256.rgb023;
+  static const _verbosePunctuationColor = ansi.Color256.rgb023;
+  static const _debugPunctuationColor = ansi.Color256.rgb034;
+  static const _punctuationColor = ansi.Color256.rgb045;
   static const _tagColor = ansi.Color256.gray5;
 
-  static const _normalDefaultStyle = LogStyle(
+  static const _normalStyle = LogStyle(
     verbose: ansi.Style(foreground: _normalVerboseColor),
     debug: ansi.Style(foreground: _normalDebugColor),
     info: ansi.Style(foreground: _normalInfoColor),
@@ -256,7 +246,7 @@ final class LogTheme {
     error: ansi.Style(foreground: _normalErrorColor),
     critical: ansi.Style(foreground: _normalCriticalColor),
   );
-  static const _activeDefaultStyle = LogStyle(
+  static const _activeStyle = LogStyle(
     verbose: ansi.Style(foreground: _activeVerboseColor),
     debug: ansi.Style(foreground: _activeDebugColor),
     info: ansi.Style(foreground: _activeInfoColor),
@@ -264,7 +254,7 @@ final class LogTheme {
     error: ansi.Style(foreground: _activeErrorColor),
     critical: ansi.Style(foreground: _activeCriticalColor),
   );
-  static const _boldDefaultStyle = LogStyle(
+  static const _boldStyle = LogStyle(
     verbose: ansi.Style(foreground: _activeVerboseColor, bold: true),
     debug: ansi.Style(foreground: _activeDebugColor, bold: true),
     info: ansi.Style(foreground: _activeInfoColor, bold: true),
@@ -272,7 +262,7 @@ final class LogTheme {
     error: ansi.Style(foreground: _activeErrorColor, bold: true),
     critical: ansi.Style(foreground: _activeCriticalColor, bold: true),
   );
-  static const _dimDefaultStyle = LogStyle(
+  static const _dimStyle = LogStyle(
     verbose: ansi.Style(foreground: _dimVerboseColor),
     debug: ansi.Style(foreground: _dimDebugColor),
     info: ansi.Style(foreground: _dimInfoColor),
@@ -280,15 +270,20 @@ final class LogTheme {
     error: ansi.Style(foreground: _dimErrorColor),
     critical: ansi.Style(foreground: _dimCriticalColor),
   );
-  // static const _superDimDefaultStyle = LogStyle(
-  //   verbose: ansi.Style(foreground: _superDimVerboseColor),
-  //   debug: ansi.Style(foreground: _superDimDebugColor),
-  //   info: ansi.Style(foreground: _superDimInfoColor),
-  //   warning: ansi.Style(foreground: _superDimWarningColor),
-  //   error: ansi.Style(foreground: _superDimErrorColor),
-  //   critical: ansi.Style(foreground: _superDimCriticalColor),
-  // );
-  static const _tagDefaultStyle = LogStyle(
+  static const _superDimStyle = LogStyle(
+    verbose: ansi.Style(foreground: _superDimVerboseColor),
+    debug: ansi.Style(foreground: _superDimDebugColor),
+    info: ansi.Style(foreground: _superDimInfoColor),
+    warning: ansi.Style(foreground: _superDimWarningColor),
+    error: ansi.Style(foreground: _superDimErrorColor),
+    critical: ansi.Style(foreground: _superDimCriticalColor),
+  );
+  static const _punctuationStyle = LogStyle.only(
+    verbose: ansi.Style(foreground: _verbosePunctuationColor),
+    debug: ansi.Style(foreground: _debugPunctuationColor),
+    ansi.Style(foreground: _punctuationColor),
+  );
+  static const _tagStyle = LogStyle(
     verbose: ansi.Style(foreground: _tagColor),
     debug: ansi.Style(foreground: _tagColor),
     info: ansi.Style(foreground: _tagColor),
@@ -298,10 +293,11 @@ final class LogTheme {
   );
 
   static const LogTheme defaultTheme = LogTheme._raw(
-    normal: _normalDefaultStyle,
-    bold: _boldDefaultStyle,
-    dim: _dimDefaultStyle,
-    sequenceNum: _tagDefaultStyle,
+    normal: _normalStyle,
+    bold: _boldStyle,
+    dim: _dimStyle,
+    superDim: _superDimStyle,
+    sequenceNum: _tagStyle,
     levelName: LogStyle(
       verbose: ansi.Style(
         background: _normalVerboseColor,
@@ -328,12 +324,10 @@ final class LogTheme {
         foreground: _black,
       ),
     ),
-    time: LogStyle.defaultStyle,
-    path: _boldDefaultStyle,
-    tags: _tagDefaultStyle,
-    controlCodes: LogStyle.oneForAll(
-      ansi.Style(foreground: _punctuationColor),
-    ),
+    time: LogStyle.noColors,
+    path: _boldStyle,
+    tags: _tagStyle,
+    controlCodes: _punctuationStyle,
     dataTitle: LogStyle(
       verbose: ansi.Style(
         foreground: _black,
@@ -360,46 +354,37 @@ final class LogTheme {
         background: _dimCriticalColor,
       ),
     ),
-    dataName: LogStyle.defaultStyle,
-    dataKey: _activeDefaultStyle,
-    dataIndex: _dimDefaultStyle,
-    dataValue: _normalDefaultStyle,
-    dataUnits: _dimDefaultStyle,
-    dataDim: _dimDefaultStyle,
-    dataLevel0: LogStyle.oneForAll(
-      ansi.Style(foreground: ansi.Color256.rgb045, bold: true),
-    ),
-    dataLevel1: LogStyle.oneForAll(
-      ansi.Style(foreground: ansi.Color256.rgb034, bold: true),
-    ),
-    dataLevel2: LogStyle.oneForAll(
-      ansi.Style(foreground: ansi.Color256.rgb023, bold: true),
-    ),
-    dataLevel3: LogStyle.oneForAll(
-      ansi.Style(foreground: ansi.Color256.rgb012, bold: true),
-    ),
-    dataLevelN: _normalDefaultStyle,
-    punctuation: LogStyle.oneForAll(
-      ansi.Style(foreground: _punctuationColor),
-    ),
-    colon: LogPunctuation(
-      ':',
-      style: LogStyle.oneForAll(
-        ansi.Style(foreground: _punctuationColor),
+    dataName: LogStyle.noColors,
+    dataKey: _activeStyle,
+    dataIndex: _dimStyle,
+    dataValue: _normalStyle,
+    dataUnits: _dimStyle,
+    dataLevels: [
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb320, bold: true),
+        debug: ansi.Style(foreground: ansi.Color256.rgb430, bold: true),
+        ansi.Style(foreground: ansi.Color256.rgb530, bold: true),
       ),
-    ),
-    ellipsis: LogPunctuation(
-      '…',
-      style: LogStyle.oneForAll(
-        ansi.Style(foreground: _punctuationColor),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb230, bold: true),
+        debug: ansi.Style(foreground: ansi.Color256.rgb240, bold: true),
+        ansi.Style(foreground: ansi.Color256.rgb350, bold: true),
       ),
-    ),
-    lineBreak: LogPunctuation(
-      '-',
-      style: LogStyle.oneForAll(
-        ansi.Style(foreground: _punctuationColor),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb024, bold: true),
+        debug: ansi.Style(foreground: ansi.Color256.rgb034, bold: true),
+        ansi.Style(foreground: ansi.Color256.rgb045, bold: true),
       ),
-    ),
+      LogStyle.only(
+        verbose: ansi.Style(foreground: ansi.Color256.rgb224, bold: true),
+        debug: ansi.Style(foreground: ansi.Color256.rgb325, bold: true),
+        ansi.Style(foreground: ansi.Color256.rgb425, bold: true),
+      ),
+    ],
+    punctuation: _punctuationStyle,
+    colon: LogPunctuation(':', style: _punctuationStyle),
+    ellipsis: LogPunctuation('…', style: _punctuationStyle),
+    lineBreak: LogPunctuation('-', style: _punctuationStyle),
     padding: LogPunctuation(' '),
     maxLength: null,
     maxLines: null,
@@ -409,6 +394,7 @@ final class LogTheme {
     LogStyle? normal,
     LogStyle? bold,
     LogStyle? dim,
+    LogStyle? superDim,
     LogStyle? sequenceNum,
     LogStyle? levelName,
     LogStyle? time,
@@ -421,12 +407,7 @@ final class LogTheme {
     LogStyle? dataIndex,
     LogStyle? dataValue,
     LogStyle? dataUnits,
-    LogStyle? dataDim,
-    LogStyle? dataLevel0,
-    LogStyle? dataLevel1,
-    LogStyle? dataLevel2,
-    LogStyle? dataLevel3,
-    LogStyle? dataLevelN,
+    List<LogStyle>? dataLevels,
     LogStyle? punctuation,
     String? colon,
     LogStyle? colonStyle,
@@ -445,6 +426,7 @@ final class LogTheme {
       normal: normal ?? this.normal,
       bold: bold ?? this.bold,
       dim: dim ?? this.dim,
+      superDim: superDim ?? this.superDim,
       sequenceNum: sequenceNum ?? this.sequenceNum,
       levelName: levelName ?? this.levelName,
       time: time ?? this.time,
@@ -457,12 +439,7 @@ final class LogTheme {
       dataIndex: dataIndex ?? this.dataIndex,
       dataValue: dataValue ?? this.dataValue,
       dataUnits: dataUnits ?? this.dataUnits,
-      dataDim: dataDim ?? this.dataDim,
-      dataLevel0: dataLevel0 ?? this.dataLevel0,
-      dataLevel1: dataLevel1 ?? this.dataLevel1,
-      dataLevel2: dataLevel2 ?? this.dataLevel2,
-      dataLevel3: dataLevel3 ?? this.dataLevel3,
-      dataLevelN: dataLevelN ?? this.dataLevelN,
+      dataLevels: dataLevels ?? this.dataLevels,
       punctuation: punctuation ?? this.punctuation,
       colon: colon == null && colonStyle == null
           ? this.colon
@@ -488,24 +465,50 @@ final class LogTheme {
         index: dataIndex[level],
         value: dataValue[level],
         units: dataUnits[level],
-        dim: dataDim[level],
-        level0: dataLevel0[level],
-        level1: dataLevel1[level],
-        level2: dataLevel2[level],
-        level3: dataLevel3[level],
-        levelN: dataLevelN[level],
+        levels: dataLevels.map((s) => s[level]).toList(),
         ellipsis: ellipsis.toAnsiStyled(level),
       );
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+          ..prop('normal', normal)
+          ..prop('bold', bold)
+          ..prop('dim', dim)
+          ..prop('superDim', superDim)
+          ..prop('sequenceNum', sequenceNum)
+          ..prop('levelName', levelName)
+          ..prop('time', time)
+          ..prop('path', path)
+          ..prop('tags', tags)
+          ..prop('controlCodes', controlCodes)
+          ..prop('dataTitle', dataTitle)
+          ..prop('dataName', dataName)
+          ..prop('dataKey', dataKey)
+          ..prop('dataIndex', dataIndex)
+          ..prop('dataValue', dataValue)
+          ..prop('dataUnits', dataUnits)
+          ..prop('dataLevels', dataLevels)
+          ..prop('punctuation', punctuation)
+          ..prop('colon', colon)
+          ..prop('ellipsis', ellipsis)
+          ..prop('lineBreak', lineBreak)
+          ..prop('padding', padding)
+          ..prop('maxLength', maxLength)
+          ..prop('maxLines', maxLines)
+        //
+        ;
+  }
 }
 
-final class LogPunctuation {
+final class LogPunctuation with Loggable {
   final String _string;
   final LogStyle style;
 
   const LogPunctuation(
     this._string, {
     LogStyle? style,
-  }) : style = style ?? LogStyle.defaultStyle;
+  }) : style = style ?? LogStyle.noColors;
 
   bool get isEmpty => _string.isEmpty;
 
@@ -528,4 +531,11 @@ final class LogPunctuation {
 
   @override
   String toString() => '$LogPunctuation($_string)';
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..prop('string', _string, showName: false)
+      ..prop('style', style);
+  }
 }

@@ -1,19 +1,16 @@
 import 'package:ansi_escape_codes/style.dart' as ansi;
-import 'package:team_logger/src/log_formatters/extensions.dart';
 
-final class LogDataTheme {
+import '../log_formatters/extensions.dart';
+import 'loggable.dart';
+
+final class LogDataTheme with Loggable {
   final ansi.Style title;
   final ansi.Style name;
   final ansi.Style key;
   final ansi.Style index;
   final ansi.Style value;
   final ansi.Style units;
-  final ansi.Style dim;
-  final ansi.Style level0;
-  final ansi.Style level1;
-  final ansi.Style level2;
-  final ansi.Style level3;
-  final ansi.Style levelN;
+  final List<ansi.Style> levels;
   final AnsiStyled ellipsis;
 
   const LogDataTheme({
@@ -23,36 +20,43 @@ final class LogDataTheme {
     required this.index,
     required this.value,
     required this.units,
-    required this.dim,
-    required this.level0,
-    required this.level1,
-    required this.level2,
-    required this.level3,
-    required this.levelN,
+    required this.levels,
     required this.ellipsis,
   });
 
-  ansi.Style level(int level) => switch (level) {
-        0 => level0,
-        1 => level1,
-        2 => level2,
-        3 => level3,
-        _ => levelN,
-      };
+  ansi.Style level(int level) =>
+      levels.isEmpty ? const ansi.NoStyle() : levels[level % levels.length];
 
   static const LogDataTheme noColorsTheme = LogDataTheme(
-    title: ansi.Style.defaults,
-    name: ansi.Style.defaults,
-    key: ansi.Style.defaults,
-    index: ansi.Style.defaults,
-    value: ansi.Style.defaults,
-    units: ansi.Style.defaults,
-    dim: ansi.Style.defaults,
-    level0: ansi.Style.defaults,
-    level1: ansi.Style.defaults,
-    level2: ansi.Style.defaults,
-    level3: ansi.Style.defaults,
-    levelN: ansi.Style.defaults,
-    ellipsis: AnsiStyled('…', ansi.Style.defaults),
+    title: ansi.NoStyle(),
+    name: ansi.NoStyle(),
+    key: ansi.NoStyle(),
+    index: ansi.NoStyle(),
+    value: ansi.NoStyle(),
+    units: ansi.NoStyle(),
+    levels: [ansi.NoStyle()],
+    ellipsis: AnsiStyled('…', ansi.NoStyle()),
   );
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    final levelsBuf = StringBuffer('"');
+    for (final level in levels) {
+      levelsBuf.write(level('['));
+    }
+    for (final level in levels.reversed) {
+      levelsBuf.write(level(']'));
+    }
+    levelsBuf.write('"');
+
+    data
+      ..prop('title', title, showName: false, view: title('title'))
+      ..prop('name', name, showName: false, view: name('name'))
+      ..prop('key', key, showName: false, view: key('key'))
+      ..prop('index', index, showName: false, view: index('index'))
+      ..prop('value', value, showName: false, view: value('value'))
+      ..prop('units', units, showName: false, view: units('units'))
+      ..prop('levels', levels, view: levelsBuf.toString())
+      ..prop('ellipsis', ellipsis);
+  }
 }

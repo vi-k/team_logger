@@ -21,7 +21,7 @@ mixin Loggable {
 
   @nonVirtual
   LoggableData logClassInfo() {
-    final data = LoggableData._(ClassProp(runtimeType));
+    final data = LoggableData._(TypeProp(runtimeType));
     collectLoggableData(data);
     return data;
   }

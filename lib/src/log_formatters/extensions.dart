@@ -1,4 +1,5 @@
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
+import 'package:ansi_escape_codes/extensions.dart';
 import 'package:team_logger/team_logger.dart';
 
 extension AnsiStringExtensions on String {
@@ -79,18 +80,26 @@ extension AnsiParserExtensions on ansi.Parser {
   }
 }
 
-final class AnsiStyled {
-  final String _string;
+final class AnsiStyled with Loggable {
+  final String string;
   final ansi.Style style;
 
-  const AnsiStyled(this._string, this.style);
+  const AnsiStyled(this.string, this.style);
 
-  bool get isEmpty => _string.isEmpty;
+  bool get isEmpty => string.isEmpty;
 
-  bool get isNotEmpty => _string.isNotEmpty;
+  bool get isNotEmpty => string.isNotEmpty;
 
-  int get length => _string.length;
+  int get length => string.length;
 
   @override
-  String toString() => style(_string);
+  String toString() => style(string);
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..showName = false
+      ..showParentheses = false
+      ..prop('string', string, showName: false, view: '"${style(string)}"');
+  }
 }

@@ -1,8 +1,9 @@
 import 'package:ansi_escape_codes/style.dart' as ansi;
 
+import '../loggable/loggable.dart';
 import '../logger/log_levels.dart';
 
-final class LogStyle {
+final class LogStyle with Loggable {
   final ansi.Style verbose;
   final ansi.Style debug;
   final ansi.Style info;
@@ -19,17 +20,27 @@ final class LogStyle {
     required this.critical,
   });
 
-  const LogStyle.oneForAll(ansi.Style style)
-      : this(
-          verbose: style,
-          debug: style,
-          info: style,
-          warning: style,
-          error: style,
-          critical: style,
+  const LogStyle.only(
+    ansi.Style style, {
+    ansi.Style? verbose,
+    ansi.Style? debug,
+    ansi.Style? info,
+    ansi.Style? warning,
+    ansi.Style? error,
+    ansi.Style? critical,
+  }) : this(
+          verbose: verbose ?? style,
+          debug: debug ?? style,
+          info: info ?? style,
+          warning: warning ?? style,
+          error: error ?? style,
+          critical: critical ?? style,
         );
 
-  static const LogStyle defaultStyle = LogStyle.oneForAll(ansi.Style.defaults);
+  static const LogStyle noColors = LogStyle.only(ansi.NoStyle());
+
+  static const LogStyle terminalColors =
+      LogStyle.only(ansi.Style.terminalColors);
 
   ansi.Style operator [](int level) => switch (level) {
         LogLevels.verbose => verbose,
@@ -59,7 +70,7 @@ final class LogStyle {
       );
 
   @override
-  String toString() => 'LogStyle('
+  String toString() => '$LogStyle('
       'verbose: $verbose'
       ', debug: $debug'
       ', info: $info'
@@ -67,4 +78,35 @@ final class LogStyle {
       ', error: $error'
       ', critical: $critical'
       ')';
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    if (this == LogStyle.noColors) {
+      data
+        ..name = '$LogStyle.noColors'
+        ..showParentheses = false;
+      return;
+    }
+
+    final same = verbose == debug &&
+        debug == info &&
+        info == warning &&
+        warning == error &&
+        error == critical;
+
+    if (same) {
+      data
+        ..name = '$LogStyle.only'
+        ..prop('style', verbose, showName: false, view: verbose('style'));
+      return;
+    }
+
+    data
+      ..prop('verbose', verbose, showName: false, view: verbose('verbose'))
+      ..prop('debug', debug, showName: false, view: debug('debug'))
+      ..prop('info', info, showName: false, view: info('info'))
+      ..prop('warning', warning, showName: false, view: warning('warning'))
+      ..prop('error', error, showName: false, view: error('error'))
+      ..prop('critical', critical, showName: false, view: critical('critical'));
+  }
 }

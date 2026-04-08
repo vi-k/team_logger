@@ -48,13 +48,13 @@ void f() {
               formatters: {
                 'b': BbCodeFormat.colorize(theme.bold),
                 'ok': const BbCodeFormat.colorize(
-                  LogStyle.oneForAll(ansi.rgb050),
+                  LogStyle.only(ansi.rgb050),
                 ),
                 'trace': const BbCodeFormat.colorize(
-                  LogStyle.oneForAll(ansi.magenta),
+                  LogStyle.only(ansi.magenta),
                 ),
                 'signal': const BbCodeFormat.colorize(
-                  LogStyle.oneForAll(
+                  LogStyle.only(
                     ansi.Style(
                       foreground: ansi.Color256.rgb055,
                       background: ansi.Color256.rgb011,
@@ -62,14 +62,12 @@ void f() {
                   ),
                 ),
                 'error': BbCodeFormat.colorize(
-                  LogStyle.oneForAll(theme.normal.error),
+                  LogStyle.only(theme.normal.error),
                 ),
               },
             ),
           ]),
         ),
-        // const LogMessageFormatter(constraints: Constraints.exact(20)),
-        // const LogMessageFormatter(constraints: Constraints(min: 100)),
         const LogSystemTagsFormatter(),
         const LogTagsFormatter(),
       ],
@@ -195,69 +193,109 @@ void f() {
     }
   }
 
-  const showIndexes = true;
-  const maxLength = 69;
-  // const maxLength = 49;
-  // const maxLength = 20;
-  const int? maxCount = null;
-  // const maxCount = 2;
-  const units = 'm/s';
-  print('-' * maxLength);
-  const level = LogLevels.debug;
-  final list = theme.normal[level](
-    Loggable.listToString(
-      [
-        [1234567890],
-        [1234567890],
-        [1234567890],
-      ],
-      theme: theme.toDataTheme(level),
-      showIndexes: showIndexes,
-      units: units,
-      maxLength: maxLength,
-      maxCount: maxCount,
-    ),
-  );
-  final set = theme.normal[level](
-    Loggable.setToString(
+  final json = {
+    'active_cities': [
       {
-        {1234567890},
-        {1234567890},
-        {1234567890},
+        'id': 12,
+        'title': 'Актобе',
+        'is_active': true,
+        'center_point': {'lat': '0.000000', 'lon': '0.000000'},
+        'city_polygon': [
+          [
+            [56.897667241460255],
+            [50.2187685702103],
+            [11.111111],
+            [22.222222],
+            [56.897667241460255],
+          ],
+          [
+            [56.950893744325896],
+            [50.182233885471334],
+            [11.111111],
+            [22.222222],
+            [56.950893744325896],
+          ],
+          [
+            [56.9918157263381],
+            [50.20415823088945],
+            [11.111111],
+            [22.222222],
+            [56.9918157263381],
+          ],
+          [
+            [57.02535158229375],
+            [50.186004802921815],
+            [11.111111],
+            [22.222222],
+            [57.02535158229375],
+          ],
+          [
+            [11.111111],
+            [11.111111],
+            [11.111111],
+            [11.111111],
+          ],
+          [
+            [22.222222],
+            [22.222222],
+            [22.222222],
+            [22.222222],
+          ],
+          [
+            [56.897667241460255],
+            [50.2187685702103],
+            [11.111111],
+            [56.897667241460255],
+          ],
+        ],
       },
-      theme: theme.toDataTheme(level),
-      showIndexes: showIndexes,
-      units: units,
-      maxLength: maxLength,
-      maxCount: maxCount,
-    ),
-  );
-  final iterable = theme.normal[level](
-    Loggable.iterableToString(
-      [
-        [1234567890].skip(0),
-        [1234567890].skip(0),
-        [1234567890].skip(0),
-      ],
-      theme: theme.toDataTheme(level),
-      showIndexes: showIndexes,
-      units: units,
-      maxLength: maxLength,
-      maxCount: maxCount,
-    ),
-  );
-  print(list);
-  print(set);
-  print(iterable);
-  print('-' * maxLength);
+    ],
+  };
 
-  final parser = ansi.Parser(list);
-  print(
-    'length: ${list.length}'
-    ', parser.length: ${parser.length}'
-    ', text.lengthWithoutEscapeCodes: ${list.lengthWithoutEscapeCodes}',
+  const level = LogLevels.info;
+  log.v('json', data: LoggableObject(json, collectionMaxCount: 3));
+  log.d('json', data: LoggableObject(json, collectionMaxCount: 3));
+  log[level].log('json', data: LoggableObject(json, collectionMaxCount: 3));
+  log[level].log(
+    'list',
+    data: LoggableObject(json['active_cities'], collectionMaxCount: 3),
   );
-  print(parser.showControlFunctions());
+  const list = [
+    [
+      [
+        [
+          [
+            [
+              [
+                [
+                  [
+                    [
+                      [
+                        [123]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  ];
+  log.v('list2', data: list);
+  log.d('list2', data: list);
+  log.i('list2', data: list);
+  log.w('list2', data: list);
+  log.e('list2', data: list);
+  log.critical('list2', data: list);
+
+  print(theme);
+  log.d('Theme', data: theme);
+
+  log.d('NoColors', data: LogStyle.noColors);
+  log.d('TerminalColors', data: LogStyle.terminalColors);
+  log.d('DataTheme', data: theme.toDataTheme(LogLevels.info));
 }
 
 final class LoggableTest with Loggable {
@@ -290,7 +328,7 @@ final class LoggableTest with Loggable {
     ..prop('speed', speed, units: 'm/s')
     ..prop('distance', distance, units: 'm')
     ..prop('createdAt', createdAt)
-    ..list('points', points, maxCount: 2, units: '@')
+    ..prop('points', points, collectionMaxCount: 2)
     ..prop('destinations', destinations);
 }
 
@@ -344,9 +382,10 @@ final class MyLogTimeAndPathFormatter implements LogTimeFormatter {
     return LogFormatterBox(
       log,
       theme,
-      theme.maxLines == 1
-          ? ['$localTimeStr $realTimeStr $pathStr']
-          : [pathStr, localTimeStr, realTimeStr],
+      ['$localTimeStr $realTimeStr $pathStr'],
+      // theme.maxLines == 1
+      //     ? ['$localTimeStr $realTimeStr $pathStr']
+      //     : [pathStr, localTimeStr, realTimeStr],
       constraints: constraints.restrict(maxWidth),
     );
   }

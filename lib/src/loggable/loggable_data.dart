@@ -10,8 +10,8 @@ final class LoggableData {
   /// > Calling `toString` on a runtime type is a non-trivial operation that
   /// > can negatively impact performance. It's better to avoid it
   /// > (https://dart.dev/tools/linter-rules/no_runtimeType_toString)
-  ClassProp _type;
-  ClassProp get type => _type;
+  TypeProp _type;
+  TypeProp get type => _type;
 
   /// Список параметров с их значениями.
   ///
@@ -32,6 +32,11 @@ final class LoggableData {
     _type = _type.copyWith(showName: value);
   }
 
+  bool get showParentheses => _type.showParentheses;
+  set showParentheses(bool value) {
+    _type = _type.copyWith(showParentheses: value);
+  }
+
   void prop<T extends Object?>(
     String name,
     T value, {
@@ -47,6 +52,7 @@ final class LoggableData {
     int? collectionMaxLength,
     bool? showIndexes,
     String? units,
+    int levelCorrection = 0,
   }) {
     assert(!props.any((e) => e.name == name));
 
@@ -61,6 +67,7 @@ final class LoggableData {
         collectionMaxLength: collectionMaxLength,
         showIndexes: showIndexes,
         units: units,
+        levelCorrection: levelCorrection,
       ),
     );
   }
@@ -77,118 +84,6 @@ final class LoggableData {
       value,
       showName: showName,
       view: value.toStringAsFixed(fractionDigits),
-      units: units,
-    );
-  }
-
-  void list<T extends Object?>(
-    String name,
-    List<T> list, {
-    bool showName = true,
-    int? maxCount,
-    int? maxLength,
-    bool? showIndexes,
-    String? units,
-  }) {
-    prop<List<T>>(
-      name,
-      list,
-      showName: showName,
-      convert: (value, level, preformat, theme) => Loggable.listToString(
-        value,
-        level: level,
-        preformat: preformat,
-        theme: theme,
-        maxCount: maxCount,
-        maxLength: maxLength,
-        showIndexes: showIndexes,
-        units: units,
-      ),
-      units: units,
-    );
-  }
-
-  void set<T extends Object?>(
-    String name,
-    Set<T> set, {
-    bool showName = true,
-    int? maxCount,
-    int? maxLength,
-    bool? showIndexes,
-    String? units,
-  }) {
-    prop<Set<T>>(
-      name,
-      set,
-      showName: showName,
-      convert: (value, level, preformat, theme) => Loggable.setToString(
-        value,
-        level: level,
-        preformat: preformat,
-        theme: theme,
-        maxCount: maxCount,
-        maxLength: maxLength,
-        showIndexes: showIndexes,
-        units: units,
-      ),
-      units: units,
-    );
-  }
-
-  void iterable<T extends Object?>(
-    String name,
-    Iterable<T> iterable, {
-    bool showName = true,
-    int? maxCount,
-    int? maxLength,
-    bool? showIndexes,
-    String? units,
-  }) {
-    prop<Iterable<T>>(
-      name,
-      iterable,
-      showName: showName,
-      convert: (value, level, preformat, theme) => Loggable.iterableToString(
-        value,
-        level: level,
-        preformat: preformat,
-        theme: theme,
-        maxCount: maxCount,
-        maxLength: maxLength,
-        showIndexes: showIndexes,
-        units: units,
-      ),
-      units: units,
-    );
-  }
-
-  void efficientLengthIterable<T extends Object?>(
-    String name,
-    Iterable<T> iterable, {
-    bool showName = true,
-    String start = '(',
-    String end = ')',
-    int? length,
-    int? maxCount,
-    int? maxLength,
-    bool? showIndexes,
-    String? units,
-  }) {
-    prop<Iterable<T>>(
-      name,
-      iterable,
-      showName: showName,
-      convert: (value, level, preformat, theme) =>
-          Loggable.efficientLengthIterableToString(
-        value,
-        level: level,
-        preformat: preformat,
-        theme: theme,
-        maxCount: maxCount,
-        maxLength: maxLength,
-        showIndexes: showIndexes,
-        units: units,
-      ),
       units: units,
     );
   }
@@ -220,9 +115,9 @@ final class LoggableData {
         );
 
     return '${_type.showName ? name2str() : ''}'
-        '${_type.showParentheses ? level2str(_type.openingParenthesis) : ''}'
+        '${level2str(_type.openingParenthesis)}'
         '${props.map(prop2str).join(', ')}'
-        '${_type.showParentheses ? level2str(_type.closingParenthesis) : ''}';
+        '${level2str(_type.closingParenthesis)}';
   }
 
   @override
@@ -244,6 +139,7 @@ final class Prop<T extends Object?> {
     String Function(String value)? preformat,
     LogDataTheme theme,
   )? convert;
+  final int levelCorrection;
 
   const Prop(
     this.name,
@@ -255,6 +151,7 @@ final class Prop<T extends Object?> {
     this.collectionMaxLength,
     this.showIndexes,
     this.units,
+    this.levelCorrection = 0,
   });
 
   String toLogString({
@@ -272,7 +169,7 @@ final class Prop<T extends Object?> {
         convert?.call(value, level + 1, preformat, theme) ??
         Loggable.objectToString(
           value,
-          level: level + 1,
+          level: level + 1 + levelCorrection,
           preformat: preformat,
           theme: theme,
           collectionMaxCount: this.collectionMaxCount ?? collectionMaxCount,
@@ -288,33 +185,36 @@ final class Prop<T extends Object?> {
   String toString() => toLogString();
 }
 
-final class ClassProp extends Prop<Type> {
+final class TypeProp extends Prop<Type> {
   final bool showParentheses;
-  final String openingParenthesis;
-  final String closingParenthesis;
+  final String _openingParenthesis;
+  final String _closingParenthesis;
 
-  const ClassProp(
+  const TypeProp(
     Type type, {
     String? name,
     super.showName = true,
     this.showParentheses = true,
     String? openingParenthesis,
     String? closingParenthesis,
-  })  : assert(!showName || showParentheses),
-        openingParenthesis = showParentheses ? (openingParenthesis ?? '(') : '',
-        closingParenthesis = showParentheses ? (closingParenthesis ?? ')') : '',
-        super('class', type, view: name);
+  })  : _openingParenthesis = openingParenthesis ?? '(',
+        _closingParenthesis = closingParenthesis ?? ')',
+        super('type', type, view: name);
 
-  ClassProp copyWith({
+  String get openingParenthesis => showParentheses ? _openingParenthesis : '';
+
+  String get closingParenthesis => showParentheses ? _closingParenthesis : '';
+
+  TypeProp copyWith({
     String? name,
     bool? showName,
+    bool? showParentheses,
   }) =>
-      ClassProp(
+      TypeProp(
         value,
-        name: name ?? this.name,
+        name: name ?? view,
         showName: showName ?? this.showName,
-        openingParenthesis: openingParenthesis,
-        closingParenthesis: closingParenthesis,
+        showParentheses: showParentheses ?? this.showParentheses,
       );
 }
 
@@ -328,7 +228,7 @@ final class LoggableWrap<T extends Object?> extends LoggableData {
     String? closingParenthesis,
   })  : assert(value is! Loggable),
         super._(
-          ClassProp(
+          TypeProp(
             value.runtimeType,
             name: name,
             showName: showName,
@@ -342,7 +242,7 @@ final class LoggableWrap<T extends Object?> extends LoggableData {
 final class LoggableMap<T extends Object?> extends LoggableData {
   LoggableMap()
       : super._(
-          ClassProp(
+          TypeProp(
             Map<String, T>,
             showName: false,
             openingParenthesis: '{',
@@ -358,13 +258,7 @@ final class LoggableObject<T extends Object?> extends LoggableData {
     int? collectionMaxLength,
     bool? showIndexes,
     String? units,
-  }) : super._(
-          ClassProp(
-            T,
-            showName: false,
-            showParentheses: false,
-          ),
-        ) {
+  }) : super._(TypeProp(T, showName: false, showParentheses: false)) {
     prop<T>(
       'obj',
       obj,
@@ -373,6 +267,7 @@ final class LoggableObject<T extends Object?> extends LoggableData {
       collectionMaxLength: collectionMaxLength,
       showIndexes: showIndexes,
       units: units,
+      levelCorrection: -1,
     );
   }
 }

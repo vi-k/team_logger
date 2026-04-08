@@ -24,7 +24,7 @@ final class _LogCustomText implements LogCustomText {
 
   const _LogCustomText(
     this.text, {
-    this.style = LogStyle.defaultStyle,
+    this.style = LogStyle.noColors,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = TextAlign.left,
     this.verticalAlign = VerticalAlign.top,

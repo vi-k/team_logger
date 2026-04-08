@@ -31,7 +31,7 @@ final class _SingleLineLogDivider implements LogDivider {
 
   const _SingleLineLogDivider(
     this.divider, {
-    this.style = LogStyle.defaultStyle,
+    this.style = LogStyle.noColors,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = TextAlign.left,
     this.verticalAlign = VerticalAlign.top,
@@ -61,7 +61,7 @@ final class _FulHeightLogDivider implements LogDivider {
 
   const _FulHeightLogDivider(
     this.divider, {
-    this.style = LogStyle.defaultStyle,
+    this.style = LogStyle.noColors,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = TextAlign.left,
   });
