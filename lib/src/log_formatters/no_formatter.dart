@@ -4,6 +4,14 @@ import 'log_formatter.dart';
 
 final class NoFormatter implements LogFormatter {
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) =>
-      const LogFormatterBox.raw(0, ['']);
+  int get priority => 0;
+
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) =>
+      LogFormatterBox.raw(0, ['']);
 }

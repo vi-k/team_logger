@@ -9,7 +9,14 @@ import 'extensions.dart';
 import 'text_align.dart';
 
 abstract interface class LogFormatter {
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth);
+  int get priority;
+
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  );
 }
 
 enum VerticalAlign { top, bottom, center, stretch }
@@ -21,7 +28,7 @@ final class LogFormatterBox {
 
   factory LogFormatterBox(
     Log log,
-    LogTheme theme,
+    LogLevelTheme theme,
     List<String> lines, {
     Constraints constraints = const Constraints.unlimited(),
     TextAlign textAlign = TextAlign.left,
@@ -49,12 +56,12 @@ final class LogFormatterBox {
     return LogFormatterBox.raw(width, boxLines, verticalAlign);
   }
 
-  const LogFormatterBox.empty()
+  LogFormatterBox.empty()
       : width = 0,
-        lines = const [],
+        lines = [],
         verticalAlign = VerticalAlign.top;
 
-  const LogFormatterBox.raw(
+  LogFormatterBox.raw(
     this.width,
     this.lines, [
     this.verticalAlign = VerticalAlign.top,
@@ -62,8 +69,9 @@ final class LogFormatterBox {
 
   factory LogFormatterBox.fromText(
     Log log,
-    LogTheme theme,
+    LogLevelTheme theme,
     String text, {
+    required int? maxLines,
     Constraints constraints = const Constraints.unlimited(),
     TextAlign textAlign = TextAlign.left,
     VerticalAlign verticalAlign = VerticalAlign.top,
@@ -72,10 +80,9 @@ final class LogFormatterBox {
     final parsers = lines.map(ansi.Parser.new).toList(growable: false);
     var boxWidth = parsers.fold(0, (w, parser) => math.max(w, parser.length));
     boxWidth = constraints.apply(boxWidth);
-    final maxLines = theme.maxLines;
 
     if (boxWidth == 0) {
-      return const LogFormatterBox.empty();
+      return LogFormatterBox.empty();
     }
 
     final textWidth = boxWidth - theme.lineBreak.length;
@@ -114,13 +121,13 @@ final class LogFormatterBox {
         } else if (maxLines == null || maxLines > boxLines.length + 1) {
           boxLines.add(
             '${parser.substring(start, maxLength: textWidth)}'
-            '${theme.lineBreak(log)}',
+            '${theme.styledLineBreak}',
           );
           start += textWidth;
         } else {
           boxLines.add(
             parser.terminatedSubstring(
-              theme.ellipsis.toAnsiStyled(log.level),
+              theme.ellipsisAnsiPair,
               start,
               maxLength: textWidth,
             ),

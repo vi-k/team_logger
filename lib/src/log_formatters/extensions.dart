@@ -1,10 +1,15 @@
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
-import 'package:team_logger/team_logger.dart';
+
+import '../loggable/loggable.dart';
+import '../logger/log.dart';
+import '../theme/log_theme.dart';
+import 'constraints.dart';
+import 'text_align.dart';
 
 extension AnsiStringExtensions on String {
   String applyConstraints(
     Log log,
-    LogTheme theme,
+    LogLevelTheme theme,
     Constraints constraints, {
     TextAlign textAlign = TextAlign.left,
     bool showEllipsis = true,
@@ -21,7 +26,7 @@ extension AnsiStringExtensions on String {
 extension AnsiParserExtensions on ansi.Parser {
   String applyConstraints(
     Log log,
-    LogTheme theme,
+    LogLevelTheme theme,
     Constraints constraints, {
     TextAlign textAlign = TextAlign.left,
     bool showEllipsis = true,
@@ -36,16 +41,16 @@ extension AnsiParserExtensions on ansi.Parser {
     if (newLength > length) {
       switch (textAlign) {
         case TextAlign.left:
-          return padRight(newLength, theme.padding(log));
+          return padRight(newLength, theme.styledPadding);
 
         case TextAlign.right:
-          return padLeft(newLength, theme.padding(log));
+          return padLeft(newLength, theme.styledPadding);
 
         case TextAlign.center:
           final needToAdd = newLength - length;
           final left = needToAdd ~/ 2;
           final right = needToAdd - left;
-          final padding = theme.padding(log);
+          final padding = theme.styledPadding;
           return '${padding * left}$input${padding * right}';
       }
     }
@@ -55,16 +60,12 @@ extension AnsiParserExtensions on ansi.Parser {
     }
 
     return showEllipsis
-        ? terminatedSubstring(
-            theme.ellipsis.toAnsiStyled(log.level),
-            0,
-            maxLength: newLength,
-          )
+        ? terminatedSubstring(theme.ellipsisAnsiPair, 0, maxLength: newLength)
         : substring(0, maxLength: newLength);
   }
 
   String terminatedSubstring(
-    AnsiStyled terminator,
+    AnsiPair terminator,
     int start, {
     required int maxLength,
   }) {
@@ -79,11 +80,11 @@ extension AnsiParserExtensions on ansi.Parser {
   }
 }
 
-final class AnsiStyled with Loggable {
+final class AnsiPair with Loggable {
   final String string;
   final ansi.Style style;
 
-  const AnsiStyled(this.string, this.style);
+  const AnsiPair(this.string, this.style);
 
   bool get isEmpty => string.isEmpty;
 

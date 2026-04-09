@@ -1,36 +1,35 @@
-import '../logger/log.dart';
+import '../loggable/loggable.dart';
 import '../theme/log_theme.dart';
 import 'log_pre_formatter.dart';
 
-final class BbCodeLogPreFormatter implements LogPreFormatter {
-  final Map<String, BbCodeFormat> formatters;
-  final RegExp _re;
+final class BbCodeLogPreFormatter with Loggable implements LogPreFormatter {
+  static final _reExpando = Expando<RegExp>();
 
-  BbCodeLogPreFormatter({required this.formatters})
-      : _re = RegExp(
-          r'(?<prefix>(?:\[\[|\]\]|.)*?)\[(?<tag>'
-          '${formatters.keys.toSet().join('|')}'
-          r')\](?<content>(?:\[\[|\]\]|.)*?)\[\/\k<tag>\]',
-          dotAll: true,
-        );
+  const BbCodeLogPreFormatter();
 
   @override
-  String call(Log log, LogTheme theme, String text) {
+  String call(LogLevelTheme theme, String text) {
     final buf = StringBuffer();
     var last = 0;
 
-    final matches = _re.allMatches(text);
+    final re = _reExpando[theme] ??= RegExp(
+      r'(?<prefix>(?:\[\[|\]\]|.)*?)\[(?<tag>'
+      '${theme.messageStyles.keys.join('|')}'
+      r')\](?<content>(?:\[\[|\]\]|.)*?)\[\/\k<tag>\]',
+      dotAll: true,
+    );
+    final matches = re.allMatches(text);
 
     for (final m in matches) {
       final tag = m.namedGroup('tag')!;
-      final fmt = formatters[tag];
-      if (fmt == null) {
+      final style = theme.messageStyles[tag];
+      if (style == null) {
         return m[0]!;
       }
 
       final prefix = m.namedGroup('prefix')!;
-      final content = call(log, theme, m.namedGroup('content')!);
-      final result = fmt(log, tag, content);
+      final content = call(theme, m.namedGroup('content')!);
+      final result = style(content);
 
       buf
         ..write(prefix)
@@ -45,50 +44,7 @@ final class BbCodeLogPreFormatter implements LogPreFormatter {
 
     return buf.toString().replaceAll('[[', '[').replaceAll(']]', ']');
   }
-}
-
-abstract interface class BbCodeFormat {
-  const factory BbCodeFormat.colorize(LogStyle style) = _BbCodeColorize;
-
-  const factory BbCodeFormat.noColor() = _BbCodeNoColor;
-
-  const factory BbCodeFormat.asIs() = _BbCodeAsIs;
-
-  const factory BbCodeFormat.replace(
-    String Function(Log log, String code, String text) replacer,
-  ) = _BbCodeReplace;
-
-  String call(Log log, String code, String text);
-}
-
-final class _BbCodeColorize implements BbCodeFormat {
-  final LogStyle style;
-
-  const _BbCodeColorize(this.style);
 
   @override
-  String call(Log log, String code, String text) => style[log.level](text);
-}
-
-final class _BbCodeAsIs implements BbCodeFormat {
-  const _BbCodeAsIs();
-
-  @override
-  String call(Log log, String code, String text) => '[$code]$text[/$code]';
-}
-
-final class _BbCodeNoColor implements BbCodeFormat {
-  const _BbCodeNoColor();
-
-  @override
-  String call(Log log, String code, String text) => text;
-}
-
-final class _BbCodeReplace implements BbCodeFormat {
-  final String Function(Log log, String code, String text) replacer;
-
-  const _BbCodeReplace(this.replacer);
-
-  @override
-  String call(Log log, String code, String text) => replacer(log, code, text);
+  void collectLoggableData(LoggableData data) {}
 }

@@ -1,0 +1,366 @@
+part of 'log_theme.dart';
+
+final class LogLevelTheme with Loggable {
+  static const String defaultColon = ':';
+  static const String defaultEllipsis = '…';
+  static const String defaultLineBreak = '-';
+  static const String defaultPadding = ' ';
+
+  final ansi.Style normalStyle;
+  final ansi.Style boldStyle;
+  final ansi.Style dimStyle;
+  final ansi.Style superDimStyle;
+  final ansi.Style sequenceNumStyle;
+  final ansi.Style levelNameStyle;
+  final ansi.Style timeStyle;
+  final ansi.Style pathStyle;
+  final Map<String, ansi.Style> messageStyles;
+  final LogPreFormatter valueFormatter;
+  final LogPreFormatter messageFormatter;
+  final ansi.Style tagsStyle;
+  final ansi.Style controlCodesStyle;
+  final ansi.Style punctuationStyle;
+  final String colon;
+  final ansi.Style colonStyle;
+  final String ellipsis;
+  final ansi.Style ellipsisStyle;
+  final String lineBreak;
+  final ansi.Style lineBreakStyle;
+  final String padding;
+  final ansi.Style paddingStyle;
+  final ansi.Style dataSectionStyle;
+  final ansi.Style dataNameStyle;
+  final ansi.Style dataKeyStyle;
+  final ansi.Style dataValueStyle;
+  final ansi.Style dataUnitsStyle;
+  final List<ansi.Style> dataBracketsStyles;
+  final List<ansi.Style> dataDescriptionStyles;
+  final List<ansi.Style> dataPunctuationStyles;
+  final bool showCount;
+  final bool showIndexes;
+
+  LogLevelTheme({
+    this.normalStyle = ansi.Style.terminalColors,
+    ansi.Style? boldStyle,
+    ansi.Style? dimStyle,
+    ansi.Style? superDimStyle,
+    ansi.Style? sequenceNumStyle,
+    ansi.Style? levelNameStyle,
+    ansi.Style? timeStyle,
+    ansi.Style? pathStyle,
+    this.messageStyles = const {},
+    this.valueFormatter = const ControlCodeLogPreFormatter(),
+    this.messageFormatter = const BbCodeLogPreFormatter(),
+    ansi.Style? tagsStyle,
+    ansi.Style? controlCodesStyle,
+    ansi.Style? punctuationStyle,
+    this.colon = defaultColon,
+    ansi.Style? colonStyle,
+    this.ellipsis = defaultEllipsis,
+    ansi.Style? ellipsisStyle,
+    this.lineBreak = defaultLineBreak,
+    ansi.Style? lineBreakStyle,
+    this.padding = defaultPadding,
+    ansi.Style? paddingStyle,
+    ansi.Style? sectionStyle,
+    ansi.Style? nameStyle,
+    ansi.Style? keyStyles,
+    ansi.Style? valueStyles,
+    ansi.Style? unitsStyles,
+    List<ansi.Style>? bracketsStyles,
+    List<ansi.Style>? descriptionStyles,
+    List<ansi.Style>? punctuationStyles,
+    this.showCount = true,
+    this.showIndexes = true,
+  })  : boldStyle = boldStyle ?? normalStyle.bold,
+        dimStyle = dimStyle ?? normalStyle.dim,
+        superDimStyle = superDimStyle ?? normalStyle,
+        sequenceNumStyle = sequenceNumStyle ??
+            const ansi.Style(foreground: LogTheme._tagsColor),
+        levelNameStyle = levelNameStyle ??
+            (normalStyle.foregroundColor == null
+                ? const ansi.NoStyle()
+                : ansi.Style(
+                    background: normalStyle.foregroundColor,
+                    foreground: LogTheme._black,
+                  )),
+        timeStyle = timeStyle ?? const ansi.NoStyle(),
+        pathStyle = pathStyle ?? const ansi.NoStyle(),
+        tagsStyle = tagsStyle ??
+            const ansi.Style(
+              foreground: LogTheme._tagsColor,
+            ),
+        controlCodesStyle = controlCodesStyle ?? const ansi.NoStyle(),
+        punctuationStyle = punctuationStyle ?? const ansi.NoStyle(),
+        assert(!colon.ansiHasEscapeCodes),
+        colonStyle = colonStyle ?? punctuationStyle ?? const ansi.NoStyle(),
+        assert(!ellipsis.ansiHasEscapeCodes),
+        ellipsisStyle =
+            ellipsisStyle ?? punctuationStyle ?? const ansi.NoStyle(),
+        assert(!lineBreak.ansiHasEscapeCodes),
+        lineBreakStyle =
+            lineBreakStyle ?? punctuationStyle ?? const ansi.NoStyle(),
+        assert(!padding.ansiHasEscapeCodes),
+        assert(padding.length == 1),
+        paddingStyle = paddingStyle ?? punctuationStyle ?? const ansi.NoStyle(),
+        dataSectionStyle = sectionStyle ?? const ansi.NoStyle(),
+        dataNameStyle = nameStyle ?? const ansi.NoStyle(),
+        dataKeyStyle = keyStyles ?? const ansi.NoStyle(),
+        dataValueStyle = valueStyles ?? const ansi.NoStyle(),
+        dataUnitsStyle = unitsStyles ?? const ansi.NoStyle(),
+        assert(bracketsStyles == null || bracketsStyles.isNotEmpty),
+        assert(descriptionStyles == null || descriptionStyles.isNotEmpty),
+        assert(punctuationStyles == null || punctuationStyles.isNotEmpty),
+        assert(bracketsStyles?.length == descriptionStyles?.length),
+        assert(descriptionStyles?.length == punctuationStyles?.length),
+        dataBracketsStyles = bracketsStyles ?? [const ansi.NoStyle()],
+        dataDescriptionStyles = descriptionStyles ?? [const ansi.NoStyle()],
+        dataPunctuationStyles = punctuationStyles ?? [const ansi.NoStyle()];
+
+  const LogLevelTheme._({
+    required this.normalStyle,
+    required this.boldStyle,
+    required this.dimStyle,
+    required this.superDimStyle,
+    required this.sequenceNumStyle,
+    required this.levelNameStyle,
+    required this.timeStyle,
+    required this.pathStyle,
+    required this.messageStyles,
+    required this.valueFormatter,
+    required this.messageFormatter,
+    required this.tagsStyle,
+    required this.controlCodesStyle,
+    required this.punctuationStyle,
+    this.colon = defaultColon,
+    required this.colonStyle,
+    this.ellipsis = defaultEllipsis,
+    required this.ellipsisStyle,
+    this.lineBreak = defaultLineBreak,
+    required this.lineBreakStyle,
+    this.padding = defaultPadding,
+    required this.paddingStyle,
+    required this.dataSectionStyle,
+    required this.dataNameStyle,
+    required this.dataKeyStyle,
+    required this.dataValueStyle,
+    required this.dataUnitsStyle,
+    required this.dataBracketsStyles,
+    required this.dataDescriptionStyles,
+    required this.dataPunctuationStyles,
+    required this.showCount,
+    required this.showIndexes,
+  });
+
+  String get styledColon => colonStyle(colon);
+
+  AnsiPair get colonAnsiPair => AnsiPair(colon, colonStyle);
+
+  String get styledEllipsis => ellipsisStyle(ellipsis);
+
+  AnsiPair get ellipsisAnsiPair => AnsiPair(ellipsis, ellipsisStyle);
+
+  String get styledLineBreak => lineBreakStyle(lineBreak);
+
+  AnsiPair get lineBreakAnsiPair => AnsiPair(lineBreak, lineBreakStyle);
+
+  String get styledPadding => paddingStyle(padding);
+
+  AnsiPair get paddingAnsiPair => AnsiPair(padding, paddingStyle);
+
+  String formatValue(String value) => valueFormatter(this, value);
+
+  String formatMessage(String value) => messageFormatter(this, value);
+
+  ansi.Style dataBracketsStyle(int level) =>
+      dataBracketsStyles[level % dataBracketsStyles.length];
+
+  ansi.Style dataDescriptionStyle(int level) =>
+      dataDescriptionStyles[level % dataDescriptionStyles.length];
+
+  ansi.Style dataPunctuationStyle(int level) =>
+      dataPunctuationStyles[level % dataPunctuationStyles.length];
+
+  static const LogLevelTheme noColors = LogLevelTheme._(
+    normalStyle: ansi.NoStyle(),
+    boldStyle: ansi.NoStyle(),
+    dimStyle: ansi.NoStyle(),
+    superDimStyle: ansi.NoStyle(),
+    sequenceNumStyle: ansi.NoStyle(),
+    levelNameStyle: ansi.NoStyle(),
+    timeStyle: ansi.NoStyle(),
+    pathStyle: ansi.NoStyle(),
+    messageStyles: {},
+    valueFormatter: ControlCodeLogPreFormatter(),
+    messageFormatter: BbCodeLogPreFormatter(),
+    tagsStyle: ansi.NoStyle(),
+    controlCodesStyle: ansi.NoStyle(),
+    punctuationStyle: ansi.NoStyle(),
+    colonStyle: ansi.NoStyle(),
+    ellipsisStyle: ansi.NoStyle(),
+    lineBreakStyle: ansi.NoStyle(),
+    paddingStyle: ansi.NoStyle(),
+    dataSectionStyle: ansi.NoStyle(),
+    dataNameStyle: ansi.NoStyle(),
+    dataKeyStyle: ansi.NoStyle(),
+    dataValueStyle: ansi.NoStyle(),
+    dataUnitsStyle: ansi.NoStyle(),
+    dataBracketsStyles: [ansi.NoStyle()],
+    dataDescriptionStyles: [ansi.NoStyle()],
+    dataPunctuationStyles: [ansi.NoStyle()],
+    showCount: true,
+    showIndexes: true,
+  );
+
+  LogLevelTheme copyWith({
+    int? maxLength,
+    int? maxLines,
+    ansi.Style? normalStyle,
+    ansi.Style? boldStyle,
+    ansi.Style? dimStyle,
+    ansi.Style? superDimStyle,
+    ansi.Style? sequenceNumStyle,
+    ansi.Style? levelNameStyle,
+    ansi.Style? timeStyle,
+    ansi.Style? pathStyle,
+    Map<String, ansi.Style>? messageStyles,
+    LogPreFormatter? valueFormatter,
+    LogPreFormatter? messageFormatter,
+    ansi.Style? tagsStyle,
+    ansi.Style? controlCodesStyle,
+    ansi.Style? punctuationStyle,
+    String? colon,
+    ansi.Style? colonStyle,
+    String? ellipsis,
+    ansi.Style? ellipsisStyle,
+    String? lineBreak,
+    ansi.Style? lineBreakStyle,
+    String? padding,
+    ansi.Style? paddingStyle,
+    ansi.Style? dataSectionStyle,
+    ansi.Style? dataNameStyle,
+    ansi.Style? dataKeyStyle,
+    ansi.Style? dataValueStyle,
+    ansi.Style? dataUnitsStyle,
+    List<ansi.Style>? dataBracketsStyles,
+    List<ansi.Style>? dataDescriptionStyles,
+    List<ansi.Style>? dataPunctuationStyles,
+    bool? showCount,
+    bool? showIndexes,
+  }) {
+    assert(padding == null || padding.length == 1);
+
+    return LogLevelTheme._(
+      normalStyle: normalStyle ?? this.normalStyle,
+      boldStyle: boldStyle ?? this.boldStyle,
+      dimStyle: dimStyle ?? this.dimStyle,
+      superDimStyle: superDimStyle ?? this.superDimStyle,
+      sequenceNumStyle: sequenceNumStyle ?? this.sequenceNumStyle,
+      levelNameStyle: levelNameStyle ?? this.levelNameStyle,
+      timeStyle: timeStyle ?? this.timeStyle,
+      pathStyle: pathStyle ?? this.pathStyle,
+      messageStyles: messageStyles ?? this.messageStyles,
+      valueFormatter: valueFormatter ?? this.valueFormatter,
+      messageFormatter: messageFormatter ?? this.messageFormatter,
+      tagsStyle: tagsStyle ?? this.tagsStyle,
+      controlCodesStyle: controlCodesStyle ?? this.controlCodesStyle,
+      punctuationStyle: punctuationStyle ?? this.punctuationStyle,
+      colon: colon ?? this.colon,
+      colonStyle: colonStyle ?? this.colonStyle,
+      ellipsis: ellipsis ?? this.ellipsis,
+      ellipsisStyle: ellipsisStyle ?? this.ellipsisStyle,
+      lineBreak: lineBreak ?? this.lineBreak,
+      lineBreakStyle: lineBreakStyle ?? this.lineBreakStyle,
+      padding: padding ?? this.padding,
+      paddingStyle: paddingStyle ?? this.paddingStyle,
+      dataSectionStyle: dataSectionStyle ?? this.dataSectionStyle,
+      dataNameStyle: dataNameStyle ?? this.dataNameStyle,
+      dataKeyStyle: dataKeyStyle ?? this.dataKeyStyle,
+      dataValueStyle: dataValueStyle ?? this.dataValueStyle,
+      dataUnitsStyle: dataUnitsStyle ?? this.dataUnitsStyle,
+      dataBracketsStyles: dataBracketsStyles ?? this.dataBracketsStyles,
+      dataDescriptionStyles:
+          dataDescriptionStyles ?? this.dataDescriptionStyles,
+      dataPunctuationStyles:
+          dataPunctuationStyles ?? this.dataPunctuationStyles,
+      showCount: showCount ?? this.showCount,
+      showIndexes: showIndexes ?? this.showIndexes,
+    );
+  }
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..style('normalStyle', normalStyle)
+      ..style('boldStyle', boldStyle)
+      ..style('dimStyle', dimStyle)
+      ..style('superDimStyle', superDimStyle)
+      ..style('sequenceNumStyle', sequenceNumStyle)
+      ..style('levelNameStyle', levelNameStyle)
+      ..style('timeStyle', timeStyle)
+      ..style('pathStyle', pathStyle)
+      ..mapStyles('messageStyles', messageStyles)
+      ..prop('valueFormatter', valueFormatter)
+      ..prop('messageFormatter', messageFormatter)
+      ..style('tagsStyle', tagsStyle)
+      ..style('controlCodesStyle', controlCodesStyle)
+      ..style('punctuationStyle', punctuationStyle)
+      ..prop('colon', colon, view: '"${colonStyle(colon)}"')
+      ..style('colonStyle', colonStyle)
+      ..prop('ellipsis', ellipsis, view: '"${ellipsisStyle(ellipsis)}"')
+      ..style('ellipsisStyle', ellipsisStyle)
+      ..prop('lineBreak', lineBreak, view: '"${lineBreakStyle(lineBreak)}"')
+      ..style('lineBreakStyle', lineBreakStyle)
+      ..prop('padding', padding, view: '"${paddingStyle(padding)}"')
+      ..style('paddingStyle', paddingStyle)
+      ..style('dataSectionStyle', dataSectionStyle)
+      ..style('dataNameStyle', dataNameStyle)
+      ..style('dataKeyStyle', dataKeyStyle)
+      ..style('dataValueStyle', dataValueStyle)
+      ..style('dataUnitsStyle', dataUnitsStyle)
+      ..styles('dataBracketsStyles', dataBracketsStyles, (_) => '[')
+      ..styles('dataDescriptionStyles', dataDescriptionStyles, (i) => '$i')
+      ..styles('dataPunctuationStyles', dataPunctuationStyles, (_) => ',')
+      ..prop('showCount', showCount)
+      ..prop('showIndexes', showIndexes)
+      ..prop('test', null, view: 'abc\ndef');
+  }
+}
+
+extension on LoggableData {
+  void style(String name, ansi.Style style) {
+    if (style is ansi.NoStyle) {
+      prop(name, style, view: 'none');
+      return;
+    }
+
+    prop(name, style, showName: false, view: style(name));
+  }
+
+  void styles(
+    String name,
+    List<ansi.Style> styles,
+    String Function(int i) getValue, {
+    String separator = '',
+  }) {
+    final none =
+        styles.fold(false, (none, style) => none || style is ansi.NoStyle);
+    if (none) {
+      prop(name, styles, view: 'none');
+      return;
+    }
+
+    final values =
+        styles.indexed.map((e) => e.$2(getValue(e.$1))).join(separator);
+    prop(name, styles, view: '"$values"');
+  }
+
+  void mapStyles(String name, Map<String, ansi.Style> styles) {
+    final map = LoggableMap();
+    for (final MapEntry(:key, value: style) in styles.entries) {
+      map.prop(key, style, showName: false, view: style(key));
+    }
+
+    prop(name, map);
+  }
+}

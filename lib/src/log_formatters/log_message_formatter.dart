@@ -1,4 +1,3 @@
-import '../log_pre_formatters/log_pre_formatter.dart';
 import '../loggable/loggable.dart';
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
@@ -8,8 +7,6 @@ import 'text_align.dart';
 
 abstract interface class LogMessageFormatter implements LogFormatter {
   const factory LogMessageFormatter({
-    LogPreFormatter? messagePreFormatter,
-    LogPreFormatter? dataPreFormatter,
     Constraints constraints,
     TextAlign textAlign,
     VerticalAlign verticalAlign,
@@ -17,45 +14,48 @@ abstract interface class LogMessageFormatter implements LogFormatter {
 }
 
 final class _LogMessageFormatter implements LogMessageFormatter {
-  final LogPreFormatter? messagePreFormatter;
-  final LogPreFormatter? dataPreFormatter;
   final Constraints constraints;
   final TextAlign textAlign;
   final VerticalAlign verticalAlign;
 
   const _LogMessageFormatter({
-    this.messagePreFormatter,
-    this.dataPreFormatter,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = TextAlign.left,
     this.verticalAlign = VerticalAlign.top,
   });
 
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) {
-    final message =
-        messagePreFormatter?.call(log, theme, log.message) ?? log.message;
+  int get priority => 9999;
 
-    final format = switch (dataPreFormatter?.call) {
-      null => null,
-      final format => (String text) => format(log, theme, text),
-    };
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) {
+    final message = theme.formatMessage(theme.formatValue(log.message));
 
-    final dataTheme = theme.toDataTheme(log.level);
+    var error = '';
+    if (log.error case final err?) {
+      final errorStr = theme.formatValue(err.toString());
+      final styledStr = theme.formatMessage('[error]$errorStr[/error]');
+
+      error = '${theme.styledColon} $styledStr';
+    }
+
     final data = switch (log.data) {
       null => '',
-      final data => '${theme.colon(log)} ${Loggable.objectToString(
-          data,
-          theme: dataTheme,
-          preformat: format,
-        )}',
+      final data =>
+        '${theme.styledColon} ${Loggable.objectToString(data, theme: theme)}',
     };
 
     return LogFormatterBox.fromText(
       log,
       theme,
-      '$message$data',
-      constraints: constraints.restrict(maxWidth),
+      '$message$error$data',
+      maxLines: maxLength,
+      constraints: constraints.restrict(maxLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

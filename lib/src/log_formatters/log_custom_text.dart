@@ -30,12 +30,21 @@ final class _LogCustomText implements LogCustomText {
   });
 
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) =>
+  int get priority => 0;
+
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) =>
       LogFormatterBox.fromText(
         log,
         theme,
-        style[log.level](text),
-        constraints: constraints.restrict(maxWidth),
+        style[log.level].call(text),
+        maxLines: maxLines,
+        constraints: constraints.restrict(maxLength),
         textAlign: textAlign,
         verticalAlign: verticalAlign,
       );

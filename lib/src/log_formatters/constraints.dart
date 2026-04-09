@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 sealed class Constraints {
-  const factory Constraints({required int min, int? max}) = _ConstConstraints;
+  const factory Constraints({int min, int? max}) = _ConstConstraints;
 
   const factory Constraints.unlimited() = _ConstConstraints.unlimited;
 
@@ -42,7 +42,7 @@ final class _ConstConstraints extends Constraints {
   @override
   final int? _max;
 
-  const _ConstConstraints({required int min, int? max})
+  const _ConstConstraints({int min = 0, int? max})
       : _min = min,
         _max = max,
         super._();

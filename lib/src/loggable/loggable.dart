@@ -30,8 +30,7 @@ mixin Loggable {
   static String objectToString(
     Object? obj, {
     int level = 0,
-    String Function(String value)? preformat,
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
+    LogLevelTheme theme = LogLevelTheme.noColors,
     int? collectionMaxCount,
     int? collectionMaxLength,
     bool? showCount,
@@ -41,13 +40,12 @@ mixin Loggable {
     showCount ??= theme.showCount;
     showIndexes ??= theme.showIndexes;
 
-    final brackets = theme.bracketStyle(level);
-    final content = theme.punctuationStyle(level);
+    final brackets = theme.dataBracketsStyle(level);
+    final punctuation = theme.dataPunctuationStyle(level);
 
     String obj2str(Object? obj) => objectToString(
           obj,
           level: level + 1,
-          preformat: preformat,
           theme: theme,
           collectionMaxCount: collectionMaxCount,
           collectionMaxLength: collectionMaxLength,
@@ -56,25 +54,24 @@ mixin Loggable {
           units: units,
         );
 
-    String units2str() => Loggable.units2str(units, preformat, theme);
+    String units2str() => Loggable.units2str(units, theme);
 
     String map2str(MapEntry<Object?, Object?> e) {
       final key = switch (e.key) {
-        final String key => preformat?.call(key) ?? key,
+        final String key => theme.formatValue(key),
         final key => obj2str(key),
       };
 
-      return '${theme.key(key)}${content(':')}'
-          ' ${theme.value(obj2str(e.value))}${units2str()}';
+      return '${theme.dataKeyStyle(key)}${punctuation(':')}'
+          ' ${theme.dataValueStyle(obj2str(e.value))}${units2str()}';
     }
 
     return switch (obj) {
-      null => preformat?.call('null') ?? 'null',
-      String() => '"${preformat?.call(obj) ?? obj}"${units2str()}',
+      null => theme.formatValue('null'),
+      String() => '"${theme.formatValue(obj)}"${units2str()}',
       List<Object?>() => listToString(
           obj,
           level: level,
-          preformat: preformat,
           theme: theme,
           maxCount: collectionMaxCount,
           maxLength: collectionMaxLength,
@@ -85,7 +82,6 @@ mixin Loggable {
       Set<Object?>() => setToString(
           obj,
           level: level,
-          preformat: preformat,
           theme: theme,
           maxCount: collectionMaxCount,
           maxLength: collectionMaxLength,
@@ -96,7 +92,6 @@ mixin Loggable {
       Iterable<Object?>() => iterableToString(
           obj,
           level: level,
-          preformat: preformat,
           theme: theme,
           maxCount: collectionMaxCount,
           maxLength: collectionMaxLength,
@@ -104,12 +99,11 @@ mixin Loggable {
           units: units,
         ),
       Map<Object?, Object?>() => '${brackets('{')}'
-          '${obj.entries.map(map2str).join(content(', '))}'
+          '${obj.entries.map(map2str).join(punctuation(', '))}'
           '${brackets('}')}',
       Loggable() => obj.logClassInfo().toLogString(
             theme: theme,
             level: level,
-            valueFormat: preformat,
             collectionMaxCount: collectionMaxCount,
             collectionMaxLength: collectionMaxLength,
             showCount: showCount,
@@ -119,7 +113,6 @@ mixin Loggable {
       LoggableData() => obj.toLogString(
           theme: theme,
           level: level,
-          valueFormat: preformat,
           collectionMaxCount: collectionMaxCount,
           collectionMaxLength: collectionMaxLength,
           showCount: showCount,
@@ -130,16 +123,15 @@ mixin Loggable {
           final value = Loggable.objectToString(
             e.value,
             theme: theme,
-            preformat: preformat,
             collectionMaxCount: obj.collectionMaxCount ?? collectionMaxCount,
             collectionMaxLength: obj.collectionMaxLength ?? collectionMaxLength,
             showCount: obj.showCount ?? showCount,
             showIndexes: obj.showIndexes ?? showIndexes,
             units: obj.units ?? units,
           );
-          return '${theme.title('[${e.key}]')} $value';
-        }).join(content(', ')),
-      _ => '${preformat?.call(obj.toString()) ?? obj}${units2str()}',
+          return '${theme.dataSectionStyle('[${e.key}]')} $value';
+        }).join(punctuation(', ')),
+      _ => '${theme.formatValue(obj.toString())}${units2str()}',
     };
   }
 
@@ -151,8 +143,7 @@ mixin Loggable {
   static String listToString(
     List<Object?> list, {
     int level = 0,
-    String Function(String value)? preformat,
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
+    LogLevelTheme theme = LogLevelTheme.noColors,
     int? maxCount,
     int? maxLength,
     bool? showCount,
@@ -162,7 +153,6 @@ mixin Loggable {
       efficientLengthIterableToString(
         list,
         level: level,
-        preformat: preformat,
         theme: theme,
         start: '[',
         end: ']',
@@ -181,8 +171,7 @@ mixin Loggable {
   static String setToString(
     Set<Object?> set, {
     int level = 0,
-    String Function(String value)? preformat,
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
+    LogLevelTheme theme = LogLevelTheme.noColors,
     int? maxCount,
     int? maxLength,
     bool? showCount,
@@ -192,7 +181,6 @@ mixin Loggable {
       efficientLengthIterableToString(
         set,
         level: level,
-        preformat: preformat,
         theme: theme,
         start: '{',
         end: '}',
@@ -215,8 +203,7 @@ mixin Loggable {
   static String efficientLengthIterableToString(
     Iterable<Object?> iterable, {
     int level = 0,
-    String Function(String value)? preformat,
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
+    LogLevelTheme theme = LogLevelTheme.noColors,
     String start = '(',
     String end = ')',
     int? maxCount,
@@ -233,15 +220,14 @@ mixin Loggable {
     showIndexes ??= theme.showIndexes;
     showCount ??= theme.showCount;
 
-    final brackets = theme.bracketStyle(level);
-    final description = theme.descriptionStyle(level);
-    final content = theme.punctuationStyle(level);
-    final delimiter = content(', ');
+    final brackets = theme.dataBracketsStyle(level);
+    final description = theme.dataDescriptionStyle(level);
+    final punctuation = theme.dataPunctuationStyle(level);
+    final delimiter = punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
           level: level + 1,
-          preformat: preformat,
           theme: theme,
           collectionMaxCount: maxCount,
           collectionMaxLength: maxLength,
@@ -328,7 +314,7 @@ mixin Loggable {
 
             buf
               ..write(delimiter)
-              ..write(content(theme.ellipsis));
+              ..write(punctuation(theme.ellipsis));
           }
 
           buf
@@ -355,8 +341,7 @@ mixin Loggable {
   static String iterableToString(
     Iterable<Object?> iterable, {
     int level = 0,
-    String Function(String value)? preformat,
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
+    LogLevelTheme theme = LogLevelTheme.noColors,
     String start = '(',
     String end = ')',
     int? maxCount,
@@ -369,15 +354,14 @@ mixin Loggable {
 
     showIndexes ??= theme.showIndexes;
 
-    final brackets = theme.bracketStyle(level);
-    final description = theme.descriptionStyle(level);
-    final content = theme.punctuationStyle(level);
-    final delimiter = content(', ');
+    final brackets = theme.dataBracketsStyle(level);
+    final description = theme.dataDescriptionStyle(level);
+    final punctuation = theme.dataPunctuationStyle(level);
+    final delimiter = punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
           level: level + 1,
-          preformat: preformat,
           theme: theme,
           collectionMaxCount: maxCount,
           collectionMaxLength: maxLength,
@@ -454,7 +438,7 @@ mixin Loggable {
 
             buf
               ..write(delimiter)
-              ..write(content(theme.ellipsis));
+              ..write(punctuation(theme.ellipsis));
           }
         }
       }
@@ -469,12 +453,10 @@ mixin Loggable {
 
   static String units2str(
     String? units,
-    String Function(String value)? preformat,
-    LogDataTheme theme,
+    LogLevelTheme theme,
   ) {
     final unitsStr = units ?? '';
-    // final unitsStr = units == null ? '' : ' $units';
 
-    return theme.units(preformat?.call(unitsStr) ?? unitsStr);
+    return theme.dataUnitsStyle(theme.formatValue(unitsStr));
   }
 }

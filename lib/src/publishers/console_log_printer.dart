@@ -13,38 +13,42 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogTheme theme;
   final List<LogFormatter> _formatters = [];
   final LogDivider defaultDivider;
+  void Function() outputStart;
   void Function(String) output;
+  void Function() outputFinish;
 
   final Map<int, ansi.StackedPrinter> _printers;
 
   ConsoleLogPrinter({
-    this.theme = LogTheme.defaultTheme,
+    this.theme = LogTheme.defaultActiveTheme,
     this.defaultDivider = const LogDivider(' '),
     required List<LogFormatter> formatters,
+    this.outputStart = _voidCallback,
     this.output = print,
+    this.outputFinish = _voidCallback,
   }) : _printers = {
           LogLevels.verbose: ansi.StackedPrinter(
-            defaultStyle: theme.normal.verbose,
+            defaultStyle: theme.verbose.normalStyle,
             output: output,
           ),
           LogLevels.debug: ansi.StackedPrinter(
-            defaultStyle: theme.normal.debug,
+            defaultStyle: theme.debug.normalStyle,
             output: output,
           ),
           LogLevels.info: ansi.StackedPrinter(
-            defaultStyle: theme.normal.info,
+            defaultStyle: theme.info.normalStyle,
             output: output,
           ),
           LogLevels.warning: ansi.StackedPrinter(
-            defaultStyle: theme.normal.warning,
+            defaultStyle: theme.warning.normalStyle,
             output: output,
           ),
           LogLevels.error: ansi.StackedPrinter(
-            defaultStyle: theme.normal.error,
+            defaultStyle: theme.error.normalStyle,
             output: output,
           ),
           LogLevels.critical: ansi.StackedPrinter(
-            defaultStyle: theme.normal.critical,
+            defaultStyle: theme.critical.normalStyle,
             output: output,
           ),
         } {
@@ -60,13 +64,17 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
 
   @override
   void publish(Log log) {
+    final levelTheme = theme[log.level];
+    final formattersByPriority = _formatters.indexed.toList()
+      ..sort((a, b) => a.$2.priority.compareTo(b.$2.priority));
+
+    final boxes = List<LogFormatterBox?>.filled(_formatters.length, null);
     var remainingWidth = theme.maxLength;
-    final boxes = <LogFormatterBox>[];
     var linesCount = 0;
 
-    for (final formatter in _formatters) {
-      final box = formatter(log, theme, remainingWidth);
-      boxes.add(box);
+    for (final (index, formatter) in formattersByPriority) {
+      final box = boxes[index] =
+          formatter(log, levelTheme, remainingWidth, theme.maxLines);
       linesCount = math.max(linesCount, box.lines.length);
       if (remainingWidth != null) {
         remainingWidth -= box.width;
@@ -81,15 +89,19 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     }
 
     for (final box in boxes) {
-      box.applyHeight(linesCount);
+      box!.applyHeight(linesCount);
     }
 
+    outputStart();
     final printer = _printers[log.level]!;
     for (var i = 0; i < linesCount; i++) {
       for (final box in boxes) {
-        printer.write(box.lines[i]);
+        printer.write(box!.lines[i]);
       }
       printer.writeln();
     }
+    outputFinish();
   }
+
+  static void _voidCallback() {}
 }

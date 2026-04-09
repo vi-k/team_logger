@@ -81,8 +81,16 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) {
-    final style = (this.style ?? theme.time)[log.level];
+  int get priority => 0;
+
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) {
+    final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -98,7 +106,7 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
       log,
       theme,
       [style(timeStr)],
-      constraints: constraints.restrict(maxWidth),
+      constraints: constraints.restrict(maxLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );
@@ -127,8 +135,16 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) {
-    final style = (this.style ?? theme.time)[log.level];
+  int get priority => 0;
+
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) {
+    final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -138,7 +154,7 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
       log,
       theme,
       [style('$open${time.toIso8601String()}$close')],
-      constraints: constraints.restrict(maxWidth),
+      constraints: constraints.restrict(maxLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );
@@ -169,8 +185,16 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) {
-    final style = (this.style ?? theme.time)[log.level];
+  int get priority => 0;
+
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) {
+    final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -183,7 +207,7 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
       log,
       theme,
       [style(timeStr)],
-      constraints: constraints.restrict(maxWidth),
+      constraints: constraints.restrict(maxLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

@@ -1,10 +1,11 @@
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
+import 'log_divider.dart';
 import 'log_formatter.dart';
 import 'text_align.dart';
 
-abstract interface class LogTagsFormatter implements LogFormatter {
+abstract interface class LogTagsFormatter implements LogDivider {
   const factory LogTagsFormatter({
     LogStyle? style,
     Constraints constraints,
@@ -12,6 +13,7 @@ abstract interface class LogTagsFormatter implements LogFormatter {
     VerticalAlign verticalAlign,
     String open,
     String close,
+    Set<String> commonTags,
   }) = _LogTagsFormatter;
 }
 
@@ -22,6 +24,7 @@ final class _LogTagsFormatter implements LogTagsFormatter {
   final VerticalAlign verticalAlign;
   final String open;
   final String close;
+  final Set<String> commonTags;
 
   const _LogTagsFormatter({
     this.style,
@@ -30,18 +33,28 @@ final class _LogTagsFormatter implements LogTagsFormatter {
     this.verticalAlign = VerticalAlign.stretch,
     this.open = '',
     this.close = '',
+    this.commonTags = const {},
   });
 
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) {
-    final style = (this.style ?? theme.tags)[log.level];
-    final tags = log.tags.map((tag) => '#$tag').join(' ');
+  int get priority => 0;
+
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) {
+    final style = this.style?[log.level] ?? theme.tagsStyle;
+    final logTags = log.tags.map((tag) => ' #$tag').join();
+    final commonTags = this.commonTags.map((tag) => ' #$tag').join();
 
     return LogFormatterBox(
       log,
       theme,
-      [style('$open$tags$close')],
-      constraints: constraints.restrict(maxWidth),
+      [style('$open$logTags$commonTags$close')],
+      constraints: constraints.restrict(maxLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

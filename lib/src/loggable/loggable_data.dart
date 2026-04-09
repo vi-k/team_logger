@@ -42,12 +42,7 @@ final class LoggableData {
     T value, {
     bool showName = true,
     String? view,
-    String Function(
-      T value,
-      int level,
-      String Function(String)? convert,
-      LogDataTheme theme,
-    )? convert,
+    String Function(T value, int level, LogLevelTheme theme)? convert,
     int? collectionMaxCount,
     int? collectionMaxLength,
     bool? showCount,
@@ -91,7 +86,7 @@ final class LoggableData {
   }
 
   String toLogString({
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
+    LogLevelTheme theme = LogLevelTheme.noColors,
     int level = 0,
     String Function(String value)? valueFormat,
     int? collectionMaxCount,
@@ -100,18 +95,17 @@ final class LoggableData {
     bool? showIndexes,
     String? units,
   }) {
-    final brackets = theme.bracketStyle(level);
-    final content = theme.punctuationStyle(level);
+    final brackets = theme.dataBracketsStyle(level);
+    final punctuation = theme.dataPunctuationStyle(level);
 
     String name2str() {
       final name = _type.view ?? _type.value.toString();
-      return theme.name(valueFormat?.call(name) ?? name);
+      return theme.dataNameStyle(valueFormat?.call(name) ?? name);
     }
 
     String prop2str(Prop<Object?> p) => p.toLogString(
           theme: theme,
           level: level,
-          preformat: valueFormat,
           collectionMaxCount: collectionMaxCount,
           collectionMaxLength: collectionMaxLength,
           showCount: showCount,
@@ -121,7 +115,7 @@ final class LoggableData {
 
     return '${_type.showName ? name2str() : ''}'
         '${brackets(_type.openingBracket)}'
-        '${props.map(prop2str).join(content(', '))}'
+        '${props.map(prop2str).join(punctuation(', '))}'
         '${brackets(_type.closingBracket)}';
   }
 
@@ -139,12 +133,7 @@ final class Prop<T extends Object?> {
   final bool? showCount;
   final bool? showIndexes;
   final String? units;
-  final String Function(
-    T value,
-    int level,
-    String Function(String value)? preformat,
-    LogDataTheme theme,
-  )? convert;
+  final String Function(T value, int level, LogLevelTheme theme)? convert;
   final int levelCorrection;
 
   const Prop(
@@ -163,24 +152,20 @@ final class Prop<T extends Object?> {
 
   String toLogString({
     int level = 0,
-    String Function(String value)? preformat,
-    LogDataTheme theme = LogDataTheme.noColorsTheme,
+    LogLevelTheme theme = LogLevelTheme.noColors,
     int? collectionMaxCount,
     int? collectionMaxLength,
     bool? showCount,
     bool? showIndexes,
     String? units,
   }) {
-    final content = theme.punctuationStyle(level);
-
-    String name2str() => theme.key(preformat?.call(name) ?? name);
+    String name2str() => theme.dataKeyStyle(theme.formatValue(name));
 
     final valueStr = view ??
-        convert?.call(value, level + 1, preformat, theme) ??
+        convert?.call(value, level + 1, theme) ??
         Loggable.objectToString(
           value,
           level: level + 1 + levelCorrection,
-          preformat: preformat,
           theme: theme,
           collectionMaxCount: this.collectionMaxCount ?? collectionMaxCount,
           collectionMaxLength: this.collectionMaxLength ?? collectionMaxLength,
@@ -188,8 +173,12 @@ final class Prop<T extends Object?> {
           showIndexes: this.showIndexes ?? showIndexes,
           units: this.units ?? units,
         );
+    final styledValueStr = theme.formatValue(valueStr);
 
-    return '${showName ? '${name2str()}${content(':')} ' : ''}$valueStr';
+    final punctuation = theme.dataPunctuationStyle(level);
+    final prefix = showName ? '${name2str()}${punctuation(':')} ' : '';
+
+    return '$prefix$styledValueStr';
   }
 
   @override

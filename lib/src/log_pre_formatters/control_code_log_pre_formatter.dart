@@ -1,21 +1,49 @@
-import 'package:ansi_escape_codes/extensions.dart';
+import 'package:ansi_escape_codes/parsing.dart' as ansi;
 
-import '../logger/log.dart';
+import '../loggable/loggable.dart';
 import '../theme/log_theme.dart';
 import 'log_pre_formatter.dart';
 
-final class ControlCodeLogPreFormatter implements LogPreFormatter {
-  final LogStyle? style;
+final class ControlCodeLogPreFormatter
+    with Loggable
+    implements LogPreFormatter {
+  final bool excludeEscCode;
 
-  const ControlCodeLogPreFormatter({this.style});
+  const ControlCodeLogPreFormatter({this.excludeEscCode = true});
 
   @override
-  String call(Log log, LogTheme theme, String text) {
-    final style = (this.style ?? theme.punctuation)[log.level];
+  String call(LogLevelTheme theme, String text) {
+    final buf = StringBuffer();
+    final open = theme.paddingStyle.open;
+    final close = theme.paddingStyle.close;
 
-    return text.ansiShowControlCodes(
-      open: style.open,
-      close: style.close,
-    );
+    for (final charCode in text.codeUnits) {
+      final controlCode = ansi.ControlFunctionsC0.byIndex(charCode);
+
+      if (controlCode == null ||
+          excludeEscCode && controlCode == ansi.ControlFunctionsC0.ESC) {
+        buf.writeCharCode(charCode);
+      } else {
+        if (controlCode.escapeSymbol case final escapeSymbol?) {
+          buf
+            ..write(open)
+            ..write(escapeSymbol)
+            ..write(close);
+        } else {
+          buf
+            ..write(open)
+            ..write(r'\x')
+            ..write(charCode.toRadixString(16).toUpperCase().padLeft(2, '0'))
+            ..write(close);
+        }
+      }
+    }
+
+    return buf.toString();
+  }
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data.prop('excludeEscCode', excludeEscCode);
   }
 }

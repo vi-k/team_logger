@@ -1,611 +1,892 @@
 import 'package:ansi_escape_codes/extensions.dart';
 import 'package:ansi_escape_codes/style.dart' as ansi;
+import 'package:team_logger/src/log_pre_formatters/control_code_log_pre_formatter.dart';
 
 import '../log_formatters/extensions.dart';
+import '../log_pre_formatters/bb_code_text_formatter.dart';
+import '../log_pre_formatters/log_pre_formatter.dart';
 import '../loggable/loggable.dart';
-import '../logger/log.dart';
 import '../logger/log_levels.dart';
 
-part 'log_data_theme.dart';
+part 'log_level_theme.dart';
 part 'log_style.dart';
 
 final class LogTheme with Loggable {
-  final LogStyle normal;
-  final LogStyle bold;
-  final LogStyle dim;
-  final LogStyle superDim;
-  final LogStyle sequenceNum;
-  final LogStyle levelName;
-  final LogStyle time;
-  final LogStyle path;
-  final LogStyle tags;
-  final LogStyle controlCodes;
-  final LogStyle dataTitle;
-  final LogStyle dataName;
-  final LogStyle dataKey;
-  final LogStyle dataValue;
-  final LogStyle dataUnits;
-  final List<LogStyle> dataBrackets;
-  final List<LogStyle> dataDescription;
-  final List<LogStyle> dataPunctuation;
-  final bool showCount;
-  final bool showIndexes;
-  final LogStyle punctuation;
-  final LogPunctuation colon;
-  final LogPunctuation ellipsis;
-  final LogPunctuation lineBreak;
-  final LogPunctuation padding;
+  final LogLevelTheme verbose;
+  final LogLevelTheme debug;
+  final LogLevelTheme info;
+  final LogLevelTheme warning;
+  final LogLevelTheme error;
+  final LogLevelTheme critical;
   final int? maxLength;
   final int? maxLines;
 
-  LogTheme({
-    this.normal = LogStyle.terminalColors,
-    LogStyle? bold,
-    LogStyle? dim,
-    LogStyle? superDim,
-    LogStyle? sequenceNum,
-    LogStyle? levelName,
-    LogStyle? time,
-    LogStyle? path,
-    LogStyle? tags,
-    LogStyle? controlCodes,
-    LogStyle? paddingStyle,
-    LogStyle? dataTitle,
-    LogStyle? dataName,
-    LogStyle? dataKey,
-    LogStyle? dataValue,
-    LogStyle? dataUnits,
-    List<LogStyle>? dataBrackets,
-    List<LogStyle>? dataDescription,
-    List<LogStyle>? dataPunctuation,
-    this.showCount = true,
-    this.showIndexes = true,
-    LogStyle? punctuation,
-    String colon = ':',
-    LogStyle? colonStyle,
-    String ellipsis = '…',
-    LogStyle? ellipsisStyle,
-    String lineBreak = '-',
-    LogStyle? lineBreakStyle,
-    String padding = ' ',
+  const LogTheme({
+    this.verbose = LogLevelTheme.noColors,
+    this.debug = LogLevelTheme.noColors,
+    this.info = LogLevelTheme.noColors,
+    this.warning = LogLevelTheme.noColors,
+    this.error = LogLevelTheme.noColors,
+    this.critical = LogLevelTheme.noColors,
     this.maxLength,
     this.maxLines,
-  })  : assert(maxLength == null || maxLength >= 0),
-        assert(maxLines == null || maxLines >= 1),
-        bold = bold ??
-            normal.copyWith(
-              verbose: normal.verbose.bold,
-              debug: normal.debug.bold,
-              info: normal.info.bold,
-              warning: normal.warning.bold,
-              error: normal.error.bold,
-              critical: normal.critical.bold,
-            ),
-        dim = dim ??
-            normal.copyWith(
-              verbose: normal.verbose.dim,
-              debug: normal.debug.dim,
-              info: normal.info.dim,
-              warning: normal.warning.dim,
-              error: normal.error.dim,
-              critical: normal.critical.dim,
-            ),
-        superDim = superDim ??
-            normal.copyWith(
-              verbose: normal.verbose.dim,
-              debug: normal.debug.dim,
-              info: normal.info.dim,
-              warning: normal.warning.dim,
-              error: normal.error.dim,
-              critical: normal.critical.dim,
-            ),
-        sequenceNum = sequenceNum ??
-            const LogStyle.only(
-              ansi.Style(foreground: _tagColor),
-            ),
-        levelName = levelName ??
-            normal.copyWith(
-              verbose: ansi.Style(
-                background: normal.verbose.foregroundColor,
-                foreground: ansi.Color256.gray0,
-              ),
-              debug: ansi.Style(
-                background: normal.debug.foregroundColor,
-                foreground: ansi.Color256.gray0,
-              ),
-              info: ansi.Style(
-                background: normal.info.foregroundColor,
-                foreground: ansi.Color256.gray0,
-              ),
-              warning: ansi.Style(
-                background: normal.warning.foregroundColor,
-                foreground: ansi.Color256.gray0,
-              ),
-              error: ansi.Style(
-                background: normal.error.foregroundColor,
-                foreground: ansi.Color256.gray0,
-              ),
-              critical: ansi.Style(
-                background: normal.critical.foregroundColor,
-                foreground: ansi.Color256.gray0,
-              ),
-            ),
-        time = time ?? LogStyle.noColors,
-        path = path ?? LogStyle.noColors,
-        tags = tags ??
-            const LogStyle.only(
-              ansi.Style(foreground: _tagColor),
-            ),
-        controlCodes = controlCodes ?? LogStyle.noColors,
-        dataTitle = dataTitle ?? LogStyle.noColors,
-        dataName = dataName ?? LogStyle.noColors,
-        dataKey = dataKey ?? LogStyle.noColors,
-        dataValue = dataValue ?? LogStyle.noColors,
-        dataUnits = dataUnits ?? LogStyle.noColors,
-        dataBrackets = dataBrackets ?? [LogStyle.noColors],
-        dataDescription = dataDescription ?? [LogStyle.noColors],
-        dataPunctuation = dataPunctuation ?? [LogStyle.noColors],
-        punctuation = punctuation ?? LogStyle.noColors,
-        assert(!colon.ansiHasEscapeCodes),
-        colon = LogPunctuation(colon, style: colonStyle ?? punctuation),
-        assert(!ellipsis.ansiHasEscapeCodes),
-        ellipsis =
-            LogPunctuation(ellipsis, style: ellipsisStyle ?? punctuation),
-        assert(!lineBreak.ansiHasEscapeCodes),
-        lineBreak =
-            LogPunctuation(lineBreak, style: lineBreakStyle ?? punctuation),
-        assert(!padding.ansiHasEscapeCodes),
-        assert(padding.length == 1),
-        padding = LogPunctuation(padding, style: paddingStyle ?? punctuation);
-
-  const LogTheme._raw({
-    required this.normal,
-    required this.bold,
-    required this.dim,
-    required this.superDim,
-    required this.sequenceNum,
-    required this.levelName,
-    required this.time,
-    required this.path,
-    required this.tags,
-    required this.controlCodes,
-    required this.dataTitle,
-    required this.dataName,
-    required this.dataKey,
-    required this.dataValue,
-    required this.dataUnits,
-    required this.dataBrackets,
-    required this.dataDescription,
-    required this.dataPunctuation,
-    required this.showCount,
-    required this.showIndexes,
-    required this.punctuation,
-    required this.colon,
-    required this.ellipsis,
-    required this.lineBreak,
-    required this.padding,
-    required this.maxLength,
-    required this.maxLines,
   });
 
-  static const LogTheme noColorsTheme = LogTheme._raw(
-    normal: LogStyle.noColors,
-    bold: LogStyle.noColors,
-    dim: LogStyle.noColors,
-    superDim: LogStyle.noColors,
-    sequenceNum: LogStyle.noColors,
-    levelName: LogStyle.noColors,
-    time: LogStyle.noColors,
-    path: LogStyle.noColors,
-    tags: LogStyle.noColors,
-    controlCodes: LogStyle.noColors,
-    dataTitle: LogStyle.noColors,
-    dataName: LogStyle.noColors,
-    dataKey: LogStyle.noColors,
-    dataValue: LogStyle.noColors,
-    dataUnits: LogStyle.noColors,
-    dataBrackets: [LogStyle.noColors],
-    dataDescription: [LogStyle.noColors],
-    dataPunctuation: [LogStyle.noColors],
-    showCount: true,
-    showIndexes: true,
-    punctuation: LogStyle.noColors,
-    colon: LogPunctuation(':'),
-    ellipsis: LogPunctuation('…'),
-    lineBreak: LogPunctuation('-'),
-    padding: LogPunctuation(' '),
-    maxLength: null,
-    maxLines: null,
-  );
+  LogLevelTheme operator [](int level) => switch (level) {
+        LogLevels.verbose => verbose,
+        LogLevels.debug => debug,
+        LogLevels.info => info,
+        LogLevels.warning => warning,
+        LogLevels.error => error,
+        LogLevels.critical => critical,
+        _ => throw Exception('Unknown log level: $level'),
+      };
+
+  static const LogTheme noColors = LogTheme();
 
   static const _black = ansi.Color256.gray0;
 
-  static const _normalVerboseColor = ansi.Color256.gray7;
-  static const _normalDebugColor = ansi.Color256.gray11;
-  static const _normalInfoColor = ansi.Color256.rgb233;
-  static const _normalWarningColor = ansi.Color256.rgb430;
-  static const _normalErrorColor = ansi.Color256.rgb411;
-  static const _normalCriticalColor = ansi.Color256.rgb414;
+  static const _inactiveVerboseNormalColor = ansi.Color256.gray5;
+  static const _inactiveVerboseNormalStyle =
+      ansi.Style(foreground: _inactiveVerboseNormalColor);
+  static const _inactiveDebugNormalColor = ansi.Color256.gray7;
+  static const _inactiveDebugNormalStyle =
+      ansi.Style(foreground: _inactiveDebugNormalColor);
+  static const _inactiveInfoNormalColor = ansi.Color256.rgb122;
+  static const _inactiveInfoNormalStyle =
+      ansi.Style(foreground: _inactiveInfoNormalColor);
+  static const _inactiveWarningNormalColor = ansi.Color256.rgb320;
+  static const _inactiveWarningNormalStyle =
+      ansi.Style(foreground: _inactiveWarningNormalColor);
+  static const _inactiveErrorNormalColor = ansi.Color256.rgb300;
+  static const _inactiveErrorNormalStyle =
+      ansi.Style(foreground: _inactiveErrorNormalColor);
+  static const _inactiveCriticalNormalColor = ansi.Color256.rgb303;
+  static const _inactiveCriticalNormalStyle =
+      ansi.Style(foreground: _inactiveCriticalNormalColor);
 
-  static const _activeVerboseColor = ansi.Color256.gray10;
-  static const _activeDebugColor = ansi.Color256.gray15;
-  static const _activeInfoColor = ansi.Color256.rgb344;
-  static const _activeWarningColor = ansi.Color256.rgb540;
-  static const _activeErrorColor = ansi.Color256.rgb511;
-  static const _activeCriticalColor = ansi.Color256.rgb515;
+  static const _activeVerboseNormalColor = ansi.Color256.gray7;
+  static const _activeVerboseNormalStyle =
+      ansi.Style(foreground: _activeVerboseNormalColor);
+  static const _activeDebugNormalColor = ansi.Color256.gray11;
+  static const _activeDebugNormalStyle =
+      ansi.Style(foreground: _activeDebugNormalColor);
+  static const _activeInfoNormalColor = ansi.Color256.rgb233;
+  static const _activeInfoNormalStyle =
+      ansi.Style(foreground: _activeInfoNormalColor);
+  static const _activeWarningNormalColor = ansi.Color256.rgb430;
+  static const _activeWarningNormalStyle =
+      ansi.Style(foreground: _activeWarningNormalColor);
+  static const _activeErrorNormalColor = ansi.Color256.rgb411;
+  static const _activeErrorNormalStyle =
+      ansi.Style(foreground: _activeErrorNormalColor);
+  static const _activeCriticalNormalColor = ansi.Color256.rgb414;
+  static const _activeCriticalNormalStyle =
+      ansi.Style(foreground: _activeCriticalNormalColor);
 
-  static const _dimVerboseColor = ansi.Color256.gray5;
-  static const _dimDebugColor = ansi.Color256.gray8;
-  static const _dimInfoColor = ansi.Color256.rgb122;
-  static const _dimWarningColor = ansi.Color256.rgb320;
-  static const _dimErrorColor = ansi.Color256.rgb311;
-  static const _dimCriticalColor = ansi.Color256.rgb313;
+  static const _activeVerboseEmphasisColor = ansi.Color256.gray10;
+  static const _activeVerboseEmphasisStyle =
+      ansi.Style(foreground: _activeVerboseEmphasisColor);
+  static const _activeVerboseBoldStyle =
+      ansi.Style(foreground: _activeVerboseEmphasisColor, bold: true);
+  static const _activeDebugEmphasisColor = ansi.Color256.gray15;
+  static const _activeDebugEmphasisStyle =
+      ansi.Style(foreground: _activeDebugEmphasisColor);
+  static const _activeDebugBoldStyle =
+      ansi.Style(foreground: _activeDebugEmphasisColor, bold: true);
+  static const _activeInfoEmphasisColor = ansi.Color256.rgb344;
+  static const _activeInfoEmphasisStyle =
+      ansi.Style(foreground: _activeInfoEmphasisColor);
+  static const _activeInfoBoldStyle =
+      ansi.Style(foreground: _activeInfoEmphasisColor, bold: true);
+  static const _activeWarningEmphasisColor = ansi.Color256.rgb540;
+  static const _activeWarningEmphasisStyle =
+      ansi.Style(foreground: _activeWarningEmphasisColor);
+  static const _activeWarningBoldStyle =
+      ansi.Style(foreground: _activeWarningEmphasisColor, bold: true);
+  static const _activeErrorEmphasisColor = ansi.Color256.rgb511;
+  static const _activeErrorEmphasisStyle =
+      ansi.Style(foreground: _activeErrorEmphasisColor);
+  static const _activeErrorBoldStyle =
+      ansi.Style(foreground: _activeErrorEmphasisColor, bold: true);
+  static const _activeCriticalEmphasisColor = ansi.Color256.rgb515;
+  static const _activeCriticalEmphasisStyle =
+      ansi.Style(foreground: _activeCriticalEmphasisColor);
+  static const _activeCriticalBoldStyle =
+      ansi.Style(foreground: _activeCriticalEmphasisColor, bold: true);
 
-  static const _superDimVerboseColor = ansi.Color256.gray4;
-  static const _superDimDebugColor = ansi.Color256.gray4;
-  static const _superDimInfoColor = ansi.Color256.rgb011;
-  static const _superDimWarningColor = ansi.Color256.rgb210;
-  static const _superDimErrorColor = ansi.Color256.rgb200;
-  static const _superDimCriticalColor = ansi.Color256.rgb202;
+  static const _activeVerboseDimColor = ansi.Color256.gray5;
+  static const _activeDebugDimColor = ansi.Color256.gray8;
+  static const _activeInfoDimColor = ansi.Color256.rgb122;
+  static const _activeWarningDimColor = ansi.Color256.rgb320;
+  static const _activeErrorDimColor = ansi.Color256.rgb311;
+  static const _activeCriticalDimColor = ansi.Color256.rgb313;
 
-  static const _verbosePunctuationColor = ansi.Color256.rgb023;
-  static const _debugPunctuationColor = ansi.Color256.rgb034;
-  static const _punctuationColor = ansi.Color256.rgb045;
-  static const _tagColor = ansi.Color256.gray5;
+  static const _activeVerboseSuperDimColor = ansi.Color256.gray4;
+  static const _activeDebugSuperDimColor = ansi.Color256.gray4;
+  static const _activeInfoSuperDimColor = ansi.Color256.rgb011;
+  static const _activeWarningSuperDimColor = ansi.Color256.rgb210;
+  static const _activeErrorSuperDimColor = ansi.Color256.rgb200;
+  static const _activeCriticalSuperDimColor = ansi.Color256.rgb202;
 
-  static const _normalStyle = LogStyle(
-    verbose: ansi.Style(foreground: _normalVerboseColor),
-    debug: ansi.Style(foreground: _normalDebugColor),
-    info: ansi.Style(foreground: _normalInfoColor),
-    warning: ansi.Style(foreground: _normalWarningColor),
-    error: ansi.Style(foreground: _normalErrorColor),
-    critical: ansi.Style(foreground: _normalCriticalColor),
-  );
-  static const _activeStyle = LogStyle(
-    verbose: ansi.Style(foreground: _activeVerboseColor),
-    debug: ansi.Style(foreground: _activeDebugColor),
-    info: ansi.Style(foreground: _activeInfoColor),
-    warning: ansi.Style(foreground: _activeWarningColor),
-    error: ansi.Style(foreground: _activeErrorColor),
-    critical: ansi.Style(foreground: _activeCriticalColor),
-  );
-  static const _boldStyle = LogStyle(
-    verbose: ansi.Style(foreground: _activeVerboseColor, bold: true),
-    debug: ansi.Style(foreground: _activeDebugColor, bold: true),
-    info: ansi.Style(foreground: _activeInfoColor, bold: true),
-    warning: ansi.Style(foreground: _activeWarningColor, bold: true),
-    error: ansi.Style(foreground: _activeErrorColor, bold: true),
-    critical: ansi.Style(foreground: _activeCriticalColor, bold: true),
-  );
-  static const _dimStyle = LogStyle(
-    verbose: ansi.Style(foreground: _dimVerboseColor),
-    debug: ansi.Style(foreground: _dimDebugColor),
-    info: ansi.Style(foreground: _dimInfoColor),
-    warning: ansi.Style(foreground: _dimWarningColor),
-    error: ansi.Style(foreground: _dimErrorColor),
-    critical: ansi.Style(foreground: _dimCriticalColor),
-  );
-  static const _superDimStyle = LogStyle(
-    verbose: ansi.Style(foreground: _superDimVerboseColor),
-    debug: ansi.Style(foreground: _superDimDebugColor),
-    info: ansi.Style(foreground: _superDimInfoColor),
-    warning: ansi.Style(foreground: _superDimWarningColor),
-    error: ansi.Style(foreground: _superDimErrorColor),
-    critical: ansi.Style(foreground: _superDimCriticalColor),
-  );
-  static const _punctuationStyle = LogStyle.only(
-    verbose: ansi.Style(foreground: _verbosePunctuationColor),
-    debug: ansi.Style(foreground: _debugPunctuationColor),
-    ansi.Style(foreground: _punctuationColor),
-  );
-  static const _tagStyle = LogStyle(
-    verbose: ansi.Style(foreground: _tagColor),
-    debug: ansi.Style(foreground: _tagColor),
-    info: ansi.Style(foreground: _tagColor),
-    warning: ansi.Style(foreground: _tagColor),
-    error: ansi.Style(foreground: _tagColor),
-    critical: ansi.Style(foreground: _tagColor),
-  );
+  static const _activeVerbosePunctuationColor = ansi.Color256.rgb023;
+  static const _activeDebugPunctuationColor = ansi.Color256.rgb034;
+  static const _activePunctuationColor = ansi.Color256.rgb045;
 
-  static const LogTheme defaultTheme = LogTheme._raw(
-    normal: _normalStyle,
-    bold: _boldStyle,
-    dim: _dimStyle,
-    superDim: _superDimStyle,
-    sequenceNum: _tagStyle,
-    levelName: LogStyle(
-      verbose: ansi.Style(
-        background: _normalVerboseColor,
+  static const _activeVerboseLevels0Color = ansi.Color256.rgb310;
+  static const _activeVerboseLevels1Color = ansi.Color256.rgb130;
+  static const _activeVerboseLevels2Color = ansi.Color256.rgb023;
+  static const _activeVerboseLevels3Color = ansi.Color256.rgb213;
+
+  static const _activeDebugLevels0Color = ansi.Color256.rgb420;
+  static const _activeDebugLevels1Color = ansi.Color256.rgb240;
+  static const _activeDebugLevels2Color = ansi.Color256.rgb034;
+  static const _activeDebugLevels3Color = ansi.Color256.rgb324;
+
+  static const _activeDebugLevels0DimColor = ansi.Color256.rgb310;
+  static const _activeDebugLevels1DimColor = ansi.Color256.rgb130;
+  static const _activeDebugLevels2DimColor = ansi.Color256.rgb023;
+  static const _activeDebugLevels3DimColor = ansi.Color256.rgb213;
+
+  static const _activeLevels0Color = ansi.Color256.rgb530;
+  static const _activeLevels1Color = ansi.Color256.rgb350;
+  static const _activeLevels2Color = ansi.Color256.rgb045;
+  static const _activeLevels3Color = ansi.Color256.rgb425;
+
+  static const _activeLevels0DimColor = ansi.Color256.rgb420;
+  static const _activeLevels1DimColor = ansi.Color256.rgb240;
+  static const _activeLevels2DimColor = ansi.Color256.rgb034;
+  static const _activeLevels3DimColor = ansi.Color256.rgb324;
+
+  static const _tagsColor = ansi.Color256.gray5;
+
+  static const LogTheme defaultActiveTheme = LogTheme(
+    verbose: LogLevelTheme._(
+      normalStyle: _activeVerboseNormalStyle,
+      boldStyle: _activeVerboseBoldStyle,
+      dimStyle: ansi.Style(foreground: _activeVerboseDimColor),
+      superDimStyle: ansi.Style(foreground: _activeVerboseSuperDimColor),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.Style(
         foreground: _black,
+        background: _activeVerboseNormalColor,
       ),
-      debug: ansi.Style(
-        background: _normalDebugColor,
+      timeStyle: ansi.NoStyle(),
+      pathStyle: _activeVerboseBoldStyle,
+      messageStyles: {
+        'b': _activeVerboseBoldStyle,
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _activeErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
+      punctuationStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
+      colonStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
+      ellipsisStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
+      lineBreakStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
+      paddingStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
+      dataSectionStyle: ansi.Style(
         foreground: _black,
+        background: _activeVerboseDimColor,
       ),
-      info: ansi.Style(
-        background: _normalInfoColor,
-        foreground: _black,
-      ),
-      warning: ansi.Style(
-        background: _normalWarningColor,
-        foreground: _black,
-      ),
-      error: ansi.Style(
-        background: _normalErrorColor,
-        foreground: _black,
-      ),
-      critical: ansi.Style(
-        background: _normalCriticalColor,
-        foreground: _black,
-      ),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: _activeVerboseEmphasisStyle,
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.Style(foreground: _activeVerboseDimColor),
+      dataBracketsStyles: [
+        ansi.Style(foreground: _activeVerboseLevels0Color, bold: true),
+        ansi.Style(foreground: _activeVerboseLevels1Color, bold: true),
+        ansi.Style(foreground: _activeVerboseLevels2Color, bold: true),
+        ansi.Style(foreground: _activeVerboseLevels3Color, bold: true),
+      ],
+      dataDescriptionStyles: [
+        ansi.Style(foreground: _activeDebugLevels0DimColor),
+        ansi.Style(foreground: _activeDebugLevels1DimColor),
+        ansi.Style(foreground: _activeDebugLevels2DimColor),
+        ansi.Style(foreground: _activeDebugLevels3DimColor),
+      ],
+      dataPunctuationStyles: [
+        ansi.Style(foreground: _activeVerboseLevels0Color),
+        ansi.Style(foreground: _activeVerboseLevels1Color),
+        ansi.Style(foreground: _activeVerboseLevels2Color),
+        ansi.Style(foreground: _activeVerboseLevels3Color),
+      ],
+      showCount: true,
+      showIndexes: true,
     ),
-    time: LogStyle.noColors,
-    path: _boldStyle,
-    tags: _tagStyle,
-    controlCodes: _punctuationStyle,
-    dataTitle: LogStyle(
-      verbose: ansi.Style(
+    debug: LogLevelTheme._(
+      normalStyle: _activeDebugNormalStyle,
+      boldStyle: _activeDebugBoldStyle,
+      dimStyle: ansi.Style(foreground: _activeDebugDimColor),
+      superDimStyle: ansi.Style(foreground: _activeDebugSuperDimColor),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.Style(
         foreground: _black,
-        background: _dimVerboseColor,
+        background: _activeDebugNormalColor,
       ),
-      debug: ansi.Style(
+      timeStyle: ansi.NoStyle(),
+      pathStyle: _activeDebugBoldStyle,
+      messageStyles: {
+        'b': _activeDebugBoldStyle,
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _activeErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
+      punctuationStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
+      colonStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
+      ellipsisStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
+      lineBreakStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
+      paddingStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
+      dataSectionStyle: ansi.Style(
         foreground: _black,
-        background: _dimDebugColor,
+        background: _activeDebugDimColor,
       ),
-      info: ansi.Style(
-        foreground: _black,
-        background: _dimInfoColor,
-      ),
-      warning: ansi.Style(
-        foreground: _black,
-        background: _dimWarningColor,
-      ),
-      error: ansi.Style(
-        foreground: _black,
-        background: _dimErrorColor,
-      ),
-      critical: ansi.Style(
-        foreground: _black,
-        background: _dimCriticalColor,
-      ),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: _activeDebugEmphasisStyle,
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.Style(foreground: _activeDebugDimColor),
+      dataBracketsStyles: [
+        ansi.Style(foreground: _activeDebugLevels0Color, bold: true),
+        ansi.Style(foreground: _activeDebugLevels1Color, bold: true),
+        ansi.Style(foreground: _activeDebugLevels2Color, bold: true),
+        ansi.Style(foreground: _activeDebugLevels3Color, bold: true),
+      ],
+      dataDescriptionStyles: [
+        ansi.Style(foreground: _activeDebugLevels0DimColor),
+        ansi.Style(foreground: _activeDebugLevels1DimColor),
+        ansi.Style(foreground: _activeDebugLevels2DimColor),
+        ansi.Style(foreground: _activeDebugLevels3DimColor),
+      ],
+      dataPunctuationStyles: [
+        ansi.Style(foreground: _activeDebugLevels0Color),
+        ansi.Style(foreground: _activeDebugLevels1Color),
+        ansi.Style(foreground: _activeDebugLevels2Color),
+        ansi.Style(foreground: _activeDebugLevels3Color),
+      ],
+      showCount: true,
+      showIndexes: true,
     ),
-    dataName: LogStyle.noColors,
-    dataKey: _activeStyle,
-    dataValue: _normalStyle,
-    dataUnits: _dimStyle,
-    dataBrackets: [
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb310, bold: true),
-        debug: ansi.Style(foreground: ansi.Color256.rgb420, bold: true),
-        ansi.Style(foreground: ansi.Color256.rgb530, bold: true),
+    info: LogLevelTheme._(
+      normalStyle: _activeInfoNormalStyle,
+      boldStyle: _activeInfoBoldStyle,
+      dimStyle: ansi.Style(foreground: _activeInfoDimColor),
+      superDimStyle: ansi.Style(foreground: _activeInfoSuperDimColor),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.Style(
+        foreground: _black,
+        background: _activeInfoNormalColor,
       ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb130, bold: true),
-        debug: ansi.Style(foreground: ansi.Color256.rgb240, bold: true),
-        ansi.Style(foreground: ansi.Color256.rgb350, bold: true),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: _activeInfoBoldStyle,
+      messageStyles: {
+        'b': _activeInfoBoldStyle,
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _activeErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
+      punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
+      colonStyle: ansi.Style(foreground: _activePunctuationColor),
+      ellipsisStyle: ansi.Style(foreground: _activePunctuationColor),
+      lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
+      paddingStyle: ansi.Style(foreground: _activePunctuationColor),
+      dataSectionStyle: ansi.Style(
+        foreground: _black,
+        background: _activeInfoDimColor,
       ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb023, bold: true),
-        debug: ansi.Style(foreground: ansi.Color256.rgb034, bold: true),
-        ansi.Style(foreground: ansi.Color256.rgb045, bold: true),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: _activeInfoEmphasisStyle,
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.Style(foreground: _activeInfoDimColor),
+      dataBracketsStyles: [
+        ansi.Style(foreground: _activeLevels0Color, bold: true),
+        ansi.Style(foreground: _activeLevels1Color, bold: true),
+        ansi.Style(foreground: _activeLevels2Color, bold: true),
+        ansi.Style(foreground: _activeLevels3Color, bold: true),
+      ],
+      dataDescriptionStyles: [
+        ansi.Style(foreground: _activeLevels0DimColor),
+        ansi.Style(foreground: _activeLevels1DimColor),
+        ansi.Style(foreground: _activeLevels2DimColor),
+        ansi.Style(foreground: _activeLevels3DimColor),
+      ],
+      dataPunctuationStyles: [
+        ansi.Style(foreground: _activeLevels0Color),
+        ansi.Style(foreground: _activeLevels1Color),
+        ansi.Style(foreground: _activeLevels2Color),
+        ansi.Style(foreground: _activeLevels3Color),
+      ],
+      showCount: true,
+      showIndexes: true,
+    ),
+    warning: LogLevelTheme._(
+      normalStyle: _activeWarningNormalStyle,
+      boldStyle: _activeWarningBoldStyle,
+      dimStyle: ansi.Style(foreground: _activeWarningDimColor),
+      superDimStyle: ansi.Style(foreground: _activeWarningSuperDimColor),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.Style(
+        foreground: _black,
+        background: _activeWarningNormalColor,
       ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb213, bold: true),
-        debug: ansi.Style(foreground: ansi.Color256.rgb324, bold: true),
-        ansi.Style(foreground: ansi.Color256.rgb425, bold: true),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: _activeWarningBoldStyle,
+      messageStyles: {
+        'b': _activeWarningBoldStyle,
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _activeErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
+      punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
+      colonStyle: ansi.Style(foreground: _activePunctuationColor),
+      ellipsisStyle: ansi.Style(foreground: _activePunctuationColor),
+      lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
+      paddingStyle: ansi.Style(foreground: _activePunctuationColor),
+      dataSectionStyle: ansi.Style(
+        foreground: _black,
+        background: _activeWarningDimColor,
       ),
-    ],
-    dataDescription: [
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb310),
-        debug: ansi.Style(foreground: ansi.Color256.rgb310),
-        ansi.Style(foreground: ansi.Color256.rgb420),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: _activeWarningEmphasisStyle,
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.Style(foreground: _activeWarningDimColor),
+      dataBracketsStyles: [
+        ansi.Style(foreground: _activeLevels0Color, bold: true),
+        ansi.Style(foreground: _activeLevels1Color, bold: true),
+        ansi.Style(foreground: _activeLevels2Color, bold: true),
+        ansi.Style(foreground: _activeLevels3Color, bold: true),
+      ],
+      dataDescriptionStyles: [
+        ansi.Style(foreground: _activeLevels0Color),
+        ansi.Style(foreground: _activeLevels1Color),
+        ansi.Style(foreground: _activeLevels2Color),
+        ansi.Style(foreground: _activeLevels3Color),
+      ],
+      dataPunctuationStyles: [
+        ansi.Style(foreground: _activeLevels0Color),
+        ansi.Style(foreground: _activeLevels1Color),
+        ansi.Style(foreground: _activeLevels2Color),
+        ansi.Style(foreground: _activeLevels3Color),
+      ],
+      showCount: true,
+      showIndexes: true,
+    ),
+    error: LogLevelTheme._(
+      normalStyle: _activeErrorNormalStyle,
+      boldStyle: _activeErrorBoldStyle,
+      dimStyle: ansi.Style(foreground: _activeErrorDimColor),
+      superDimStyle: ansi.Style(foreground: _activeErrorSuperDimColor),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.Style(
+        foreground: _black,
+        background: _activeErrorNormalColor,
       ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb130),
-        debug: ansi.Style(foreground: ansi.Color256.rgb130),
-        ansi.Style(foreground: ansi.Color256.rgb240),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: _activeErrorBoldStyle,
+      messageStyles: {
+        'b': _activeErrorBoldStyle,
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _activeErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
+      punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
+      colonStyle: ansi.Style(foreground: _activePunctuationColor),
+      ellipsisStyle: ansi.Style(foreground: _activePunctuationColor),
+      lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
+      paddingStyle: ansi.Style(foreground: _activePunctuationColor),
+      dataSectionStyle: ansi.Style(
+        foreground: _black,
+        background: _activeErrorDimColor,
       ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb023),
-        debug: ansi.Style(foreground: ansi.Color256.rgb023),
-        ansi.Style(foreground: ansi.Color256.rgb034),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: _activeErrorEmphasisStyle,
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.Style(foreground: _activeErrorDimColor),
+      dataBracketsStyles: [
+        ansi.Style(foreground: _activeLevels0Color, bold: true),
+        ansi.Style(foreground: _activeLevels1Color, bold: true),
+        ansi.Style(foreground: _activeLevels2Color, bold: true),
+        ansi.Style(foreground: _activeLevels3Color, bold: true),
+      ],
+      dataDescriptionStyles: [
+        ansi.Style(foreground: _activeLevels0Color),
+        ansi.Style(foreground: _activeLevels1Color),
+        ansi.Style(foreground: _activeLevels2Color),
+        ansi.Style(foreground: _activeLevels3Color),
+      ],
+      dataPunctuationStyles: [
+        ansi.Style(foreground: _activeLevels0Color),
+        ansi.Style(foreground: _activeLevels1Color),
+        ansi.Style(foreground: _activeLevels2Color),
+        ansi.Style(foreground: _activeLevels3Color),
+      ],
+      showCount: true,
+      showIndexes: true,
+    ),
+    critical: LogLevelTheme._(
+      normalStyle: _activeCriticalNormalStyle,
+      boldStyle: _activeCriticalBoldStyle,
+      dimStyle: ansi.Style(foreground: _activeCriticalDimColor),
+      superDimStyle: ansi.Style(foreground: _activeCriticalSuperDimColor),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.Style(
+        foreground: _black,
+        background: _activeCriticalNormalColor,
       ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb213),
-        debug: ansi.Style(foreground: ansi.Color256.rgb213),
-        ansi.Style(foreground: ansi.Color256.rgb324),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: _activeCriticalBoldStyle,
+      messageStyles: {
+        'b': _activeCriticalBoldStyle,
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _activeErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
+      punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
+      colonStyle: ansi.Style(foreground: _activePunctuationColor),
+      ellipsisStyle: ansi.Style(foreground: _activePunctuationColor),
+      lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
+      paddingStyle: ansi.Style(foreground: _activePunctuationColor),
+      dataSectionStyle: ansi.Style(
+        foreground: _black,
+        background: _activeCriticalDimColor,
       ),
-    ],
-    dataPunctuation: [
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb310),
-        debug: ansi.Style(foreground: ansi.Color256.rgb420),
-        ansi.Style(foreground: ansi.Color256.rgb530),
-      ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb130),
-        debug: ansi.Style(foreground: ansi.Color256.rgb240),
-        ansi.Style(foreground: ansi.Color256.rgb350),
-      ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb023),
-        debug: ansi.Style(foreground: ansi.Color256.rgb034),
-        ansi.Style(foreground: ansi.Color256.rgb045),
-      ),
-      LogStyle.only(
-        verbose: ansi.Style(foreground: ansi.Color256.rgb213),
-        debug: ansi.Style(foreground: ansi.Color256.rgb324),
-        ansi.Style(foreground: ansi.Color256.rgb425),
-      ),
-    ],
-    showCount: true,
-    showIndexes: true,
-    punctuation: _punctuationStyle,
-    colon: LogPunctuation(':', style: _punctuationStyle),
-    ellipsis: LogPunctuation('…', style: _punctuationStyle),
-    lineBreak: LogPunctuation('-', style: _punctuationStyle),
-    padding: LogPunctuation(' '),
-    maxLength: null,
-    maxLines: null,
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: _activeCriticalEmphasisStyle,
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.Style(foreground: _activeCriticalDimColor),
+      dataBracketsStyles: [
+        ansi.Style(foreground: _activeLevels0Color, bold: true),
+        ansi.Style(foreground: _activeLevels1Color, bold: true),
+        ansi.Style(foreground: _activeLevels2Color, bold: true),
+        ansi.Style(foreground: _activeLevels3Color, bold: true),
+      ],
+      dataDescriptionStyles: [
+        ansi.Style(foreground: _activeLevels0Color),
+        ansi.Style(foreground: _activeLevels1Color),
+        ansi.Style(foreground: _activeLevels2Color),
+        ansi.Style(foreground: _activeLevels3Color),
+      ],
+      dataPunctuationStyles: [
+        ansi.Style(foreground: _activeLevels0Color),
+        ansi.Style(foreground: _activeLevels1Color),
+        ansi.Style(foreground: _activeLevels2Color),
+        ansi.Style(foreground: _activeLevels3Color),
+      ],
+      showCount: true,
+      showIndexes: true,
+    ),
+  );
+
+  static const LogTheme defaultInactiveTheme = LogTheme(
+    verbose: LogLevelTheme._(
+      normalStyle: _inactiveVerboseNormalStyle,
+      boldStyle: ansi.NoStyle(),
+      dimStyle: ansi.NoStyle(),
+      superDimStyle: ansi.NoStyle(),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.NoStyle(),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: ansi.NoStyle(),
+      messageStyles: {
+        'b': ansi.Style(bold: true),
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _inactiveErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.NoStyle(),
+      punctuationStyle: ansi.NoStyle(),
+      colonStyle: ansi.NoStyle(),
+      ellipsisStyle: ansi.NoStyle(),
+      lineBreakStyle: ansi.NoStyle(),
+      paddingStyle: ansi.NoStyle(),
+      dataSectionStyle: ansi.NoStyle(),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: ansi.NoStyle(),
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.NoStyle(),
+      dataBracketsStyles: [ansi.NoStyle()],
+      dataDescriptionStyles: [ansi.NoStyle()],
+      dataPunctuationStyles: [ansi.NoStyle()],
+      showCount: true,
+      showIndexes: true,
+    ),
+    debug: LogLevelTheme._(
+      normalStyle: _inactiveDebugNormalStyle,
+      boldStyle: ansi.NoStyle(),
+      dimStyle: ansi.NoStyle(),
+      superDimStyle: ansi.NoStyle(),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.NoStyle(),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: ansi.NoStyle(),
+      messageStyles: {
+        'b': ansi.Style(bold: true),
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _inactiveErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.NoStyle(),
+      punctuationStyle: ansi.NoStyle(),
+      colonStyle: ansi.NoStyle(),
+      ellipsisStyle: ansi.NoStyle(),
+      lineBreakStyle: ansi.NoStyle(),
+      paddingStyle: ansi.NoStyle(),
+      dataSectionStyle: ansi.NoStyle(),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: ansi.NoStyle(),
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.NoStyle(),
+      dataBracketsStyles: [ansi.NoStyle()],
+      dataDescriptionStyles: [ansi.NoStyle()],
+      dataPunctuationStyles: [ansi.NoStyle()],
+      showCount: true,
+      showIndexes: true,
+    ),
+    info: LogLevelTheme._(
+      normalStyle: _inactiveInfoNormalStyle,
+      boldStyle: ansi.NoStyle(),
+      dimStyle: ansi.NoStyle(),
+      superDimStyle: ansi.NoStyle(),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.NoStyle(),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: ansi.NoStyle(),
+      messageStyles: {
+        'b': ansi.Style(bold: true),
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _inactiveErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.NoStyle(),
+      punctuationStyle: ansi.NoStyle(),
+      colonStyle: ansi.NoStyle(),
+      ellipsisStyle: ansi.NoStyle(),
+      lineBreakStyle: ansi.NoStyle(),
+      paddingStyle: ansi.NoStyle(),
+      dataSectionStyle: ansi.NoStyle(),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: ansi.NoStyle(),
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.NoStyle(),
+      dataBracketsStyles: [ansi.NoStyle()],
+      dataDescriptionStyles: [ansi.NoStyle()],
+      dataPunctuationStyles: [ansi.NoStyle()],
+      showCount: true,
+      showIndexes: true,
+    ),
+    warning: LogLevelTheme._(
+      normalStyle: _inactiveWarningNormalStyle,
+      boldStyle: ansi.NoStyle(),
+      dimStyle: ansi.NoStyle(),
+      superDimStyle: ansi.NoStyle(),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.NoStyle(),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: ansi.NoStyle(),
+      messageStyles: {
+        'b': ansi.Style(bold: true),
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _inactiveErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.NoStyle(),
+      punctuationStyle: ansi.NoStyle(),
+      colonStyle: ansi.NoStyle(),
+      ellipsisStyle: ansi.NoStyle(),
+      lineBreakStyle: ansi.NoStyle(),
+      paddingStyle: ansi.NoStyle(),
+      dataSectionStyle: ansi.NoStyle(),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: ansi.NoStyle(),
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.NoStyle(),
+      dataBracketsStyles: [ansi.NoStyle()],
+      dataDescriptionStyles: [ansi.NoStyle()],
+      dataPunctuationStyles: [ansi.NoStyle()],
+      showCount: true,
+      showIndexes: true,
+    ),
+    error: LogLevelTheme._(
+      normalStyle: _inactiveErrorNormalStyle,
+      boldStyle: ansi.NoStyle(),
+      dimStyle: ansi.NoStyle(),
+      superDimStyle: ansi.NoStyle(),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.NoStyle(),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: ansi.NoStyle(),
+      messageStyles: {
+        'b': ansi.Style(bold: true),
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _inactiveErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.NoStyle(),
+      punctuationStyle: ansi.NoStyle(),
+      colonStyle: ansi.NoStyle(),
+      ellipsisStyle: ansi.NoStyle(),
+      lineBreakStyle: ansi.NoStyle(),
+      paddingStyle: ansi.NoStyle(),
+      dataSectionStyle: ansi.NoStyle(),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: ansi.NoStyle(),
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.NoStyle(),
+      dataBracketsStyles: [ansi.NoStyle()],
+      dataDescriptionStyles: [ansi.NoStyle()],
+      dataPunctuationStyles: [ansi.NoStyle()],
+      showCount: true,
+      showIndexes: true,
+    ),
+    critical: LogLevelTheme._(
+      normalStyle: _inactiveCriticalNormalStyle,
+      boldStyle: ansi.NoStyle(),
+      dimStyle: ansi.NoStyle(),
+      superDimStyle: ansi.NoStyle(),
+      sequenceNumStyle: ansi.Style(foreground: _tagsColor),
+      levelNameStyle: ansi.NoStyle(),
+      timeStyle: ansi.NoStyle(),
+      pathStyle: ansi.NoStyle(),
+      messageStyles: {
+        'b': ansi.Style(bold: true),
+        // 'ok': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.rgb050),
+        // ),
+        // 'trace': const BbCodeFormat.colorize(
+        //   LogStyle.only(ansi.magenta),
+        // ),
+        // 'signal': const BbCodeFormat.colorize(
+        //   LogStyle.only(
+        //     ansi.Style(
+        //       foreground: ansi.Color256.rgb055,
+        //       background: ansi.Color256.rgb011,
+        //     ),
+        //   ),
+        // ),
+        'error': _inactiveErrorNormalStyle,
+      },
+      valueFormatter: ControlCodeLogPreFormatter(),
+      messageFormatter: BbCodeLogPreFormatter(),
+      tagsStyle: ansi.Style(foreground: _tagsColor),
+      controlCodesStyle: ansi.NoStyle(),
+      punctuationStyle: ansi.NoStyle(),
+      colonStyle: ansi.NoStyle(),
+      ellipsisStyle: ansi.NoStyle(),
+      lineBreakStyle: ansi.NoStyle(),
+      paddingStyle: ansi.NoStyle(),
+      dataSectionStyle: ansi.NoStyle(),
+      dataNameStyle: ansi.NoStyle(),
+      dataKeyStyle: ansi.NoStyle(),
+      dataValueStyle: ansi.NoStyle(),
+      dataUnitsStyle: ansi.NoStyle(),
+      dataBracketsStyles: [ansi.NoStyle()],
+      dataDescriptionStyles: [ansi.NoStyle()],
+      dataPunctuationStyles: [ansi.NoStyle()],
+      showCount: true,
+      showIndexes: true,
+    ),
   );
 
   LogTheme copyWith({
-    LogStyle? normal,
-    LogStyle? bold,
-    LogStyle? dim,
-    LogStyle? superDim,
-    LogStyle? sequenceNum,
-    LogStyle? levelName,
-    LogStyle? time,
-    LogStyle? path,
-    LogStyle? tags,
-    LogStyle? controlCodes,
-    LogStyle? dataTitle,
-    LogStyle? dataName,
-    LogStyle? dataKey,
-    LogStyle? dataValue,
-    LogStyle? dataUnits,
-    List<LogStyle>? dataBrackets,
-    List<LogStyle>? dataDescription,
-    List<LogStyle>? dataPunctuation,
-    bool? showCount,
-    bool? showIndexes,
-    LogStyle? punctuation,
-    String? colon,
-    LogStyle? colonStyle,
-    String? ellipsis,
-    LogStyle? ellipsisStyle,
-    String? lineBreak,
-    LogStyle? lineBreakStyle,
-    String? padding,
-    LogStyle? paddingStyle,
+    LogLevelTheme? verbose,
+    LogLevelTheme? debug,
+    LogLevelTheme? info,
+    LogLevelTheme? warning,
+    LogLevelTheme? error,
+    LogLevelTheme? critical,
     int? maxLength,
     int? maxLines,
-  }) {
-    assert(padding == null || padding.length == 1);
-
-    return LogTheme._raw(
-      normal: normal ?? this.normal,
-      bold: bold ?? this.bold,
-      dim: dim ?? this.dim,
-      superDim: superDim ?? this.superDim,
-      sequenceNum: sequenceNum ?? this.sequenceNum,
-      levelName: levelName ?? this.levelName,
-      time: time ?? this.time,
-      path: path ?? this.path,
-      tags: tags ?? this.tags,
-      controlCodes: controlCodes ?? this.controlCodes,
-      dataTitle: dataTitle ?? this.dataTitle,
-      dataName: dataName ?? this.dataName,
-      dataKey: dataKey ?? this.dataKey,
-      dataValue: dataValue ?? this.dataValue,
-      dataUnits: dataUnits ?? this.dataUnits,
-      dataBrackets: dataBrackets ?? this.dataBrackets,
-      dataDescription: dataDescription ?? this.dataDescription,
-      dataPunctuation: dataPunctuation ?? this.dataPunctuation,
-      showCount: showCount ?? this.showCount,
-      showIndexes: showIndexes ?? this.showIndexes,
-      punctuation: punctuation ?? this.punctuation,
-      colon: colon == null && colonStyle == null
-          ? this.colon
-          : this.colon.copyWith(string: colon, style: colonStyle),
-      ellipsis: ellipsis == null && ellipsisStyle == null
-          ? this.ellipsis
-          : this.ellipsis.copyWith(string: ellipsis, style: ellipsisStyle),
-      lineBreak: lineBreak == null && lineBreakStyle == null
-          ? this.lineBreak
-          : this.lineBreak.copyWith(string: lineBreak, style: lineBreakStyle),
-      padding: padding == null && paddingStyle == null
-          ? this.padding
-          : this.padding.copyWith(string: padding, style: paddingStyle),
-      maxLength: maxLength ?? this.maxLength,
-      maxLines: maxLines ?? this.maxLines,
-    );
-  }
-
-  LogDataTheme toDataTheme(int level) => LogDataTheme._(
-        title: dataTitle[level],
-        name: dataName[level],
-        key: dataKey[level],
-        value: dataValue[level],
-        units: dataUnits[level],
-        brackets: dataBrackets.map((s) => s[level]).toList(),
-        description: dataDescription.map((s) => s[level]).toList(),
-        punctuation: dataPunctuation.map((s) => s[level]).toList(),
-        showCount: showCount,
-        showIndexes: showIndexes,
-        ellipsis: ellipsis.string,
+  }) =>
+      LogTheme(
+        verbose: verbose ?? this.verbose,
+        debug: debug ?? this.debug,
+        info: info ?? this.info,
+        warning: warning ?? this.warning,
+        error: error ?? this.error,
+        critical: critical ?? this.critical,
+        maxLength: maxLength ?? this.maxLength,
+        maxLines: maxLines ?? this.maxLines,
       );
 
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..prop('normal', normal)
-      ..prop('bold', bold)
-      ..prop('dim', dim)
-      ..prop('superDim', superDim)
-      ..prop('sequenceNum', sequenceNum)
-      ..prop('levelName', levelName)
-      ..prop('time', time)
-      ..prop('path', path)
-      ..prop('tags', tags)
-      ..prop('controlCodes', controlCodes)
-      ..prop('dataTitle', dataTitle)
-      ..prop('dataName', dataName)
-      ..prop('dataKey', dataKey)
-      ..prop('dataValue', dataValue)
-      ..prop('dataUnits', dataUnits)
-      ..prop('dataBrackets', dataBrackets)
-      ..prop('dataDescription', dataDescription)
-      ..prop('dataPunctuation', dataPunctuation)
-      ..prop('showCount', showCount)
-      ..prop('showIndexes', showIndexes)
-      ..prop('punctuation', punctuation)
-      ..prop('colon', colon)
-      ..prop('ellipsis', ellipsis)
-      ..prop('lineBreak', lineBreak)
-      ..prop('padding', padding)
+      ..prop('verbose', verbose)
+      ..prop('debug', debug)
+      ..prop('info', info)
+      ..prop('warning', warning)
+      ..prop('error', error)
+      ..prop('critical', critical)
       ..prop('maxLength', maxLength)
       ..prop('maxLines', maxLines);
-  }
-}
-
-final class LogPunctuation with Loggable {
-  final String string;
-  final LogStyle style;
-
-  const LogPunctuation(
-    this.string, {
-    LogStyle? style,
-  }) : style = style ?? LogStyle.noColors;
-
-  bool get isEmpty => string.isEmpty;
-
-  bool get isNotEmpty => string.isNotEmpty;
-
-  int get length => string.length;
-
-  String call(Log log) => style[log.level](string);
-
-  LogPunctuation copyWith({
-    String? string,
-    LogStyle? style,
-  }) =>
-      LogPunctuation(
-        string ?? this.string,
-        style: style ?? this.style,
-      );
-
-  AnsiStyled toAnsiStyled(int level) => AnsiStyled(string, style[level]);
-
-  @override
-  String toString() => '$LogPunctuation($string)';
-
-  @override
-  void collectLoggableData(LoggableData data) {
-    data
-      ..prop('string', string, showName: false)
-      ..prop('style', style);
   }
 }

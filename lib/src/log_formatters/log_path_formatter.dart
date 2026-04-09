@@ -33,14 +33,22 @@ final class _LogPathFormatter implements LogPathFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) {
-    final style = (this.style ?? theme.path)[log.level];
+  int get priority => 0;
+
+  @override
+  LogFormatterBox call(
+    Log log,
+    LogLevelTheme theme,
+    int? maxLength,
+    int? maxLines,
+  ) {
+    final style = this.style?[log.level] ?? theme.pathStyle;
 
     return LogFormatterBox(
       log,
       theme,
       [style('$open${log.path}$close')],
-      constraints: constraints.restrict(maxWidth),
+      constraints: constraints.restrict(maxLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

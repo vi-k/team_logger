@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
 
 void main() {
+  // f();
   runZoned(
     f,
     zoneSpecification: ZoneSpecification(
@@ -17,59 +17,35 @@ void main() {
 }
 
 void f() {
-  final theme = LogTheme.defaultTheme.copyWith(
+  // final theme = LogTheme.defaultInactiveTheme.copyWith(
+  final theme = LogTheme.defaultActiveTheme.copyWith(
     // padding: '.',
     // paddingStyle: const LogStyle.oneForAll(ansi.rgb012),
-    // maxLength: 140,
-    showIndexes: false,
+    maxLength: 140,
+    // showIndexes: false,
     maxLines: 20,
     // maxLines: 1,
   );
 
-  // final log = Logger('app') //.withAddedName('network')
+  // final buf = StringBuffer();
   final log = Logger('app')
     ..level = LogLevels.all
     ..publisher = ConsoleLogPrinter(
+      // output: (line) => buf
+      //   ..write('\n')
+      //   ..write(line),
+      // outputFinish: () {
+      //   print(buf);
+      //   buf.clear();
+      // },
       theme: theme,
-      // output: print,
       formatters: [
         const LogSequenceNumFormatter(),
         const LogLevelFormatter.short(),
-        MyLogTimeAndPathFormatter(
-          getRealTime: (log) => log.time.add(const Duration(milliseconds: 123)),
-        ),
-        // const LogPathFormatter(),
-        LogMessageFormatter(
-          constraints: const Constraints.exact(80),
-          dataPreFormatter: const ControlCodeLogPreFormatter(),
-          messagePreFormatter: MultiLogPreFormatter([
-            const ControlCodeLogPreFormatter(),
-            BbCodeLogPreFormatter(
-              formatters: {
-                'b': BbCodeFormat.colorize(theme.bold),
-                'ok': const BbCodeFormat.colorize(
-                  LogStyle.only(ansi.rgb050),
-                ),
-                'trace': const BbCodeFormat.colorize(
-                  LogStyle.only(ansi.magenta),
-                ),
-                'signal': const BbCodeFormat.colorize(
-                  LogStyle.only(
-                    ansi.Style(
-                      foreground: ansi.Color256.rgb055,
-                      background: ansi.Color256.rgb011,
-                    ),
-                  ),
-                ),
-                'error': BbCodeFormat.colorize(
-                  LogStyle.only(theme.normal.error),
-                ),
-              },
-            ),
-          ]),
-        ),
-        const LogSystemTagsFormatter(),
-        const LogTagsFormatter(),
+        const LogTimeFormatter.onlyTime(),
+        const LogPathFormatter(),
+        const LogMessageFormatter(constraints: Constraints(max: 80)),
+        const LogTagsFormatter(commonTags: {'log'}),
       ],
     );
 
@@ -282,10 +258,12 @@ void f() {
     );
   }
 
-  log.d('LogTheme', data: theme);
-  // log.d('Verbose LogDataTheme', data: theme.toDataTheme(LogLevels.verbose));
-  log.d('Debug LogDataTheme', data: theme.toDataTheme(LogLevels.debug));
-  log.d('Info LogDataTheme', data: theme.toDataTheme(LogLevels.info));
+  log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
+  log.d('   Debug LogLevelTheme', data: theme[LogLevels.debug]);
+  log.d('    Info LogLevelTheme', data: theme[LogLevels.info]);
+  log.w(' Warning LogLevelTheme', data: theme[LogLevels.warning]);
+  log.e('   Error LogLevelTheme', data: theme[LogLevels.error]);
+  log.critical('Critical LogLevelTheme', data: theme[LogLevels.critical]);
 }
 
 final class LoggableTest with Loggable {
@@ -334,46 +312,4 @@ final class Point with Loggable {
     ..showName = false
     ..prop('lat', lat, showName: false, view: lat.toStringAsFixed(5))
     ..prop('lon', lon, showName: false, view: lon.toStringAsFixed(5));
-}
-
-final class MyLogTimeAndPathFormatter implements LogTimeFormatter {
-  final DateTime Function(Log log) getRealTime;
-  final LogStyle? style;
-  final Constraints constraints;
-  final bool microseconds;
-  final bool utc;
-
-  const MyLogTimeAndPathFormatter({
-    required this.getRealTime,
-    this.style,
-    this.constraints = const Constraints.unlimited(),
-    this.microseconds = false,
-    this.utc = false,
-  });
-
-  @override
-  LogFormatterBox call(Log log, LogTheme theme, int? maxWidth) {
-    final pathStyle = (style ?? theme.path)[log.level];
-    final timeStyle = (style ?? theme.time)[log.level];
-    final dimStyle = (style ?? theme.dim)[log.level];
-    final localTime = LogTimeFormatter.timeToString(
-      utc ? log.time.toUtc() : log.time,
-      microseconds: microseconds,
-    );
-    final realTime = LogTimeFormatter.timeToString(
-      utc ? getRealTime(log).toUtc() : getRealTime(log),
-      microseconds: microseconds,
-    );
-
-    final pathStr = pathStyle('[${log.path}]');
-    final localTimeStr = '${dimStyle('L')}${timeStyle(localTime)}';
-    final realTimeStr = '${dimStyle('R')}${timeStyle(realTime)}';
-
-    return LogFormatterBox(
-      log,
-      theme,
-      ['$localTimeStr $realTimeStr $pathStr'],
-      constraints: constraints.restrict(maxWidth),
-    );
-  }
 }
