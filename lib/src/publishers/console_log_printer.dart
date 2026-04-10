@@ -97,7 +97,9 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     final printer = _printers[log.level]!;
     for (var i = 0; i < linesCount; i++) {
       for (final box in boxes) {
-        printer.write(box?.lines[i]);
+        if (box != null) {
+          printer.write(box.lines[i]);
+        }
       }
       printer.writeln();
     }

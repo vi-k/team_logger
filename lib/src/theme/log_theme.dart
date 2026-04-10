@@ -912,7 +912,7 @@ final class LogTheme with Loggable {
       '$name${theme.common.colon}';
 
   static String _defaultCountFormatter(LogLevelTheme theme, int count) =>
-      '₍ₙ₌${subscript(count)}₎ ';
+      '₌${subscript(count)} ';
 
   static String _defaultIndexFormatter(LogLevelTheme theme, int index) =>
       '${subscript(index)}${theme.common.colon}';
