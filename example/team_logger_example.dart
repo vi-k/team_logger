@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:team_logger/team_logger.dart';
 
 void main() {
-  // f();
   runZoned(
     f,
     zoneSpecification: ZoneSpecification(
@@ -25,19 +24,14 @@ void f() {
     // showIndexes: false,
     maxLines: 20,
     // maxLines: 1,
+    // dataOnNewLine: false,
+    // dataSectionName: '',
+    sectionNameFormatter: (theme, value) => '$value:',
   );
 
-  // final buf = StringBuffer();
   final log = Logger('app')
     ..level = LogLevels.all
     ..publisher = ConsoleLogPrinter(
-      // output: (line) => buf
-      //   ..write('\n')
-      //   ..write(line),
-      // outputFinish: () {
-      //   print(buf);
-      //   buf.clear();
-      // },
       theme: theme,
       formatters: [
         const LogSequenceNumFormatter(),
@@ -157,12 +151,12 @@ void f() {
         tags: ['post', 'api'],
       );
       networkLog[level].log(
-        '[ok][[200]][/ok] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
+        '[success][200 OK][/success] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
         tags: ['response', 'api'],
         data: LoggableObject(succesResponse, collectionMaxCount: 2),
       );
       log[level].log(
-        '[error][[500]][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
+        '[error][500][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
         tags: ['response', 'api'],
         data: errorResponse,
       );
@@ -229,41 +223,51 @@ void f() {
   };
 
   log.v('json', data: LoggableObject(json, collectionMaxCount: 2));
-  log.d('json', data: LoggableObject(json, collectionMaxCount: 2));
+  log.d('', data: LoggableNamedData('JSON', json, collectionMaxCount: 2));
+  log.d('', data: LoggableObject(json, collectionMaxCount: 2));
   log.i('json', data: LoggableObject(json, collectionMaxCount: 2));
 
-  List<Object?> list(List<Object?> value) => [
+  const list = [
+    [
+      [
         [
           [
             [
               [
-                [
-                  [
-                    value,
-                  ]
-                ]
+                [123],
               ]
             ]
           ]
         ]
-      ];
+      ]
+    ]
+  ];
 
   for (final l in LogLevels.values) {
-    log[l].log('list', data: LoggableObject(list([123])));
+    log[l].log('list', data: LoggableObject(list));
   }
+  const list1 = [123, 234, 345];
+  final list2 = [list1, ...list1];
+  final list3 = [list2, ...list1];
+  final list4 = [list3, ...list1];
   for (final l in LogLevels.values) {
     log[l].log(
-      'list',
-      data: LoggableObject(list([123, 234, 345, 456]), collectionMaxCount: 3),
+      list4,
+      data: LoggableObject(list4, collectionMaxCount: 2, showIndexes: true),
     );
+    // log[l].log(
+    //   'list',
+    //   data: LoggableObject(list([123, 234, 345, 456]), collectionMaxCount: 3),
+    // );
   }
 
-  log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
+  log.d('LogTheme', data: theme);
+  // log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
   log.d('   Debug LogLevelTheme', data: theme[LogLevels.debug]);
-  log.d('    Info LogLevelTheme', data: theme[LogLevels.info]);
-  log.w(' Warning LogLevelTheme', data: theme[LogLevels.warning]);
-  log.e('   Error LogLevelTheme', data: theme[LogLevels.error]);
-  log.critical('Critical LogLevelTheme', data: theme[LogLevels.critical]);
+  // log.d('    Info LogLevelTheme', data: theme[LogLevels.info]);
+  // log.w(' Warning LogLevelTheme', data: theme[LogLevels.warning]);
+  // log.e('   Error LogLevelTheme', data: theme[LogLevels.error]);
+  // log.critical('Critical LogLevelTheme', data: theme[LogLevels.critical]);
 }
 
 final class LoggableTest with Loggable {

@@ -1,10 +1,7 @@
 part of 'log_theme.dart';
 
 final class LogLevelTheme with Loggable {
-  static const String defaultColon = ':';
-  static const String defaultEllipsis = '…';
-  static const String defaultLineBreak = '-';
-  static const String defaultPadding = ' ';
+  static final _mainThemeExpando = Expando<LogTheme>();
 
   final ansi.Style normalStyle;
   final ansi.Style boldStyle;
@@ -20,13 +17,9 @@ final class LogLevelTheme with Loggable {
   final ansi.Style tagsStyle;
   final ansi.Style controlCodesStyle;
   final ansi.Style punctuationStyle;
-  final String colon;
   final ansi.Style colonStyle;
-  final String ellipsis;
   final ansi.Style ellipsisStyle;
-  final String lineBreak;
   final ansi.Style lineBreakStyle;
-  final String padding;
   final ansi.Style paddingStyle;
   final ansi.Style dataSectionStyle;
   final ansi.Style dataNameStyle;
@@ -36,8 +29,6 @@ final class LogLevelTheme with Loggable {
   final List<ansi.Style> dataBracketsStyles;
   final List<ansi.Style> dataDescriptionStyles;
   final List<ansi.Style> dataPunctuationStyles;
-  final bool showCount;
-  final bool showIndexes;
 
   LogLevelTheme({
     this.normalStyle = ansi.Style.terminalColors,
@@ -49,18 +40,14 @@ final class LogLevelTheme with Loggable {
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
     this.messageStyles = const {},
-    this.valueFormatter = const ControlCodeLogPreFormatter(),
-    this.messageFormatter = const BbCodeLogPreFormatter(),
+    this.valueFormatter = const ControlCodeFormatter(),
+    this.messageFormatter = const BbCodeFormatter(),
     ansi.Style? tagsStyle,
     ansi.Style? controlCodesStyle,
     ansi.Style? punctuationStyle,
-    this.colon = defaultColon,
     ansi.Style? colonStyle,
-    this.ellipsis = defaultEllipsis,
     ansi.Style? ellipsisStyle,
-    this.lineBreak = defaultLineBreak,
     ansi.Style? lineBreakStyle,
-    this.padding = defaultPadding,
     ansi.Style? paddingStyle,
     ansi.Style? sectionStyle,
     ansi.Style? nameStyle,
@@ -70,8 +57,6 @@ final class LogLevelTheme with Loggable {
     List<ansi.Style>? bracketsStyles,
     List<ansi.Style>? descriptionStyles,
     List<ansi.Style>? punctuationStyles,
-    this.showCount = true,
-    this.showIndexes = true,
   })  : boldStyle = boldStyle ?? normalStyle.bold,
         dimStyle = dimStyle ?? normalStyle.dim,
         superDimStyle = superDimStyle ?? normalStyle,
@@ -92,16 +77,11 @@ final class LogLevelTheme with Loggable {
             ),
         controlCodesStyle = controlCodesStyle ?? const ansi.NoStyle(),
         punctuationStyle = punctuationStyle ?? const ansi.NoStyle(),
-        assert(!colon.ansiHasEscapeCodes),
         colonStyle = colonStyle ?? punctuationStyle ?? const ansi.NoStyle(),
-        assert(!ellipsis.ansiHasEscapeCodes),
         ellipsisStyle =
             ellipsisStyle ?? punctuationStyle ?? const ansi.NoStyle(),
-        assert(!lineBreak.ansiHasEscapeCodes),
         lineBreakStyle =
             lineBreakStyle ?? punctuationStyle ?? const ansi.NoStyle(),
-        assert(!padding.ansiHasEscapeCodes),
-        assert(padding.length == 1),
         paddingStyle = paddingStyle ?? punctuationStyle ?? const ansi.NoStyle(),
         dataSectionStyle = sectionStyle ?? const ansi.NoStyle(),
         dataNameStyle = nameStyle ?? const ansi.NoStyle(),
@@ -132,13 +112,9 @@ final class LogLevelTheme with Loggable {
     required this.tagsStyle,
     required this.controlCodesStyle,
     required this.punctuationStyle,
-    this.colon = defaultColon,
     required this.colonStyle,
-    this.ellipsis = defaultEllipsis,
     required this.ellipsisStyle,
-    this.lineBreak = defaultLineBreak,
     required this.lineBreakStyle,
-    this.padding = defaultPadding,
     required this.paddingStyle,
     required this.dataSectionStyle,
     required this.dataNameStyle,
@@ -148,29 +124,40 @@ final class LogLevelTheme with Loggable {
     required this.dataBracketsStyles,
     required this.dataDescriptionStyles,
     required this.dataPunctuationStyles,
-    required this.showCount,
-    required this.showIndexes,
   });
 
-  String get styledColon => colonStyle(colon);
+  void attach(LogTheme parent) {
+    _mainThemeExpando[this] = parent;
+  }
 
-  AnsiPair get colonAnsiPair => AnsiPair(colon, colonStyle);
+  LogTheme get common => _mainThemeExpando[this] ?? LogTheme.noColors;
 
-  String get styledEllipsis => ellipsisStyle(ellipsis);
+  String get styledColon => colonStyle(common.colon);
 
-  AnsiPair get ellipsisAnsiPair => AnsiPair(ellipsis, ellipsisStyle);
+  AnsiPair get colonAnsiPair => AnsiPair(common.colon, colonStyle);
 
-  String get styledLineBreak => lineBreakStyle(lineBreak);
+  String get styledEllipsis => ellipsisStyle(common.ellipsis);
 
-  AnsiPair get lineBreakAnsiPair => AnsiPair(lineBreak, lineBreakStyle);
+  AnsiPair get ellipsisAnsiPair => AnsiPair(common.ellipsis, ellipsisStyle);
 
-  String get styledPadding => paddingStyle(padding);
+  String get styledLineBreak => lineBreakStyle(common.lineBreak);
 
-  AnsiPair get paddingAnsiPair => AnsiPair(padding, paddingStyle);
+  AnsiPair get lineBreakAnsiPair => AnsiPair(common.lineBreak, lineBreakStyle);
+
+  String get styledPadding => paddingStyle(common.padding);
+
+  AnsiPair get paddingAnsiPair => AnsiPair(common.padding, paddingStyle);
 
   String formatValue(String value) => valueFormatter(this, value);
 
   String formatMessage(String value) => messageFormatter(this, value);
+
+  String formatSectionName(String name) =>
+      common.sectionNameFormatter(this, name);
+
+  String formatIndex(int index) => common.indexFormatter(this, index);
+
+  String formatCount(int count) => common.countFormatter(this, count);
 
   ansi.Style dataBracketsStyle(int level) =>
       dataBracketsStyles[level % dataBracketsStyles.length];
@@ -191,8 +178,8 @@ final class LogLevelTheme with Loggable {
     timeStyle: ansi.NoStyle(),
     pathStyle: ansi.NoStyle(),
     messageStyles: {},
-    valueFormatter: ControlCodeLogPreFormatter(),
-    messageFormatter: BbCodeLogPreFormatter(),
+    valueFormatter: ControlCodeFormatter(),
+    messageFormatter: BbCodeFormatter(),
     tagsStyle: ansi.NoStyle(),
     controlCodesStyle: ansi.NoStyle(),
     punctuationStyle: ansi.NoStyle(),
@@ -208,8 +195,6 @@ final class LogLevelTheme with Loggable {
     dataBracketsStyles: [ansi.NoStyle()],
     dataDescriptionStyles: [ansi.NoStyle()],
     dataPunctuationStyles: [ansi.NoStyle()],
-    showCount: true,
-    showIndexes: true,
   );
 
   LogLevelTheme copyWith({
@@ -245,8 +230,6 @@ final class LogLevelTheme with Loggable {
     List<ansi.Style>? dataBracketsStyles,
     List<ansi.Style>? dataDescriptionStyles,
     List<ansi.Style>? dataPunctuationStyles,
-    bool? showCount,
-    bool? showIndexes,
   }) {
     assert(padding == null || padding.length == 1);
 
@@ -265,13 +248,9 @@ final class LogLevelTheme with Loggable {
       tagsStyle: tagsStyle ?? this.tagsStyle,
       controlCodesStyle: controlCodesStyle ?? this.controlCodesStyle,
       punctuationStyle: punctuationStyle ?? this.punctuationStyle,
-      colon: colon ?? this.colon,
       colonStyle: colonStyle ?? this.colonStyle,
-      ellipsis: ellipsis ?? this.ellipsis,
       ellipsisStyle: ellipsisStyle ?? this.ellipsisStyle,
-      lineBreak: lineBreak ?? this.lineBreak,
       lineBreakStyle: lineBreakStyle ?? this.lineBreakStyle,
-      padding: padding ?? this.padding,
       paddingStyle: paddingStyle ?? this.paddingStyle,
       dataSectionStyle: dataSectionStyle ?? this.dataSectionStyle,
       dataNameStyle: dataNameStyle ?? this.dataNameStyle,
@@ -283,8 +262,6 @@ final class LogLevelTheme with Loggable {
           dataDescriptionStyles ?? this.dataDescriptionStyles,
       dataPunctuationStyles:
           dataPunctuationStyles ?? this.dataPunctuationStyles,
-      showCount: showCount ?? this.showCount,
-      showIndexes: showIndexes ?? this.showIndexes,
     );
   }
 
@@ -305,13 +282,9 @@ final class LogLevelTheme with Loggable {
       ..style('tagsStyle', tagsStyle)
       ..style('controlCodesStyle', controlCodesStyle)
       ..style('punctuationStyle', punctuationStyle)
-      ..prop('colon', colon, view: '"${colonStyle(colon)}"')
       ..style('colonStyle', colonStyle)
-      ..prop('ellipsis', ellipsis, view: '"${ellipsisStyle(ellipsis)}"')
       ..style('ellipsisStyle', ellipsisStyle)
-      ..prop('lineBreak', lineBreak, view: '"${lineBreakStyle(lineBreak)}"')
       ..style('lineBreakStyle', lineBreakStyle)
-      ..prop('padding', padding, view: '"${paddingStyle(padding)}"')
       ..style('paddingStyle', paddingStyle)
       ..style('dataSectionStyle', dataSectionStyle)
       ..style('dataNameStyle', dataNameStyle)
@@ -320,10 +293,7 @@ final class LogLevelTheme with Loggable {
       ..style('dataUnitsStyle', dataUnitsStyle)
       ..styles('dataBracketsStyles', dataBracketsStyles, (_) => '[')
       ..styles('dataDescriptionStyles', dataDescriptionStyles, (i) => '$i')
-      ..styles('dataPunctuationStyles', dataPunctuationStyles, (_) => ',')
-      ..prop('showCount', showCount)
-      ..prop('showIndexes', showIndexes)
-      ..prop('test', null, view: 'abc\ndef');
+      ..styles('dataPunctuationStyles', dataPunctuationStyles, (_) => ',');
   }
 }
 

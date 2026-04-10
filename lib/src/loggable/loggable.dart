@@ -37,8 +37,8 @@ mixin Loggable {
     bool? showIndexes,
     String? units,
   }) {
-    showCount ??= theme.showCount;
-    showIndexes ??= theme.showIndexes;
+    showCount ??= theme.common.showCount;
+    showIndexes ??= theme.common.showIndexes;
 
     final brackets = theme.dataBracketsStyle(level);
     final punctuation = theme.dataPunctuationStyle(level);
@@ -129,7 +129,7 @@ mixin Loggable {
             showIndexes: obj.showIndexes ?? showIndexes,
             units: obj.units ?? units,
           );
-          return '${theme.dataSectionStyle('[${e.key}]')} $value';
+          return '${theme.dataSectionStyle(theme.formatSectionName(e.key))} $value';
         }).join(punctuation(', ')),
       _ => '${theme.formatValue(obj.toString())}${units2str()}',
     };
@@ -217,8 +217,8 @@ mixin Loggable {
     assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
 
-    showIndexes ??= theme.showIndexes;
-    showCount ??= theme.showCount;
+    showIndexes ??= theme.common.showIndexes;
+    showCount ??= theme.common.showCount;
 
     final brackets = theme.dataBracketsStyle(level);
     final description = theme.dataDescriptionStyle(level);
@@ -236,7 +236,7 @@ mixin Loggable {
           units: units,
         );
 
-    String index2str(int index) => description(_index2str(index));
+    String index2str(int index) => description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
@@ -245,7 +245,7 @@ mixin Loggable {
     var buf = StringBuffer(brackets(start));
     var startLength = start.length;
     if (count > 1 && showCount) {
-      final prefix = '(n=$count) ';
+      final prefix = theme.formatCount(count);
       startLength += prefix.length;
       buf.write(description(prefix));
     }
@@ -279,7 +279,7 @@ mixin Loggable {
           var length = startLength +
               first.lengthWithoutEscapeCodes +
               2 +
-              theme.ellipsis.length +
+              theme.common.ellipsis.length +
               2 +
               last.lengthWithoutEscapeCodes +
               end.length;
@@ -294,7 +294,7 @@ mixin Loggable {
                 : obj2str(iterator.current);
             length += 2 + item.lengthWithoutEscapeCodes;
             if (maxLength != null && length > maxLength) {
-              if (length - 2 - theme.ellipsis.length > maxLength) {
+              if (length - 2 - theme.common.ellipsis.length > maxLength) {
                 break;
               } else {
                 copy ??= (StringBuffer(buf.toString()), index);
@@ -314,7 +314,7 @@ mixin Loggable {
 
             buf
               ..write(delimiter)
-              ..write(punctuation(theme.ellipsis));
+              ..write(punctuation(theme.common.ellipsis));
           }
 
           buf
@@ -352,7 +352,7 @@ mixin Loggable {
     assert(maxCount == null || maxCount >= 2);
     assert(maxLength == null || maxLength > 0);
 
-    showIndexes ??= theme.showIndexes;
+    showIndexes ??= theme.common.showIndexes;
 
     final brackets = theme.dataBracketsStyle(level);
     final description = theme.dataDescriptionStyle(level);
@@ -369,7 +369,7 @@ mixin Loggable {
           units: units,
         );
 
-    String index2str(int index) => description(_index2str(index));
+    String index2str(int index) => description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
@@ -404,7 +404,7 @@ mixin Loggable {
           var length = start.length +
               first.lengthWithoutEscapeCodes +
               2 +
-              theme.ellipsis.length +
+              theme.common.ellipsis.length +
               end.length;
           var truncated = false;
           (StringBuffer, int)? copy;
@@ -415,7 +415,7 @@ mixin Loggable {
                 : obj2str(iterator.current);
             length += 2 + item.lengthWithoutEscapeCodes;
             if (maxLength != null && length > maxLength) {
-              if (length - 2 - theme.ellipsis.length > maxLength) {
+              if (length - 2 - theme.common.ellipsis.length > maxLength) {
                 truncated = true;
                 break;
               } else {
@@ -438,7 +438,7 @@ mixin Loggable {
 
             buf
               ..write(delimiter)
-              ..write(punctuation(theme.ellipsis));
+              ..write(punctuation(theme.common.ellipsis));
           }
         }
       }
@@ -449,8 +449,6 @@ mixin Loggable {
     return buf.toString();
   }
 
-  static String _index2str(int index) => '$index:';
-
   static String units2str(
     String? units,
     LogLevelTheme theme,
@@ -459,4 +457,14 @@ mixin Loggable {
 
     return theme.dataUnitsStyle(theme.formatValue(unitsStr));
   }
+
+  // static final _reDigits = RegExp('[0-9]');
+  // static final _normal0Code = '0'.codeUnitAt(0);
+  // static final _small0Code = '₀'.codeUnitAt(0);
+  // static String subscript(int n) => n.toString().replaceAllMapped(
+  //       _reDigits,
+  //       (m) => String.fromCharCode(
+  //         m[0]!.codeUnitAt(0) - _normal0Code + _small0Code,
+  //       ),
+  //     );
 }

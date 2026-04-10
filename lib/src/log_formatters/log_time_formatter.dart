@@ -84,12 +84,7 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) {
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
@@ -106,7 +101,7 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
       log,
       theme,
       [style(timeStr)],
-      constraints: constraints.restrict(maxLength),
+      constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );
@@ -138,12 +133,7 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) {
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
@@ -154,7 +144,7 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
       log,
       theme,
       [style('$open${time.toIso8601String()}$close')],
-      constraints: constraints.restrict(maxLength),
+      constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );
@@ -188,12 +178,7 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) {
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
@@ -207,7 +192,7 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
       log,
       theme,
       [style(timeStr)],
-      constraints: constraints.restrict(maxLength),
+      constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

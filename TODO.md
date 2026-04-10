@@ -1,10 +1,10 @@
 TODO
 
 - stackTrace !!!
+
 - Loggable: prop, который можно пропустить, т.к. он выведен через view
   (не для UI): hiddenProp?
 - Loggable: виртуальный prop (не для UI): virtualProp?
-
 - add no_data для data (?)
 - добавить active/inactive с возможностью раздельного форматирования
   - например, неактивные выводить в одну строку (соответственно, раздельные maxLength, maxLines)

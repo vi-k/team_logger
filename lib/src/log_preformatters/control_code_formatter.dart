@@ -4,12 +4,10 @@ import '../loggable/loggable.dart';
 import '../theme/log_theme.dart';
 import 'log_pre_formatter.dart';
 
-final class ControlCodeLogPreFormatter
-    with Loggable
-    implements LogPreFormatter {
+final class ControlCodeFormatter with Loggable implements LogPreFormatter {
   final bool excludeEscCode;
 
-  const ControlCodeLogPreFormatter({this.excludeEscCode = true});
+  const ControlCodeFormatter({this.excludeEscCode = true});
 
   @override
   String call(LogLevelTheme theme, String text) {

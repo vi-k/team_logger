@@ -2,10 +2,10 @@ import '../loggable/loggable.dart';
 import '../theme/log_theme.dart';
 import 'log_pre_formatter.dart';
 
-final class BbCodeLogPreFormatter with Loggable implements LogPreFormatter {
+final class BbCodeFormatter with Loggable implements LogPreFormatter {
   static final _reExpando = Expando<RegExp>();
 
-  const BbCodeLogPreFormatter();
+  const BbCodeFormatter();
 
   @override
   String call(LogLevelTheme theme, String text) {
@@ -13,9 +13,11 @@ final class BbCodeLogPreFormatter with Loggable implements LogPreFormatter {
     var last = 0;
 
     final re = _reExpando[theme] ??= RegExp(
-      r'(?<prefix>(?:\[\[|\]\]|.)*?)\[(?<tag>'
+      // r'(?<prefix>(?:\[\[|\]\]|.)*?)\[(?<tag>'
+      r'(?<prefix>(?:.)*?)\[(?<tag>'
       '${theme.messageStyles.keys.join('|')}'
-      r')\](?<content>(?:\[\[|\]\]|.)*?)\[\/\k<tag>\]',
+      // r')\](?<content>(?:\[\[|\]\]|.)*?)\[\/\k<tag>\]',
+      r')\](?<content>(?:.)*?)\[\/\k<tag>\]',
       dotAll: true,
     );
     final matches = re.allMatches(text);
@@ -42,7 +44,8 @@ final class BbCodeLogPreFormatter with Loggable implements LogPreFormatter {
       buf.write(text.substring(last));
     }
 
-    return buf.toString().replaceAll('[[', '[').replaceAll(']]', ']');
+    // return buf.toString().replaceAll('[[', '[').replaceAll(']]', ']');
+    return buf.toString();
   }
 
   @override

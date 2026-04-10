@@ -7,11 +7,6 @@ final class NoFormatter implements LogFormatter {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) =>
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) =>
       LogFormatterBox.raw(0, ['']);
 }

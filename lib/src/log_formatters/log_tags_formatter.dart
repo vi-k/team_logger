@@ -14,6 +14,7 @@ abstract interface class LogTagsFormatter implements LogDivider {
     String open,
     String close,
     Set<String> commonTags,
+    bool showLevelNameAsTag,
   }) = _LogTagsFormatter;
 }
 
@@ -25,6 +26,7 @@ final class _LogTagsFormatter implements LogTagsFormatter {
   final String open;
   final String close;
   final Set<String> commonTags;
+  final bool showLevelNameAsTag;
 
   const _LogTagsFormatter({
     this.style,
@@ -34,27 +36,27 @@ final class _LogTagsFormatter implements LogTagsFormatter {
     this.open = '',
     this.close = '',
     this.commonTags = const {},
+    this.showLevelNameAsTag = true,
   });
 
   @override
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) {
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.tagsStyle;
-    final logTags = log.tags.map((tag) => ' #$tag').join();
-    final commonTags = this.commonTags.map((tag) => ' #$tag').join();
+    final tags = {...log.tags, ...commonTags};
+    if (showLevelNameAsTag) {
+      tags.add(log.levelName);
+    }
+
+    final tagsStr = tags.map((tag) => ' #$tag').join();
 
     return LogFormatterBox(
       log,
       theme,
-      [style('$open$logTags$commonTags$close')],
-      constraints: constraints.restrict(maxLength),
+      [style('$open$tagsStr$close')],
+      constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

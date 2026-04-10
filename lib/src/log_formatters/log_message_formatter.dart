@@ -1,4 +1,6 @@
 import '../loggable/loggable.dart';
+import '../loggable/loggable_multi_data.dart';
+import '../loggable/loggable_named_data.dart';
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
@@ -28,34 +30,78 @@ final class _LogMessageFormatter implements LogMessageFormatter {
   int get priority => 9999;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) {
-    final message = theme.formatMessage(theme.formatValue(log.message));
-
-    var error = '';
-    if (log.error case final err?) {
-      final errorStr = theme.formatValue(err.toString());
-      final styledStr = theme.formatMessage('[error]$errorStr[/error]');
-
-      error = '${theme.styledColon} $styledStr';
-    }
-
-    final data = switch (log.data) {
-      null => '',
-      final data =>
-        '${theme.styledColon} ${Loggable.objectToString(data, theme: theme)}',
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+    final messageStr = switch (log.message) {
+      '' => '',
+      final message => theme.formatMessage(theme.formatValue(message)),
     };
+
+    final errorStr = switch (log.error) {
+      null => '',
+      final error => theme.formatMessage(theme.formatValue(error.toString())),
+    };
+
+    var dataStr = '';
+    if (log.data case final data?) {
+      var dataSectionName = '';
+
+      switch (data) {
+        case LoggableNamedData():
+          dataSectionName =
+              '${theme.dataSectionStyle(theme.formatSectionName(data.name))} ';
+          dataStr = Loggable.objectToString(
+            data.data,
+            theme: theme,
+            collectionMaxCount: data.collectionMaxCount,
+            collectionMaxLength: data.collectionMaxLength,
+            showCount: data.showCount ?? theme.common.showCount,
+            showIndexes: data.showIndexes ?? theme.common.showIndexes,
+            units: data.units,
+          );
+
+        case LoggableMultiData():
+          dataSectionName = '';
+          dataStr = data.data.entries.map((e) {
+            final value = Loggable.objectToString(
+              e.value,
+              theme: theme,
+              collectionMaxCount: data.collectionMaxCount,
+              collectionMaxLength: data.collectionMaxLength,
+              showCount: data.showCount ?? theme.common.showCount,
+              showIndexes: data.showIndexes ?? theme.common.showIndexes,
+              units: data.units,
+            );
+            return '${theme.dataSectionStyle(theme.formatSectionName(e.key))} $value';
+          }).join(
+            theme.common.dataOnNewLine ? '\n' : theme.punctuationStyle(', '),
+          );
+
+        default:
+          if (theme.common.dataSectionName case final name
+              when name.isNotEmpty) {
+            dataSectionName =
+                '${theme.dataSectionStyle(theme.formatSectionName(name))} ';
+          }
+          dataStr = Loggable.objectToString(data, theme: theme);
+      }
+
+      dataStr = '$dataSectionName$dataStr';
+    }
 
     return LogFormatterBox.fromText(
       log,
       theme,
-      '$message$error$data',
-      maxLines: maxLength,
-      constraints: constraints.restrict(maxLength),
+      '$messageStr'
+      '${messageStr.isEmpty || errorStr.isEmpty //
+          ? errorStr : '${theme.styledColon}'
+              '${theme.common.errorOnNewLine ? '\n' : ' '}'
+              '$errorStr'}'
+      '${messageStr.isEmpty && errorStr.isEmpty || dataStr.isEmpty //
+          ? dataStr : '${theme.styledColon}'
+              '${theme.common.dataOnNewLine ? '\n' : ' '}'
+              '$dataStr'}',
+      maxLines: theme.common.maxLines,
+      constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

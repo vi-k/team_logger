@@ -102,6 +102,7 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   final LevelLogger _critical = LevelLogger(
     level: LogLevels.critical,
     name: 'critical',
+    shortName: '!',
   );
 
   LogFn get v => _v.log;

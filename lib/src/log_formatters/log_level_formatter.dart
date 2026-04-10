@@ -49,12 +49,7 @@ final class _FullLogLevelFormatter implements LogLevelFormatter {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) {
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.levelNameStyle;
     final levelName = upperCase ? log.levelName.toUpperCase() : log.levelName;
 
@@ -62,7 +57,7 @@ final class _FullLogLevelFormatter implements LogLevelFormatter {
       log,
       theme,
       [style('$open$levelName$close')],
-      constraints: constraints.restrict(maxLength),
+      constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );
@@ -92,12 +87,7 @@ final class _ShortLogLevelFormatter implements LogLevelFormatter {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) {
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.levelNameStyle;
     final levelName =
         upperCase ? log.shortLevelName.toUpperCase() : log.shortLevelName;
@@ -106,7 +96,7 @@ final class _ShortLogLevelFormatter implements LogLevelFormatter {
       log,
       theme,
       [style('$open$levelName$close')],
-      constraints: constraints.restrict(maxLength),
+      constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
     );

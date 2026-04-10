@@ -14,8 +14,7 @@ abstract interface class LogFormatter {
   LogFormatterBox call(
     Log log,
     LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
+    int? remainingLength,
   );
 }
 
@@ -85,7 +84,7 @@ final class LogFormatterBox {
       return LogFormatterBox.empty();
     }
 
-    final textWidth = boxWidth - theme.lineBreak.length;
+    final textWidth = boxWidth - theme.common.lineBreak.length;
     if (textWidth <= 0) {
       return LogFormatterBox.raw(boxWidth, [' ' * boxWidth]);
     }
@@ -115,7 +114,7 @@ final class LogFormatterBox {
                   theme,
                   Constraints.exact(textWidth),
                   textAlign: textAlign,
-                )}${' ' * theme.lineBreak.length}',
+                )}${' ' * theme.common.lineBreak.length}',
           );
           start = end;
         } else if (maxLines == null || maxLines > boxLines.length + 1) {

@@ -43,17 +43,12 @@ final class _SingleLineLogDivider implements LogDivider {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) =>
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) =>
       LogFormatterBox(
         log,
         theme,
         [style[log.level](divider)],
-        constraints: constraints.restrict(maxLength),
+        constraints: constraints.restrict(remainingLength),
         showEllipsis: false,
         textAlign: textAlign,
         verticalAlign: verticalAlign,
@@ -77,17 +72,12 @@ final class _FulHeightLogDivider implements LogDivider {
   int get priority => 0;
 
   @override
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? maxLength,
-    int? maxLines,
-  ) =>
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) =>
       LogFormatterBox(
         log,
         theme,
         [style[log.level](divider)],
-        constraints: constraints.restrict(maxLength),
+        constraints: constraints.restrict(remainingLength),
         showEllipsis: false,
         verticalAlign: VerticalAlign.stretch,
       );

@@ -60,6 +60,8 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       _formatters.add(formatter);
       lastFormatter = formatter;
     }
+
+    theme.registerLevelThemes();
   }
 
   @override
@@ -73,8 +75,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     var linesCount = 0;
 
     for (final (index, formatter) in formattersByPriority) {
-      final box = boxes[index] =
-          formatter(log, levelTheme, remainingWidth, theme.maxLines);
+      final box = boxes[index] = formatter(log, levelTheme, remainingWidth);
       linesCount = math.max(linesCount, box.lines.length);
       if (remainingWidth != null) {
         remainingWidth -= box.width;
@@ -89,14 +90,14 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     }
 
     for (final box in boxes) {
-      box!.applyHeight(linesCount);
+      box?.applyHeight(linesCount);
     }
 
     outputStart();
     final printer = _printers[log.level]!;
     for (var i = 0; i < linesCount; i++) {
       for (final box in boxes) {
-        printer.write(box!.lines[i]);
+        printer.write(box?.lines[i]);
       }
       printer.writeln();
     }
