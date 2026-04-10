@@ -22,6 +22,7 @@ void f() {
     // paddingStyle: const LogStyle.oneForAll(ansi.rgb012),
     maxLength: 140,
     // showIndexes: false,
+    // showCount: false,
     maxLines: 20,
     // maxLines: 1,
   );
@@ -35,7 +36,8 @@ void f() {
         const LogLevelFormatter.short(),
         const LogTimeFormatter.onlyTime(),
         const LogPathFormatter(),
-        const LogMessageFormatter(constraints: Constraints(max: 80)),
+        const LogMessageFormatter(),
+        // const LogMessageFormatter(constraints: Constraints(max: 80)),
         const LogTagsFormatter(commonTags: {'log'}),
       ],
     );
@@ -250,7 +252,7 @@ void f() {
   for (final l in LogLevels.values) {
     log[l].log(
       list4,
-      data: LoggableObject(list4, collectionMaxCount: 2, showIndexes: true),
+      data: LoggableObject(list4, collectionMaxCount: 2),
     );
     // log[l].log(
     //   'list',

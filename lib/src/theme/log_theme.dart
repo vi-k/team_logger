@@ -35,8 +35,8 @@ final class LogTheme with Loggable {
   final String ellipsis;
   final String lineBreak;
   final String padding;
-  final bool errorOnNewLine;
-  final bool dataOnNewLine;
+  final bool _errorOnNewLine;
+  final bool _dataOnNewLine;
   final String dataSectionName;
   final bool showCount;
   final bool showIndexes;
@@ -57,8 +57,8 @@ final class LogTheme with Loggable {
     this.ellipsis = defaultEllipsis,
     this.lineBreak = defaultLineBreak,
     this.padding = defaultPadding,
-    this.errorOnNewLine = false,
-    this.dataOnNewLine = true,
+    bool errorOnNewLine = false,
+    bool dataOnNewLine = true,
     this.dataSectionName = defaulDataSectionName,
     this.showCount = true,
     this.showIndexes = true,
@@ -69,7 +69,9 @@ final class LogTheme with Loggable {
         assert(!ellipsis.ansiHasEscapeCodes),
         assert(!lineBreak.ansiHasEscapeCodes),
         assert(!padding.ansiHasEscapeCodes),
-        assert(padding.length == 1);
+        assert(padding.length == 1),
+        _errorOnNewLine = errorOnNewLine,
+        _dataOnNewLine = dataOnNewLine;
 
   const LogTheme._({
     this.verbose = LogLevelTheme.noColors,
@@ -84,8 +86,8 @@ final class LogTheme with Loggable {
         ellipsis = defaultEllipsis,
         lineBreak = defaultLineBreak,
         padding = defaultPadding,
-        errorOnNewLine = false,
-        dataOnNewLine = true,
+        _errorOnNewLine = false,
+        _dataOnNewLine = true,
         dataSectionName = defaulDataSectionName,
         showCount = true,
         showIndexes = true,
@@ -101,6 +103,10 @@ final class LogTheme with Loggable {
     error.attach(this);
     critical.attach(this);
   }
+
+  bool get errorOnNewLine => maxLines != 1 && _errorOnNewLine;
+
+  bool get dataOnNewLine => maxLines != 1 && _dataOnNewLine;
 
   LogLevelTheme operator [](int level) => switch (level) {
         LogLevels.verbose => verbose,
