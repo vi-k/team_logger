@@ -11,11 +11,7 @@ import 'text_align.dart';
 abstract interface class LogFormatter {
   int get priority;
 
-  LogFormatterBox call(
-    Log log,
-    LogLevelTheme theme,
-    int? remainingLength,
-  );
+  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength);
 }
 
 enum VerticalAlign { top, bottom, center, stretch }

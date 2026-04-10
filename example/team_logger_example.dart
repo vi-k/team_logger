@@ -24,9 +24,6 @@ void f() {
     // showIndexes: false,
     maxLines: 20,
     // maxLines: 1,
-    // dataOnNewLine: false,
-    // dataSectionName: '',
-    sectionNameFormatter: (theme, value) => '$value:',
   );
 
   final log = Logger('app')
