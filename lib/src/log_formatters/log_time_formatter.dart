@@ -81,9 +81,6 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  int get priority => 0;
-
-  @override
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
@@ -130,9 +127,6 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  int get priority => 0;
-
-  @override
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
@@ -175,9 +169,6 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  int get priority => 0;
-
-  @override
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
@@ -195,6 +186,7 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
+      debugName: 'time',
     );
   }
 }

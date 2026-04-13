@@ -27,9 +27,6 @@ final class _LogMessageFormatter implements LogMessageFormatter {
   });
 
   @override
-  int get priority => 9999;
-
-  @override
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final messageStr = switch (log.message) {
       '' => '',
@@ -104,6 +101,7 @@ final class _LogMessageFormatter implements LogMessageFormatter {
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
+      debugName: 'message',
     );
   }
 }

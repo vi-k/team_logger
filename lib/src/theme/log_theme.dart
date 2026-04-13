@@ -6,6 +6,7 @@ import '../log_preformatters/bb_code_formatter.dart';
 import '../log_preformatters/control_code_formatter.dart';
 import '../log_preformatters/log_pre_formatter.dart';
 import '../loggable/loggable.dart';
+import '../logger/log.dart';
 import '../logger/log_levels.dart';
 
 part 'log_level_theme.dart';
@@ -13,7 +14,7 @@ part 'log_style.dart';
 
 typedef LogThemeFormatter<T extends Object?> = String Function(
   LogLevelTheme theme,
-  T value,
+  T,
 );
 
 final class LogTheme with Loggable {
@@ -43,6 +44,9 @@ final class LogTheme with Loggable {
   final LogThemeFormatter<String> sectionNameFormatter;
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
+  final Set<String> tags;
+  final bool includeLevelNameTag;
+  final LogThemeFormatter<Log> levelNameTagFormatter;
 
   LogTheme({
     this.verbose = LogLevelTheme.noColors,
@@ -65,6 +69,9 @@ final class LogTheme with Loggable {
     this.sectionNameFormatter = _defaultSectionNameFormatter,
     this.countFormatter = _defaultCountFormatter,
     this.indexFormatter = _defaultIndexFormatter,
+    this.tags = const {},
+    this.includeLevelNameTag = true,
+    this.levelNameTagFormatter = _defaultLevelNameTagFormatter,
   })  : assert(!colon.ansiHasEscapeCodes),
         assert(!ellipsis.ansiHasEscapeCodes),
         assert(!lineBreak.ansiHasEscapeCodes),
@@ -93,7 +100,10 @@ final class LogTheme with Loggable {
         showIndexes = true,
         sectionNameFormatter = _defaultSectionNameFormatter,
         countFormatter = _defaultCountFormatter,
-        indexFormatter = _defaultIndexFormatter;
+        indexFormatter = _defaultIndexFormatter,
+        tags = const {'log'},
+        includeLevelNameTag = true,
+        levelNameTagFormatter = _defaultLevelNameTagFormatter;
 
   void registerLevelThemes() {
     verbose.attach(this);
@@ -680,15 +690,7 @@ final class LogTheme with Loggable {
       pathStyle: ansi.NoStyle(),
       messageStyles: {
         'b': ansi.Style(bold: true),
-        'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
+        'success': ansi.NoStyle(),
         'error': _inactiveErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
@@ -720,15 +722,7 @@ final class LogTheme with Loggable {
       pathStyle: ansi.NoStyle(),
       messageStyles: {
         'b': ansi.Style(bold: true),
-        'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
+        'success': ansi.NoStyle(),
         'error': _inactiveErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
@@ -760,15 +754,7 @@ final class LogTheme with Loggable {
       pathStyle: ansi.NoStyle(),
       messageStyles: {
         'b': ansi.Style(bold: true),
-        'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
+        'success': ansi.NoStyle(),
         'error': _inactiveErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
@@ -800,15 +786,7 @@ final class LogTheme with Loggable {
       pathStyle: ansi.NoStyle(),
       messageStyles: {
         'b': ansi.Style(bold: true),
-        'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
+        'success': ansi.NoStyle(),
         'error': _inactiveErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
@@ -840,15 +818,7 @@ final class LogTheme with Loggable {
       pathStyle: ansi.NoStyle(),
       messageStyles: {
         'b': ansi.Style(bold: true),
-        'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
+        'success': ansi.NoStyle(),
         'error': _inactiveErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
@@ -880,15 +850,7 @@ final class LogTheme with Loggable {
       pathStyle: ansi.NoStyle(),
       messageStyles: {
         'b': ansi.Style(bold: true),
-        'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
+        'success': ansi.NoStyle(),
         'error': _inactiveErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
@@ -923,6 +885,9 @@ final class LogTheme with Loggable {
   static String _defaultIndexFormatter(LogLevelTheme theme, int index) =>
       '${subscript(index)}${theme.common.colon}';
 
+  static String _defaultLevelNameTagFormatter(LogLevelTheme theme, Log log) =>
+      log.levelName;
+
   static final _reDigits = RegExp('[0-9]');
   static final _normal0Code = '0'.codeUnitAt(0);
   static final _small0Code = '₀'.codeUnitAt(0);
@@ -954,6 +919,9 @@ final class LogTheme with Loggable {
     LogThemeFormatter<String>? sectionNameFormatter,
     LogThemeFormatter<int>? countFormatter,
     LogThemeFormatter<int>? indexFormatter,
+    Set<String>? tags,
+    bool? includeLevelNameTag,
+    LogThemeFormatter<Log>? levelNameTagFormatter,
   }) =>
       LogTheme(
         verbose: verbose ?? this.verbose,
@@ -976,6 +944,10 @@ final class LogTheme with Loggable {
         sectionNameFormatter: sectionNameFormatter ?? this.sectionNameFormatter,
         countFormatter: countFormatter ?? this.countFormatter,
         indexFormatter: indexFormatter ?? this.indexFormatter,
+        tags: tags ?? this.tags,
+        includeLevelNameTag: includeLevelNameTag ?? this.includeLevelNameTag,
+        levelNameTagFormatter:
+            levelNameTagFormatter ?? this.levelNameTagFormatter,
       );
 
   @override
@@ -1027,6 +999,8 @@ final class LogTheme with Loggable {
       ..prop('dataOnNewLine', dataOnNewLine)
       ..prop('dataSectionName', dataSectionName)
       ..prop('showCount', showCount)
-      ..prop('showIndexes', showIndexes);
+      ..prop('showIndexes', showIndexes)
+      ..prop('tags', tags)
+      ..prop('includeLevelNameTag', includeLevelNameTag);
   }
 }

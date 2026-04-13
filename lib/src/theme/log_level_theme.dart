@@ -29,6 +29,7 @@ final class LogLevelTheme with Loggable {
   final List<ansi.Style> dataBracketsStyles;
   final List<ansi.Style> dataDescriptionStyles;
   final List<ansi.Style> dataPunctuationStyles;
+  final Set<String> tags;
 
   LogLevelTheme({
     this.normalStyle = ansi.Style.terminalColors,
@@ -57,6 +58,7 @@ final class LogLevelTheme with Loggable {
     List<ansi.Style>? bracketsStyles,
     List<ansi.Style>? descriptionStyles,
     List<ansi.Style>? punctuationStyles,
+    this.tags = const {},
   })  : boldStyle = boldStyle ?? normalStyle.bold,
         dimStyle = dimStyle ?? normalStyle.dim,
         superDimStyle = superDimStyle ?? normalStyle,
@@ -124,6 +126,7 @@ final class LogLevelTheme with Loggable {
     required this.dataBracketsStyles,
     required this.dataDescriptionStyles,
     required this.dataPunctuationStyles,
+    this.tags = const {},
   });
 
   void attach(LogTheme parent) {
@@ -159,6 +162,8 @@ final class LogLevelTheme with Loggable {
 
   String formatCount(int count) => common.countFormatter(this, count);
 
+  String formatLevelNameTag(Log log) => common.levelNameTagFormatter(this, log);
+
   ansi.Style dataBracketsStyle(int level) =>
       dataBracketsStyles[level % dataBracketsStyles.length];
 
@@ -167,6 +172,13 @@ final class LogLevelTheme with Loggable {
 
   ansi.Style dataPunctuationStyle(int level) =>
       dataPunctuationStyles[level % dataPunctuationStyles.length];
+
+  Set<String> allTags(Log log) => {
+        ...common.tags,
+        if (common.includeLevelNameTag) formatLevelNameTag(log),
+        ...tags,
+        ...log.tags,
+      };
 
   static const LogLevelTheme noColors = LogLevelTheme._(
     normalStyle: ansi.NoStyle(),
@@ -230,6 +242,7 @@ final class LogLevelTheme with Loggable {
     List<ansi.Style>? dataBracketsStyles,
     List<ansi.Style>? dataDescriptionStyles,
     List<ansi.Style>? dataPunctuationStyles,
+    Set<String>? tags,
   }) {
     assert(padding == null || padding.length == 1);
 
@@ -262,6 +275,7 @@ final class LogLevelTheme with Loggable {
           dataDescriptionStyles ?? this.dataDescriptionStyles,
       dataPunctuationStyles:
           dataPunctuationStyles ?? this.dataPunctuationStyles,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -293,7 +307,8 @@ final class LogLevelTheme with Loggable {
       ..style('dataUnitsStyle', dataUnitsStyle)
       ..styles('dataBracketsStyles', dataBracketsStyles, (_) => '[')
       ..styles('dataDescriptionStyles', dataDescriptionStyles, (i) => '$i')
-      ..styles('dataPunctuationStyles', dataPunctuationStyles, (_) => ',');
+      ..styles('dataPunctuationStyles', dataPunctuationStyles, (_) => ',')
+      ..prop('tags', tags);
   }
 }
 

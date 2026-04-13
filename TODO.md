@@ -1,6 +1,7 @@
 TODO
 
-- stackTrace !!!
+- сделать отдельные строки (для стектрейса), каждая формируется со своим
+  maxLength и maxLines: LogRow
 
 - Loggable: prop, который можно пропустить, т.к. он выведен через view
   (не для UI): hiddenProp?

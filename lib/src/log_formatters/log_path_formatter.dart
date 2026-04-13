@@ -33,9 +33,6 @@ final class _LogPathFormatter implements LogPathFormatter {
   });
 
   @override
-  int get priority => 0;
-
-  @override
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.pathStyle;
 
@@ -46,6 +43,7 @@ final class _LogPathFormatter implements LogPathFormatter {
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
+      debugName: 'path',
     );
   }
 }

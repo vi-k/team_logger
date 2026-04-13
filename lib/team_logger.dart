@@ -11,6 +11,7 @@ export 'src/log_formatters/log_level_formatter.dart';
 export 'src/log_formatters/log_message_formatter.dart';
 export 'src/log_formatters/log_path_formatter.dart';
 export 'src/log_formatters/log_sequence_num_formatter.dart';
+export 'src/log_formatters/log_stack_trace_formatter.dart';
 export 'src/log_formatters/log_tags_formatter.dart';
 export 'src/log_formatters/log_time_formatter.dart';
 export 'src/log_formatters/no_formatter.dart';

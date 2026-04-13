@@ -25,6 +25,9 @@ void f() {
     // showCount: false,
     maxLines: 20,
     // maxLines: 1,
+    // includeLevelNameTag: false,
+    // levelNameTagFormatter: (theme, levelName, shortLevelName) =>
+    //     '[$shortLevelName]',
   );
 
   final log = Logger('app')
@@ -33,12 +36,18 @@ void f() {
       theme: theme,
       formatters: [
         const LogSequenceNumFormatter(),
-        const LogLevelFormatter.short(),
+        // const LogLevelFormatter.short(),
         const LogTimeFormatter.onlyTime(),
         const LogPathFormatter(),
         const LogMessageFormatter(),
         // const LogMessageFormatter(constraints: Constraints(max: 80)),
-        const LogTagsFormatter(commonTags: {'log'}),
+      ],
+      stackTraceFormatters: [
+        const LogSequenceNumFormatter(),
+        const LogStackTraceFormatter(),
+      ],
+      tagsFormatters: [
+        const LogTagsFormatter(),
       ],
     );
 
@@ -156,7 +165,7 @@ void f() {
       );
       log[level].log(
         '[error][500][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
-        tags: ['response', 'api'],
+        tags: ['response', 'error'],
         data: errorResponse,
       );
     }
@@ -260,13 +269,19 @@ void f() {
     // );
   }
 
-  log.d('LogTheme', data: theme);
-  // log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
-  log.d('   Debug LogLevelTheme', data: theme[LogLevels.debug]);
-  // log.d('    Info LogLevelTheme', data: theme[LogLevels.info]);
-  // log.w(' Warning LogLevelTheme', data: theme[LogLevels.warning]);
-  // log.e('   Error LogLevelTheme', data: theme[LogLevels.error]);
-  // log.critical('Critical LogLevelTheme', data: theme[LogLevels.critical]);
+  // log.d('LogTheme', data: theme);
+  // // log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
+  log.e(
+    '   Debug LogLevelTheme',
+    data: theme[LogLevels.debug],
+    error: Exception('test'),
+    stackTrace: StackTrace.current,
+  );
+
+  // // log.d('    Info LogLevelTheme', data: theme[LogLevels.info]);
+  // // log.w(' Warning LogLevelTheme', data: theme[LogLevels.warning]);
+  // // log.e('   Error LogLevelTheme', data: theme[LogLevels.error]);
+  // // log.critical('Critical LogLevelTheme', data: theme[LogLevels.critical]);
 }
 
 final class LoggableTest with Loggable {

@@ -33,9 +33,6 @@ final class _LogSequenceNumFormatter implements LogSequenceNumFormatter {
   });
 
   @override
-  int get priority => 0;
-
-  @override
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.sequenceNumStyle;
 
@@ -46,6 +43,7 @@ final class _LogSequenceNumFormatter implements LogSequenceNumFormatter {
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
+      debugName: 'sequence_num',
     );
   }
 }

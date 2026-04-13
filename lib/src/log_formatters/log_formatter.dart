@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ansi_escape_codes/parsing.dart' as ansi;
 
+import '../loggable/loggable.dart';
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
@@ -9,14 +10,13 @@ import 'extensions.dart';
 import 'text_align.dart';
 
 abstract interface class LogFormatter {
-  int get priority;
-
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength);
 }
 
 enum VerticalAlign { top, bottom, center, stretch }
 
-final class LogFormatterBox {
+final class LogFormatterBox with Loggable {
+  final String? debugName;
   final int width;
   final List<String> lines;
   final VerticalAlign verticalAlign;
@@ -29,6 +29,7 @@ final class LogFormatterBox {
     TextAlign textAlign = TextAlign.left,
     VerticalAlign verticalAlign = VerticalAlign.top,
     bool showEllipsis = true,
+    String? debugName,
   }) {
     assert(lines.isNotEmpty, 'lines must not be empty');
 
@@ -48,19 +49,25 @@ final class LogFormatterBox {
         )
         .toList();
 
-    return LogFormatterBox.raw(width, boxLines, verticalAlign);
+    return LogFormatterBox.raw(
+      width,
+      boxLines,
+      verticalAlign: verticalAlign,
+      debugName: debugName,
+    );
   }
 
-  LogFormatterBox.empty()
+  LogFormatterBox.empty({this.debugName})
       : width = 0,
         lines = [],
         verticalAlign = VerticalAlign.top;
 
   LogFormatterBox.raw(
     this.width,
-    this.lines, [
+    this.lines, {
     this.verticalAlign = VerticalAlign.top,
-  ]);
+    this.debugName,
+  });
 
   factory LogFormatterBox.fromText(
     Log log,
@@ -70,6 +77,7 @@ final class LogFormatterBox {
     Constraints constraints = const Constraints.unlimited(),
     TextAlign textAlign = TextAlign.left,
     VerticalAlign verticalAlign = VerticalAlign.top,
+    String? debugName,
   }) {
     final lines = text.split('\n');
     final parsers = lines.map(ansi.Parser.new).toList(growable: false);
@@ -77,12 +85,16 @@ final class LogFormatterBox {
     boxWidth = constraints.apply(boxWidth);
 
     if (boxWidth == 0) {
-      return LogFormatterBox.empty();
+      return LogFormatterBox.empty(debugName: debugName);
     }
 
     final textWidth = boxWidth - theme.common.lineBreak.length;
     if (textWidth <= 0) {
-      return LogFormatterBox.raw(boxWidth, [' ' * boxWidth]);
+      return LogFormatterBox.raw(
+        boxWidth,
+        [' ' * boxWidth],
+        debugName: debugName,
+      );
     }
 
     final boxLines = <String>[];
@@ -140,6 +152,7 @@ final class LogFormatterBox {
       constraints: constraints,
       textAlign: textAlign,
       verticalAlign: verticalAlign,
+      debugName: debugName,
     );
   }
 
@@ -191,5 +204,17 @@ final class LogFormatterBox {
           lines.addAll(List.filled(linesCount - lines.length, lines.last));
         }
     }
+  }
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    if (debugName != null) {
+      data.prop('debugName', debugName, showName: false);
+    }
+
+    data
+      ..prop('width', width)
+      ..prop('lines', lines, view: lines.length.toString())
+      ..prop('verticalAlign', verticalAlign);
   }
 }
