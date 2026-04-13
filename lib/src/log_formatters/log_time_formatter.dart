@@ -15,6 +15,7 @@ abstract interface class LogTimeFormatter implements LogFormatter {
     String close,
     bool microseconds,
     bool utc,
+    bool stretch,
   }) = _DateTimeLogTimeFormatter;
 
   const factory LogTimeFormatter.iso8601({
@@ -26,6 +27,7 @@ abstract interface class LogTimeFormatter implements LogFormatter {
     String open,
     String close,
     bool utc,
+    bool stretch,
   }) = _Iso8601LogTimeFormatter;
 
   const factory LogTimeFormatter.onlyTime({
@@ -38,6 +40,7 @@ abstract interface class LogTimeFormatter implements LogFormatter {
     String close,
     bool microseconds,
     bool utc,
+    bool stretch,
   }) = _OnlyTimeLogTimeFormatter;
 
   static String dateToString(DateTime time) => '${time.year}'
@@ -67,6 +70,7 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
   final String close;
   final bool microseconds;
   final bool utc;
+  final bool stretch;
 
   const _DateTimeLogTimeFormatter({
     this.getTime,
@@ -78,6 +82,7 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
     this.close = '',
     this.microseconds = false,
     this.utc = false,
+    this.stretch = true,
   });
 
   @override
@@ -100,6 +105,7 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
       [style(timeStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
+      verticalFiller: stretch ? theme.common.hiddenStyle(timeStr) : null,
       verticalAlign: verticalAlign,
     );
   }
@@ -114,6 +120,7 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
   final String open;
   final String close;
   final bool utc;
+  final bool stretch;
 
   const _Iso8601LogTimeFormatter({
     this.getTime,
@@ -124,6 +131,7 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
     this.open = '',
     this.close = '',
     this.utc = false,
+    this.stretch = true,
   });
 
   @override
@@ -133,13 +141,15 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
     if (utc) {
       time = time.toUtc();
     }
+    final timeStr = '$open${time.toIso8601String()}$close';
 
     return LogFormatterBox(
       log,
       theme,
-      [style('$open${time.toIso8601String()}$close')],
+      [style(timeStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
+      verticalFiller: stretch ? theme.common.hiddenStyle(timeStr) : null,
       verticalAlign: verticalAlign,
     );
   }
@@ -155,6 +165,7 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
   final String close;
   final bool microseconds;
   final bool utc;
+  final bool stretch;
 
   const _OnlyTimeLogTimeFormatter({
     this.getTime,
@@ -166,6 +177,7 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
     this.close = '',
     this.microseconds = false,
     this.utc = false,
+    this.stretch = true,
   });
 
   @override
@@ -185,6 +197,7 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
       [style(timeStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
+      verticalFiller: stretch ? theme.common.hiddenStyle(timeStr) : null,
       verticalAlign: verticalAlign,
       debugName: 'time',
     );

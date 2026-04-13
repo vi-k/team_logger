@@ -1,50 +1,43 @@
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
-import 'log_divider.dart';
 import 'log_formatter.dart';
 import 'text_align.dart';
 
-abstract interface class LogTagsFormatter implements LogDivider {
-  const factory LogTagsFormatter({
-    LogStyle? style,
-    Constraints constraints,
-    TextAlign textAlign,
-    VerticalAlign verticalAlign,
-    String open,
-    String close,
-  }) = _LogTagsFormatter;
-}
-
-final class _LogTagsFormatter implements LogTagsFormatter {
+final class LogTagsFormatter implements LogFormatter {
   final LogStyle? style;
   final Constraints constraints;
   final TextAlign textAlign;
   final VerticalAlign verticalAlign;
   final String open;
   final String close;
+  final bool stretch;
+  final bool hideTags;
 
-  const _LogTagsFormatter({
+  const LogTagsFormatter({
     this.style,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.stretch,
+    this.verticalAlign = VerticalAlign.top,
     this.open = '',
     this.close = '',
+    this.stretch = true,
+    this.hideTags = true,
   });
 
   @override
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
     final style = this.style?[log.level] ?? theme.tagsStyle;
     final tags = theme.allTags(log);
-    final tagsStr = tags.map((tag) => '#$tag').join(' ');
+    final tagsStr = '$open${tags.map((tag) => '#$tag').join(' ')}$close';
 
     return LogFormatterBox(
       log,
       theme,
-      [style('$open$tagsStr$close')],
+      [if (hideTags) theme.common.hiddenStyle(tagsStr) else style(tagsStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
+      verticalFiller: stretch ? theme.common.hiddenStyle(tagsStr) : null,
       verticalAlign: verticalAlign,
       debugName: 'tags',
     );

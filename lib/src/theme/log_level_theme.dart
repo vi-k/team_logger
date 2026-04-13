@@ -62,8 +62,7 @@ final class LogLevelTheme with Loggable {
   })  : boldStyle = boldStyle ?? normalStyle.bold,
         dimStyle = dimStyle ?? normalStyle.dim,
         superDimStyle = superDimStyle ?? normalStyle,
-        sequenceNumStyle = sequenceNumStyle ??
-            const ansi.Style(foreground: LogTheme._tagsColor),
+        sequenceNumStyle = sequenceNumStyle ?? const ansi.NoStyle(),
         levelNameStyle = levelNameStyle ??
             (normalStyle.foregroundColor == null
                 ? const ansi.NoStyle()
@@ -73,10 +72,7 @@ final class LogLevelTheme with Loggable {
                   )),
         timeStyle = timeStyle ?? const ansi.NoStyle(),
         pathStyle = pathStyle ?? const ansi.NoStyle(),
-        tagsStyle = tagsStyle ??
-            const ansi.Style(
-              foreground: LogTheme._tagsColor,
-            ),
+        tagsStyle = tagsStyle ?? const ansi.NoStyle(),
         controlCodesStyle = controlCodesStyle ?? const ansi.NoStyle(),
         punctuationStyle = punctuationStyle ?? const ansi.NoStyle(),
         colonStyle = colonStyle ?? punctuationStyle ?? const ansi.NoStyle(),
@@ -313,13 +309,13 @@ final class LogLevelTheme with Loggable {
 }
 
 extension on LoggableData {
-  void style(String name, ansi.Style style) {
+  void style(String name, ansi.Style style, {bool showName = false}) {
     if (style is ansi.NoStyle) {
       prop(name, style, view: 'none');
       return;
     }
 
-    prop(name, style, showName: false, view: style(name));
+    prop(name, style, showName: showName, view: style(name));
   }
 
   void styles(

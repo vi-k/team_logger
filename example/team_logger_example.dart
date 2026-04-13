@@ -28,6 +28,7 @@ void f() {
     // includeLevelNameTag: false,
     // levelNameTagFormatter: (theme, levelName, shortLevelName) =>
     //     '[$shortLevelName]',
+    // hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
   );
 
   final log = Logger('app')
@@ -36,7 +37,7 @@ void f() {
       theme: theme,
       formatters: [
         const LogSequenceNumFormatter(),
-        // const LogLevelFormatter.short(),
+        const LogLevelFormatter.short(),
         const LogTimeFormatter.onlyTime(),
         const LogPathFormatter(),
         const LogMessageFormatter(),

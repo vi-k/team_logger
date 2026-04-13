@@ -13,13 +13,14 @@ abstract interface class LogFormatter {
   LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength);
 }
 
-enum VerticalAlign { top, bottom, center, stretch }
+enum VerticalAlign { top, bottom, center }
 
 final class LogFormatterBox with Loggable {
   final String? debugName;
   final int width;
   final List<String> lines;
   final VerticalAlign verticalAlign;
+  final String? verticalFiller;
 
   factory LogFormatterBox(
     Log log,
@@ -27,6 +28,7 @@ final class LogFormatterBox with Loggable {
     List<String> lines, {
     Constraints constraints = const Constraints.unlimited(),
     TextAlign textAlign = TextAlign.left,
+    String? verticalFiller,
     VerticalAlign verticalAlign = VerticalAlign.top,
     bool showEllipsis = true,
     String? debugName,
@@ -49,9 +51,22 @@ final class LogFormatterBox with Loggable {
         )
         .toList();
 
+    String? boxVerticalFiller;
+    if (verticalFiller != null) {
+      final parser = ansi.Parser(verticalFiller);
+      boxVerticalFiller = parser.applyConstraints(
+        log,
+        theme,
+        Constraints.exact(width),
+        textAlign: textAlign,
+        showEllipsis: showEllipsis,
+      );
+    }
+
     return LogFormatterBox.raw(
       width,
       boxLines,
+      verticalFiller: boxVerticalFiller,
       verticalAlign: verticalAlign,
       debugName: debugName,
     );
@@ -60,11 +75,13 @@ final class LogFormatterBox with Loggable {
   LogFormatterBox.empty({this.debugName})
       : width = 0,
         lines = [],
+        verticalFiller = null,
         verticalAlign = VerticalAlign.top;
 
   LogFormatterBox.raw(
     this.width,
     this.lines, {
+    this.verticalFiller,
     this.verticalAlign = VerticalAlign.top,
     this.debugName,
   });
@@ -74,6 +91,7 @@ final class LogFormatterBox with Loggable {
     LogLevelTheme theme,
     String text, {
     required int? maxLines,
+    String? verticalFiller,
     Constraints constraints = const Constraints.unlimited(),
     TextAlign textAlign = TextAlign.left,
     VerticalAlign verticalAlign = VerticalAlign.top,
@@ -145,12 +163,24 @@ final class LogFormatterBox with Loggable {
       }
     }
 
+    String? boxVerticalFiller;
+    if (verticalFiller != null) {
+      final parser = ansi.Parser(verticalFiller);
+      boxVerticalFiller = parser.applyConstraints(
+        log,
+        theme,
+        Constraints.exact(boxWidth),
+        textAlign: textAlign,
+      );
+    }
+
     return LogFormatterBox(
       log,
       theme,
       boxLines,
       constraints: constraints,
       textAlign: textAlign,
+      verticalFiller: boxVerticalFiller,
       verticalAlign: verticalAlign,
       debugName: debugName,
     );
@@ -166,7 +196,12 @@ final class LogFormatterBox with Loggable {
         if (lines.length > linesCount) {
           lines.removeRange(linesCount, lines.length);
         } else {
-          lines.addAll(List.filled(linesCount - lines.length, ' ' * width));
+          lines.addAll(
+            List.filled(
+              linesCount - lines.length,
+              verticalFiller ?? ' ' * width,
+            ),
+          );
         }
 
       case VerticalAlign.bottom:
@@ -175,7 +210,10 @@ final class LogFormatterBox with Loggable {
         } else {
           lines.insertAll(
             0,
-            List.filled(linesCount - lines.length, ' ' * width),
+            List.filled(
+              linesCount - lines.length,
+              verticalFiller ?? ' ' * width,
+            ),
           );
         }
 
@@ -191,17 +229,10 @@ final class LogFormatterBox with Loggable {
           final addCount = linesCount - lines.length;
           final addTop = addCount ~/ 2;
           final addBottom = addCount - addTop;
-          final emptyString = ' ' * width;
+          final filler = verticalFiller ?? ' ' * width;
           lines
-            ..insertAll(0, List.filled(addTop, emptyString))
-            ..addAll(List.filled(addBottom, emptyString));
-        }
-
-      case VerticalAlign.stretch:
-        if (lines.length > linesCount) {
-          lines.removeRange(linesCount, lines.length);
-        } else {
-          lines.addAll(List.filled(linesCount - lines.length, lines.last));
+            ..insertAll(0, List.filled(addTop, filler))
+            ..addAll(List.filled(addBottom, filler));
         }
     }
   }

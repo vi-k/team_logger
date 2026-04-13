@@ -30,6 +30,7 @@ final class LogTheme with Loggable {
   final LogLevelTheme warning;
   final LogLevelTheme error;
   final LogLevelTheme critical;
+  final ansi.Style hiddenStyle;
   final int? maxLength;
   final int? maxLines;
   final String colon;
@@ -55,6 +56,7 @@ final class LogTheme with Loggable {
     this.warning = LogLevelTheme.noColors,
     this.error = LogLevelTheme.noColors,
     this.critical = LogLevelTheme.noColors,
+    this.hiddenStyle = _hiddenStyle,
     this.maxLength,
     this.maxLines,
     this.colon = defaultColon,
@@ -87,6 +89,7 @@ final class LogTheme with Loggable {
     this.warning = LogLevelTheme.noColors,
     this.error = LogLevelTheme.noColors,
     this.critical = LogLevelTheme.noColors,
+    this.hiddenStyle = const ansi.NoStyle(),
   })  : maxLength = null,
         maxLines = null,
         colon = defaultColon,
@@ -131,8 +134,9 @@ final class LogTheme with Loggable {
   static const LogTheme noColors = LogTheme._();
 
   static const _black = ansi.Color256.gray0;
-  static const _tagsColor = ansi.Color256.gray5;
-  static const _tagsStyle = ansi.Style(foreground: _tagsColor);
+
+  static const _hiddenStyle =
+      ansi.Style(foreground: ansi.Color256.gray3, invisible: true);
 
   // inactive
 
@@ -309,7 +313,7 @@ final class LogTheme with Loggable {
       boldStyle: _activeVerboseBoldStyle,
       dimStyle: _activeVerboseDimStyle,
       superDimStyle: _activeVerboseSuperDimStyle,
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeVerboseNormalColor,
@@ -319,19 +323,11 @@ final class LogTheme with Loggable {
       messageStyles: {
         'b': _activeVerboseBoldStyle,
         'success': ansi.rgb030,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
         'error': _activeErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: _activeVerboseDimStyle,
       controlCodesStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
       punctuationStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
       colonStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
@@ -339,10 +335,6 @@ final class LogTheme with Loggable {
       lineBreakStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
       paddingStyle: ansi.Style(foreground: _activeVerbosePunctuationColor),
       dataSectionStyle: _activeVerboseBoldStyle,
-      // dataSectionStyle: ansi.Style(
-      //   foreground: _black,
-      //   background: _activeVerboseDimColor,
-      // ),
       dataNameStyle: ansi.NoStyle(),
       dataKeyStyle: _activeVerboseEmphasisStyle,
       dataValueStyle: ansi.NoStyle(),
@@ -371,7 +363,7 @@ final class LogTheme with Loggable {
       boldStyle: _activeDebugBoldStyle,
       dimStyle: _activeDebugDimStyle,
       superDimStyle: _activeDebugSuperDimStyle,
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeDebugNormalColor,
@@ -381,19 +373,11 @@ final class LogTheme with Loggable {
       messageStyles: {
         'b': _activeDebugBoldStyle,
         'success': ansi.rgb040,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
         'error': _activeErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: _activeDebugDimStyle,
       controlCodesStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
       punctuationStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
       colonStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
@@ -401,10 +385,6 @@ final class LogTheme with Loggable {
       lineBreakStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
       paddingStyle: ansi.Style(foreground: _activeDebugPunctuationColor),
       dataSectionStyle: _activeDebugBoldStyle,
-      // dataSectionStyle: ansi.Style(
-      //   foreground: _black,
-      //   background: _activeDebugDimColor,
-      // ),
       dataNameStyle: ansi.NoStyle(),
       dataKeyStyle: _activeDebugEmphasisStyle,
       dataValueStyle: ansi.NoStyle(),
@@ -433,7 +413,7 @@ final class LogTheme with Loggable {
       boldStyle: _activeInfoBoldStyle,
       dimStyle: _activeInfoDimStyle,
       superDimStyle: _activeInfoSuperDimStyle,
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeInfoNormalColor,
@@ -443,19 +423,11 @@ final class LogTheme with Loggable {
       messageStyles: {
         'b': _activeInfoBoldStyle,
         'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
         'error': _activeErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: _activeInfoDimStyle,
       controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
       punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
       colonStyle: ansi.Style(foreground: _activePunctuationColor),
@@ -463,10 +435,6 @@ final class LogTheme with Loggable {
       lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
       paddingStyle: ansi.Style(foreground: _activePunctuationColor),
       dataSectionStyle: _activeInfoBoldStyle,
-      // dataSectionStyle: ansi.Style(
-      //   foreground: _black,
-      //   background: _activeInfoDimColor,
-      // ),
       dataNameStyle: ansi.NoStyle(),
       dataKeyStyle: _activeInfoEmphasisStyle,
       dataValueStyle: ansi.NoStyle(),
@@ -495,7 +463,7 @@ final class LogTheme with Loggable {
       boldStyle: _activeWarningBoldStyle,
       dimStyle: _activeWarningDimStyle,
       superDimStyle: _activeWarningSuperDimStyle,
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeWarningNormalColor,
@@ -505,19 +473,11 @@ final class LogTheme with Loggable {
       messageStyles: {
         'b': _activeWarningBoldStyle,
         'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
         'error': _activeErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: _activeWarningDimStyle,
       controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
       punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
       colonStyle: ansi.Style(foreground: _activePunctuationColor),
@@ -525,10 +485,6 @@ final class LogTheme with Loggable {
       lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
       paddingStyle: ansi.Style(foreground: _activePunctuationColor),
       dataSectionStyle: _activeWarningBoldStyle,
-      // dataSectionStyle: ansi.Style(
-      //   foreground: _black,
-      //   background: _activeWarningDimColor,
-      // ),
       dataNameStyle: ansi.NoStyle(),
       dataKeyStyle: _activeWarningEmphasisStyle,
       dataValueStyle: ansi.NoStyle(),
@@ -557,7 +513,7 @@ final class LogTheme with Loggable {
       boldStyle: _activeErrorBoldStyle,
       dimStyle: _activeErrorDimStyle,
       superDimStyle: _activeErrorSuperDimStyle,
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeErrorNormalColor,
@@ -567,19 +523,11 @@ final class LogTheme with Loggable {
       messageStyles: {
         'b': _activeErrorBoldStyle,
         'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
         'error': _activeErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: _activeErrorDimStyle,
       controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
       punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
       colonStyle: ansi.Style(foreground: _activePunctuationColor),
@@ -587,10 +535,6 @@ final class LogTheme with Loggable {
       lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
       paddingStyle: ansi.Style(foreground: _activePunctuationColor),
       dataSectionStyle: _activeErrorBoldStyle,
-      // dataSectionStyle: ansi.Style(
-      //   foreground: _black,
-      //   background: _activeErrorDimColor,
-      // ),
       dataNameStyle: ansi.NoStyle(),
       dataKeyStyle: _activeErrorEmphasisStyle,
       dataValueStyle: ansi.NoStyle(),
@@ -619,7 +563,7 @@ final class LogTheme with Loggable {
       boldStyle: _activeCriticalBoldStyle,
       dimStyle: _activeCriticalDimStyle,
       superDimStyle: _activeCriticalSuperDimStyle,
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeCriticalNormalColor,
@@ -629,19 +573,11 @@ final class LogTheme with Loggable {
       messageStyles: {
         'b': _activeCriticalBoldStyle,
         'success': ansi.rgb050,
-        // 'signal': const BbCodeFormat.colorize(
-        //   LogStyle.only(
-        //     ansi.Style(
-        //       foreground: ansi.Color256.rgb055,
-        //       background: ansi.Color256.rgb011,
-        //     ),
-        //   ),
-        // ),
         'error': _activeErrorNormalStyle,
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: _activeCriticalDimStyle,
       controlCodesStyle: ansi.Style(foreground: _activePunctuationColor),
       punctuationStyle: ansi.Style(foreground: _activePunctuationColor),
       colonStyle: ansi.Style(foreground: _activePunctuationColor),
@@ -649,10 +585,6 @@ final class LogTheme with Loggable {
       lineBreakStyle: ansi.Style(foreground: _activePunctuationColor),
       paddingStyle: ansi.Style(foreground: _activePunctuationColor),
       dataSectionStyle: _activeCriticalBoldStyle,
-      // dataSectionStyle: ansi.Style(
-      //   foreground: _black,
-      //   background: _activeCriticalDimColor,
-      // ),
       dataNameStyle: ansi.NoStyle(),
       dataKeyStyle: _activeCriticalEmphasisStyle,
       dataValueStyle: ansi.NoStyle(),
@@ -676,6 +608,7 @@ final class LogTheme with Loggable {
         ansi.Style(foreground: _activeLevels3Color),
       ],
     ),
+    hiddenStyle: _hiddenStyle,
   );
 
   static const LogTheme defaultInactiveTheme = LogTheme._(
@@ -684,7 +617,7 @@ final class LogTheme with Loggable {
       boldStyle: ansi.NoStyle(),
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -695,7 +628,7 @@ final class LogTheme with Loggable {
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: ansi.NoStyle(),
       controlCodesStyle: ansi.NoStyle(),
       punctuationStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
@@ -716,7 +649,7 @@ final class LogTheme with Loggable {
       boldStyle: ansi.NoStyle(),
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -727,7 +660,7 @@ final class LogTheme with Loggable {
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: ansi.NoStyle(),
       controlCodesStyle: ansi.NoStyle(),
       punctuationStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
@@ -748,7 +681,7 @@ final class LogTheme with Loggable {
       boldStyle: ansi.NoStyle(),
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -759,7 +692,7 @@ final class LogTheme with Loggable {
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: ansi.NoStyle(),
       controlCodesStyle: ansi.NoStyle(),
       punctuationStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
@@ -780,7 +713,7 @@ final class LogTheme with Loggable {
       boldStyle: ansi.NoStyle(),
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -791,7 +724,7 @@ final class LogTheme with Loggable {
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: ansi.NoStyle(),
       controlCodesStyle: ansi.NoStyle(),
       punctuationStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
@@ -812,7 +745,7 @@ final class LogTheme with Loggable {
       boldStyle: ansi.NoStyle(),
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -823,7 +756,7 @@ final class LogTheme with Loggable {
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: ansi.NoStyle(),
       controlCodesStyle: ansi.NoStyle(),
       punctuationStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
@@ -844,7 +777,7 @@ final class LogTheme with Loggable {
       boldStyle: ansi.NoStyle(),
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
-      sequenceNumStyle: _tagsStyle,
+      sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -855,7 +788,7 @@ final class LogTheme with Loggable {
       },
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
-      tagsStyle: _tagsStyle,
+      tagsStyle: ansi.NoStyle(),
       controlCodesStyle: ansi.NoStyle(),
       punctuationStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
@@ -871,6 +804,7 @@ final class LogTheme with Loggable {
       dataDescriptionStyles: [ansi.NoStyle()],
       dataPunctuationStyles: [ansi.NoStyle()],
     ),
+    hiddenStyle: _hiddenStyle,
   );
 
   static String _defaultSectionNameFormatter(
@@ -905,6 +839,7 @@ final class LogTheme with Loggable {
     LogLevelTheme? warning,
     LogLevelTheme? error,
     LogLevelTheme? critical,
+    ansi.Style? hiddenStyle,
     int? maxLength,
     int? maxLines,
     String? colon,
@@ -930,6 +865,7 @@ final class LogTheme with Loggable {
         warning: warning ?? this.warning,
         error: error ?? this.error,
         critical: critical ?? this.critical,
+        hiddenStyle: hiddenStyle ?? this.hiddenStyle,
         maxLength: maxLength ?? this.maxLength,
         maxLines: maxLines ?? this.maxLines,
         colon: colon ?? this.colon,
@@ -989,6 +925,7 @@ final class LogTheme with Loggable {
         showName: false,
         view: critical.normalStyle('critical'),
       )
+      ..style('hiddenStyle', hiddenStyle, showName: true)
       ..prop('maxLength', maxLength)
       ..prop('maxLines', maxLines)
       ..prop('colon', colon)
