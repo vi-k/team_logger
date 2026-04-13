@@ -158,8 +158,6 @@ final class LogLevelTheme with Loggable {
 
   String formatCount(int count) => common.countFormatter(this, count);
 
-  String formatLevelNameTag(Log log) => common.levelNameTagFormatter(this, log);
-
   ansi.Style dataBracketsStyle(int level) =>
       dataBracketsStyles[level % dataBracketsStyles.length];
 
@@ -171,7 +169,6 @@ final class LogLevelTheme with Loggable {
 
   Set<String> allTags(Log log) => {
         ...common.tags,
-        if (common.includeLevelNameTag) formatLevelNameTag(log),
         ...tags,
         ...log.tags,
       };

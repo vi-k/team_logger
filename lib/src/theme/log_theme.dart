@@ -46,8 +46,6 @@ final class LogTheme with Loggable {
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
   final Set<String> tags;
-  final bool includeLevelNameTag;
-  final LogThemeFormatter<Log> levelNameTagFormatter;
 
   LogTheme({
     this.verbose = LogLevelTheme.noColors,
@@ -72,8 +70,6 @@ final class LogTheme with Loggable {
     this.countFormatter = _defaultCountFormatter,
     this.indexFormatter = _defaultIndexFormatter,
     this.tags = const {},
-    this.includeLevelNameTag = true,
-    this.levelNameTagFormatter = _defaultLevelNameTagFormatter,
   })  : assert(!colon.ansiHasEscapeCodes),
         assert(!ellipsis.ansiHasEscapeCodes),
         assert(!lineBreak.ansiHasEscapeCodes),
@@ -104,9 +100,7 @@ final class LogTheme with Loggable {
         sectionNameFormatter = _defaultSectionNameFormatter,
         countFormatter = _defaultCountFormatter,
         indexFormatter = _defaultIndexFormatter,
-        tags = const {'log'},
-        includeLevelNameTag = true,
-        levelNameTagFormatter = _defaultLevelNameTagFormatter;
+        tags = const {'log'};
 
   void registerLevelThemes() {
     verbose.attach(this);
@@ -819,9 +813,6 @@ final class LogTheme with Loggable {
   static String _defaultIndexFormatter(LogLevelTheme theme, int index) =>
       '${subscript(index)}${theme.common.colon}';
 
-  static String _defaultLevelNameTagFormatter(LogLevelTheme theme, Log log) =>
-      log.levelName;
-
   static final _reDigits = RegExp('[0-9]');
   static final _normal0Code = '0'.codeUnitAt(0);
   static final _small0Code = '₀'.codeUnitAt(0);
@@ -855,8 +846,6 @@ final class LogTheme with Loggable {
     LogThemeFormatter<int>? countFormatter,
     LogThemeFormatter<int>? indexFormatter,
     Set<String>? tags,
-    bool? includeLevelNameTag,
-    LogThemeFormatter<Log>? levelNameTagFormatter,
   }) =>
       LogTheme(
         verbose: verbose ?? this.verbose,
@@ -881,9 +870,6 @@ final class LogTheme with Loggable {
         countFormatter: countFormatter ?? this.countFormatter,
         indexFormatter: indexFormatter ?? this.indexFormatter,
         tags: tags ?? this.tags,
-        includeLevelNameTag: includeLevelNameTag ?? this.includeLevelNameTag,
-        levelNameTagFormatter:
-            levelNameTagFormatter ?? this.levelNameTagFormatter,
       );
 
   @override
@@ -937,7 +923,6 @@ final class LogTheme with Loggable {
       ..prop('dataSectionName', dataSectionName)
       ..prop('showCount', showCount)
       ..prop('showIndexes', showIndexes)
-      ..prop('tags', tags)
-      ..prop('includeLevelNameTag', includeLevelNameTag);
+      ..prop('tags', tags);
   }
 }
