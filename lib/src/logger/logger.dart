@@ -44,12 +44,10 @@ final class LevelLogger
         publisher.publish(
           Log(
             this,
-            path: overridePath == null
-                ? logger._lazyPath
-                : LazyString(overridePath),
-            message: message,
-            data: data,
-            tags: tags,
+            path: overridePath ?? logger._lazyPath.value,
+            message: LazyString(message, '').value,
+            data: Lazy(data).resolved,
+            tags: {...logger.tags, ...LazyTags(tags).value},
             error: error,
             stackTrace: stackTrace,
             zone: zone,
@@ -63,26 +61,52 @@ final class LevelLogger
 final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   final LazyString _lazyPath;
   final String pathSeparator;
+  final Set<String> tags;
 
-  Logger(Object name, {this.pathSeparator = '/'})
-      : _lazyPath = LazyString(name);
+  Logger(
+    Object name, {
+    this.pathSeparator = '/',
+    this.tags = const {},
+  }) : _lazyPath = LazyString(name);
 
-  Logger._sub(super.parent, Object name, {required bool copyPath})
-      : _lazyPath = copyPath
+  Logger._sub(
+    super.parent,
+    Object name, {
+    required bool keepPath,
+    this.tags = const {},
+  })  : _lazyPath = keepPath
             ? LazyString(
                 () => '${parent.path}'
                     '${parent.pathSeparator}'
                     '${LazyString(name).value}',
               )
-            : LazyString(name),
+            : LazyString(name, ''),
         pathSeparator = parent.pathSeparator,
         super.sub();
 
   String get path => _lazyPath.value;
 
-  Logger withName(Object name) => Logger._sub(this, name, copyPath: false);
+  Logger copyWith({
+    Object? name,
+    Set<String>? tags,
+  }) =>
+      Logger._sub(
+        this,
+        name ?? path,
+        keepPath: false,
+        tags: tags ?? this.tags,
+      );
 
-  Logger withAddedName(Object name) => Logger._sub(this, name, copyPath: true);
+  Logger createChild({
+    required Object name,
+    Set<String> tags = const {},
+  }) =>
+      Logger._sub(
+        this,
+        name,
+        keepPath: true,
+        tags: {...this.tags, ...tags},
+      );
 
   @override
   void registerLevels() {

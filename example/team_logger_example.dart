@@ -140,8 +140,8 @@ void f() {
     },
   );
 
-  final networkLog = log.withName('network');
-  final eventLog = log.withName('events').withAddedName('polling');
+  final networkLog = log.copyWith(name: 'network', tags: {'http'});
+  final eventLog = log.copyWith(name: 'events').createChild(name: 'polling');
 
   for (var i = 0; i < 1; i++) {
     for (final level in LogLevels.values) {
@@ -156,11 +156,11 @@ void f() {
           },
           collectionMaxCount: 2,
         ),
-        tags: ['post', 'api'],
+        tags: ['post'],
       );
       networkLog[level].log(
         '[success][200 OK][/success] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
-        tags: ['response', 'api'],
+        tags: ['response'],
         data: LoggableObject(succesResponse, collectionMaxCount: 2),
       );
       log[level].log(

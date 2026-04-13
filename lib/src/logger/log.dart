@@ -6,31 +6,22 @@ final class Log extends CustomLog {
 
   final DateTime time;
   final int sequenceNum;
-  final LazyString _lazyPath;
-  final LazyString _lazyMessage;
-  final Lazy _lazyData;
-  final LazyTags _lazyTags;
+  final String path;
+  final String message;
+  final Object? data;
+  final Set<String> tags;
 
   Log(
     super.levelLogger, {
-    required LazyString path,
-    required Object message,
-    required Object? data,
-    required Object? tags,
+    required this.path,
+    required this.message,
+    required this.data,
+    required this.tags,
     super.error,
     super.stackTrace,
     super.zone,
   })  : sequenceNum = ++_lastSequenceNum,
-        time = clock.now(),
-        _lazyPath = path,
-        _lazyMessage = LazyString(message, ''),
-        _lazyData = Lazy(data),
-        _lazyTags = LazyTags(tags);
-
-  String get path => _lazyPath.value;
-  String get message => _lazyMessage.value;
-  Object? get data => _lazyData.resolved;
-  Set<String> get tags => _lazyTags.value;
+        time = clock.now();
 }
 
 final class LazyTags extends TypedLazy<Set<String>> {
