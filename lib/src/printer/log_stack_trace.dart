@@ -44,7 +44,7 @@ final class LogStackTrace implements LogBlock {
       trace = trace.terse;
     }
 
-    final lines = trace.frames.indexed.map(
+    var lines = trace.frames.indexed.map(
       (e) {
         final (index, frame) = e;
         final member = frame.member;
@@ -61,8 +61,15 @@ final class LogStackTrace implements LogBlock {
       },
     ).toList();
 
+    if (row.singleLine) {
+      lines = [lines.join(theme.punctuationStyle(', '))];
+    }
+
     if (showTitle) {
       lines.insert(0, theme.dataSectionStyle('$title${theme.common.colon}'));
+      if (row.singleLine) {
+        lines = [lines.join(theme.punctuationStyle(' '))];
+      }
     }
 
     return LogBox(

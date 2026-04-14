@@ -11,24 +11,17 @@ final class LogRow {
   final LogDivider defaultDivider;
   final bool alignTail;
 
-  const LogRow.multiLine({
+  const LogRow({
     required this.children,
     this.tail = const [],
-    required int this.maxLength,
-    this.maxLines,
+    bool singleLine = false,
+    int? maxLength,
+    int? maxLines,
     this.when,
     this.defaultDivider = const LogDivider(' '),
     this.alignTail = true,
-  });
-
-  const LogRow.singleLine({
-    required this.children,
-    this.tail = const [],
-    this.when,
-    this.defaultDivider = const LogDivider(' '),
-  })  : maxLength = null,
-        maxLines = 1,
-        alignTail = false;
+  })  : maxLength = singleLine ? null : maxLength,
+        maxLines = singleLine ? 1 : maxLines;
 
   bool get singleLine => maxLines == 1 && maxLength == null;
 }

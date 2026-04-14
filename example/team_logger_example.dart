@@ -34,7 +34,8 @@ void f() {
     ..publisher = ConsoleLogPrinter(
       theme: theme,
       rows: [
-        const LogRow.multiLine(
+        const LogRow(
+          // singleLine: true,
           maxLength: 140,
           maxLines: 20,
           children: [
@@ -48,7 +49,8 @@ void f() {
             LogTags(),
           ],
         ),
-        LogRow.multiLine(
+        LogRow(
+          // singleLine: true,
           maxLength: 110,
           maxLines: 20,
           when: (log) => log.stackTrace != null,
