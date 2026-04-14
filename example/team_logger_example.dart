@@ -57,7 +57,7 @@ void f() {
           alignTail: false,
           children: const [
             LogSequenceNum(hidden: true),
-            LogStackTrace(),
+            LogStackTrace(showIndexes: true),
           ],
           tail: const [
             LogTags(hidden: true, tags: {'stacktrace'}),
@@ -282,9 +282,10 @@ void f() {
 
   // log.d('LogTheme', data: theme);
   // // log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
-  log.e(
-    'Error LogLevelTheme',
-    data: theme[LogLevels.error],
+  const level = LogLevels.error;
+  log[level].log(
+    'LogLevelTheme',
+    data: theme[level],
     error: Exception('test'),
     stackTrace: StackTrace.current,
   );

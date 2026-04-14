@@ -16,6 +16,7 @@ final class LogStackTrace implements LogBlock {
   final bool showTitle;
   final String title;
   final bool showIndexes;
+  final Set<String> controlledPackages;
 
   const LogStackTrace({
     this.constraints = const Constraints.unlimited(),
@@ -25,6 +26,7 @@ final class LogStackTrace implements LogBlock {
     this.showTitle = true,
     this.title = 'STACKTRACE',
     this.showIndexes = false,
+    this.controlledPackages = const {},
   });
 
   @override
@@ -58,13 +60,29 @@ final class LogStackTrace implements LogBlock {
 
         final indexStr = showIndexes ? '#$index ' : '';
         final memberStr = member == null ? '' : '$member ';
+        var fileStr = frame.library;
         var packageStr = '';
 
-        String stackTraceLine(String file) => '${theme.dimStyle(indexStr)}'
-            '${theme.boldStyle(memberStr)}'
-            '($packageStr$file$posStr)';
+        final uri = frame.uri;
+        var isActive = uri.scheme == 'file';
+        if (uri.scheme == 'package') {
+          isActive = controlledPackages.contains(uri.pathSegments.first);
+        }
 
-        var fileStr = frame.library;
+        String stackTraceLine(String file) => isActive
+            ? '${theme.stackTraceActiveStyle(indexStr)}'
+                '${theme.stackTraceActiveMemberStyle(memberStr)}'
+                '${theme.stackTraceActiveStyle('($packageStr$file$posStr)')}'
+            : '${theme.stackTraceInactiveStyle(indexStr)}'
+                '${theme.stackTraceInactiveMemberStyle(memberStr)}'
+                '${theme.stackTraceInactiveStyle('($packageStr$file$posStr)')}';
+        // String stackTraceLine(String file) => isActive
+        //     ? '${theme.dimStyle(indexStr)}'
+        //         '${theme.boldStyle(memberStr)}'
+        //         '($packageStr$file$posStr)'
+        //     : '${theme.dimStyle(indexStr)}'
+        //         '${theme.superDimStyle('$memberStr($packageStr$file$posStr)')}';
+
         if (remainingLength == null) {
           return stackTraceLine(fileStr);
         }
@@ -110,7 +128,7 @@ final class LogStackTrace implements LogBlock {
     }
 
     if (showTitle) {
-      lines.insert(0, theme.dataSectionStyle('$title${theme.common.colon}'));
+      lines.insert(0, theme.sectionStyle('$title${theme.common.colon}'));
       if (row.singleLine) {
         lines = [lines.join(theme.punctuationStyle(' '))];
       }

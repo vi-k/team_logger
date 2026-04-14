@@ -129,7 +129,7 @@ mixin Loggable {
             showIndexes: obj.showIndexes ?? showIndexes,
             units: obj.units ?? units,
           );
-          return '${theme.dataSectionStyle(theme.formatSectionName(e.key))} $value';
+          return '${theme.sectionStyle(theme.formatSectionName(e.key))} $value';
         }).join(punctuation(', ')),
       _ => '${theme.formatValue(obj.toString())}${units2str()}',
     };

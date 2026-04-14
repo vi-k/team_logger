@@ -47,7 +47,7 @@ final class LogMessage implements LogBlock {
       switch (data) {
         case LoggableNamedData():
           dataSectionName =
-              '${theme.dataSectionStyle(theme.formatSectionName(data.name))} ';
+              '${theme.sectionStyle(theme.formatSectionName(data.name))} ';
           dataStr = Loggable.objectToString(
             data.data,
             theme: theme,
@@ -70,7 +70,7 @@ final class LogMessage implements LogBlock {
               showIndexes: data.showIndexes ?? theme.common.showIndexes,
               units: data.units,
             );
-            return '${theme.dataSectionStyle(theme.formatSectionName(e.key))} $value';
+            return '${theme.sectionStyle(theme.formatSectionName(e.key))} $value';
           }).join(
             dataOnNewLine ? '\n' : theme.punctuationStyle(', '),
           );
@@ -79,7 +79,7 @@ final class LogMessage implements LogBlock {
           if (theme.common.dataSectionName case final name
               when name.isNotEmpty) {
             dataSectionName =
-                '${theme.dataSectionStyle(theme.formatSectionName(name))} ';
+                '${theme.sectionStyle(theme.formatSectionName(name))} ';
           }
           dataStr = Loggable.objectToString(data, theme: theme);
       }
