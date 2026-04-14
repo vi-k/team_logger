@@ -69,19 +69,12 @@ final class LogStackTrace implements LogBlock {
           isActive = controlledPackages.contains(uri.pathSegments.first);
         }
 
-        String stackTraceLine(String file) => isActive
-            ? '${theme.stackTraceActiveStyle(indexStr)}'
-                '${theme.stackTraceActiveMemberStyle(memberStr)}'
-                '${theme.stackTraceActiveStyle('($packageStr$file$posStr)')}'
-            : '${theme.stackTraceInactiveStyle(indexStr)}'
-                '${theme.stackTraceInactiveMemberStyle(memberStr)}'
-                '${theme.stackTraceInactiveStyle('($packageStr$file$posStr)')}';
-        // String stackTraceLine(String file) => isActive
-        //     ? '${theme.dimStyle(indexStr)}'
-        //         '${theme.boldStyle(memberStr)}'
-        //         '($packageStr$file$posStr)'
-        //     : '${theme.dimStyle(indexStr)}'
-        //         '${theme.superDimStyle('$memberStr($packageStr$file$posStr)')}';
+        String stackTraceLine(String file) {
+          final style = isActive
+              ? theme.stackTraceActiveStyle
+              : theme.stackTraceInactiveStyle;
+          return style('$indexStr$memberStr($packageStr$file$posStr)');
+        }
 
         if (remainingLength == null) {
           return stackTraceLine(fileStr);

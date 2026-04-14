@@ -30,9 +30,7 @@ final class LogLevelTheme with Loggable {
   final List<ansi.Style> dataBracketsStyles;
   final List<ansi.Style> dataDescriptionStyles;
   final List<ansi.Style> dataPunctuationStyles;
-  final ansi.Style stackTraceActiveMemberStyle;
   final ansi.Style stackTraceActiveStyle;
-  final ansi.Style stackTraceInactiveMemberStyle;
   final ansi.Style stackTraceInactiveStyle;
   final Set<String> tags;
 
@@ -64,9 +62,7 @@ final class LogLevelTheme with Loggable {
     this.dataBracketsStyles = const [ansi.NoStyle()],
     this.dataDescriptionStyles = const [ansi.NoStyle()],
     this.dataPunctuationStyles = const [ansi.NoStyle()],
-    ansi.Style? stackTraceActiveMemberStyle,
     this.stackTraceActiveStyle = const ansi.NoStyle(),
-    ansi.Style? stackTraceInactiveMemberStyle,
     ansi.Style? stackTraceInactiveStyle,
     this.tags = const {},
   })  : assert(dataBracketsStyles.isNotEmpty),
@@ -91,10 +87,6 @@ final class LogLevelTheme with Loggable {
         ellipsisStyle = ellipsisStyle ?? punctuationStyle,
         lineBreakStyle = lineBreakStyle ?? punctuationStyle,
         paddingStyle = paddingStyle ?? punctuationStyle,
-        stackTraceActiveMemberStyle =
-            stackTraceActiveMemberStyle ?? boldStyle ?? normalStyle.bold,
-        stackTraceInactiveMemberStyle =
-            stackTraceInactiveMemberStyle ?? dimStyle ?? normalStyle.dim,
         stackTraceInactiveStyle =
             stackTraceInactiveStyle ?? dimStyle ?? normalStyle.dim;
 
@@ -126,9 +118,7 @@ final class LogLevelTheme with Loggable {
     required this.dataBracketsStyles,
     required this.dataDescriptionStyles,
     required this.dataPunctuationStyles,
-    required this.stackTraceActiveMemberStyle,
     required this.stackTraceActiveStyle,
-    required this.stackTraceInactiveMemberStyle,
     required this.stackTraceInactiveStyle,
     this.tags = const {},
   });
@@ -209,9 +199,7 @@ final class LogLevelTheme with Loggable {
     dataBracketsStyles: [ansi.NoStyle()],
     dataDescriptionStyles: [ansi.NoStyle()],
     dataPunctuationStyles: [ansi.NoStyle()],
-    stackTraceActiveMemberStyle: ansi.NoStyle(),
     stackTraceActiveStyle: ansi.NoStyle(),
-    stackTraceInactiveMemberStyle: ansi.NoStyle(),
     stackTraceInactiveStyle: ansi.NoStyle(),
   );
 
@@ -287,12 +275,8 @@ final class LogLevelTheme with Loggable {
           dataDescriptionStyles ?? this.dataDescriptionStyles,
       dataPunctuationStyles:
           dataPunctuationStyles ?? this.dataPunctuationStyles,
-      stackTraceActiveMemberStyle:
-          stackTraceActiveMemberStyle ?? this.stackTraceActiveMemberStyle,
       stackTraceActiveStyle:
           stackTraceActiveStyle ?? this.stackTraceActiveStyle,
-      stackTraceInactiveMemberStyle:
-          stackTraceInactiveMemberStyle ?? this.stackTraceInactiveMemberStyle,
       stackTraceInactiveStyle:
           stackTraceInactiveStyle ?? this.stackTraceInactiveStyle,
       tags: tags ?? this.tags,
@@ -329,9 +313,7 @@ final class LogLevelTheme with Loggable {
       ..styles('dataBracketsStyles', dataBracketsStyles, (_) => '[')
       ..styles('dataDescriptionStyles', dataDescriptionStyles, (i) => '$i')
       ..styles('dataPunctuationStyles', dataPunctuationStyles, (_) => ',')
-      ..style('stackTraceActiveMemberStyle', stackTraceActiveMemberStyle)
       ..style('stackTraceActiveStyle', stackTraceActiveStyle)
-      ..style('stackTraceInactiveMemberStyle', stackTraceInactiveMemberStyle)
       ..style('stackTraceInactiveStyle', stackTraceInactiveStyle)
       ..prop('tags', tags);
   }
