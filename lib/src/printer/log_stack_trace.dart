@@ -48,16 +48,60 @@ final class LogStackTrace implements LogBlock {
       (e) {
         final (index, frame) = e;
         final member = frame.member;
-        var position = '';
+        var posStr = '';
         if (frame.line case final line?) {
-          position = ':$line';
+          posStr = ':$line';
           if (frame.column case final column?) {
-            position = '$position:$column';
+            posStr = '$posStr:$column';
           }
         }
-        return '${showIndexes ? '${theme.dimStyle('#$index')} ' : ''}'
-            '${theme.boldStyle(member ?? '')}'
-            ' (${frame.library}$position)';
+
+        final indexStr = showIndexes ? '#$index ' : '';
+        final memberStr = member == null ? '' : '$member ';
+        var packageStr = '';
+
+        String stackTraceLine(String file) => '${theme.dimStyle(indexStr)}'
+            '${theme.boldStyle(memberStr)}'
+            '($packageStr$file$posStr)';
+
+        var fileStr = frame.library;
+        if (remainingLength == null) {
+          return stackTraceLine(fileStr);
+        }
+
+        // truncate file path
+
+        var availableWidth = remainingLength -
+            indexStr.length -
+            memberStr.length -
+            posStr.length -
+            2;
+        if (fileStr.startsWith('package:') || fileStr.startsWith('dart:')) {
+          final index = fileStr.indexOf('/');
+          if (index != -1) {
+            availableWidth -= index;
+            packageStr = fileStr.substring(0, index + 1);
+            fileStr = fileStr.substring(index + 1);
+          }
+        }
+        if (fileStr.length <= availableWidth) {
+          return stackTraceLine(fileStr);
+        }
+
+        final ellipsis = theme.common.ellipsis;
+
+        var truncated = false;
+        while (fileStr.length + ellipsis.length + 1 > availableWidth) {
+          final index = fileStr.indexOf('/');
+          if (index == -1) break;
+          truncated = true;
+          fileStr = fileStr.substring(index + 1);
+        }
+        if (truncated) {
+          fileStr = '${theme.ellipsisStyle(ellipsis)}/$fileStr';
+        }
+
+        return stackTraceLine(fileStr);
       },
     ).toList();
 
