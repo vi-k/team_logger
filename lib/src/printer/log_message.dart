@@ -4,30 +4,29 @@ import '../loggable/loggable_named_data.dart';
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
-import 'log_formatter.dart';
-import 'text_align.dart';
+import 'log_block.dart';
+import 'log_row.dart';
+import 'log_text_align.dart';
+import 'log_vertical_align.dart';
 
-abstract interface class LogMessageFormatter implements LogFormatter {
-  const factory LogMessageFormatter({
-    Constraints constraints,
-    TextAlign textAlign,
-    VerticalAlign verticalAlign,
-  }) = _LogMessageFormatter;
-}
-
-final class _LogMessageFormatter implements LogMessageFormatter {
+final class LogMessage implements LogBlock {
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
 
-  const _LogMessageFormatter({
+  const LogMessage({
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) {
     final messageStr = switch (log.message) {
       '' => '',
       final message => theme.formatMessage(theme.formatValue(message)),
@@ -37,6 +36,9 @@ final class _LogMessageFormatter implements LogMessageFormatter {
       null => '',
       final error => theme.formatMessage(theme.formatValue(error.toString())),
     };
+
+    final dataOnNewLine = theme.common.dataOnNewLine && row.maxLines != 1;
+    final errorOnNewLine = theme.common.errorOnNewLine && row.maxLines != 1;
 
     var dataStr = '';
     if (log.data case final data?) {
@@ -70,7 +72,7 @@ final class _LogMessageFormatter implements LogMessageFormatter {
             );
             return '${theme.dataSectionStyle(theme.formatSectionName(e.key))} $value';
           }).join(
-            theme.common.dataOnNewLine ? '\n' : theme.punctuationStyle(', '),
+            dataOnNewLine ? '\n' : theme.punctuationStyle(', '),
           );
 
         default:
@@ -85,19 +87,19 @@ final class _LogMessageFormatter implements LogMessageFormatter {
       dataStr = '$dataSectionName$dataStr';
     }
 
-    return LogFormatterBox.fromText(
+    return LogBox.fromText(
       log,
       theme,
       '$messageStr'
       '${messageStr.isEmpty || errorStr.isEmpty //
           ? errorStr : '${theme.styledColon}'
-              '${theme.common.errorOnNewLine ? '\n' : ' '}'
+              '${errorOnNewLine ? '\n' : ' '}'
               '$errorStr'}'
       '${messageStr.isEmpty && errorStr.isEmpty || dataStr.isEmpty //
           ? dataStr : '${theme.styledColon}'
-              '${theme.common.dataOnNewLine ? '\n' : ' '}'
+              '${dataOnNewLine ? '\n' : ' '}'
               '$dataStr'}',
-      maxLines: theme.common.maxLines,
+      maxLines: row.maxLines,
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,

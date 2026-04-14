@@ -20,35 +20,47 @@ void f() {
   final theme = LogTheme.defaultActiveTheme.copyWith(
     // padding: '.',
     // paddingStyle: const LogStyle.oneForAll(ansi.rgb012),
-    maxLength: 140,
     // showIndexes: false,
     // showCount: false,
-    maxLines: 20,
     // maxLines: 1,
     // includeLevelNameTag: false,
     // levelNameTagFormatter: (theme, levelName, shortLevelName) =>
     //     '[$shortLevelName]',
-    // hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
+    hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
   );
 
   final log = Logger('app')
     ..level = LogLevels.all
     ..publisher = ConsoleLogPrinter(
       theme: theme,
-      formatters: [
-        const LogSequenceNumFormatter(),
-        const LogLevelFormatter.short(),
-        const LogTimeFormatter.onlyTime(),
-        const LogPathFormatter(),
-        const LogMessageFormatter(),
-        // const LogMessageFormatter(constraints: Constraints(max: 80)),
-      ],
-      stackTraceFormatters: [
-        const LogSequenceNumFormatter(),
-        const LogStackTraceFormatter(),
-      ],
-      tagsFormatters: [
-        const LogTagsFormatter(),
+      rows: [
+        const LogRow.multiLine(
+          maxLength: 140,
+          maxLines: 20,
+          children: [
+            LogSequenceNum(),
+            LogLevelName.short(),
+            LogTime.onlyTime(),
+            LogPath(),
+            LogMessage(),
+          ],
+          tail: [
+            LogTags(),
+          ],
+        ),
+        LogRow.multiLine(
+          maxLength: 110,
+          maxLines: 20,
+          when: (log) => log.stackTrace != null,
+          alignTail: false,
+          children: const [
+            LogSequenceNum(hidden: true),
+            LogStackTrace(),
+          ],
+          tail: const [
+            LogTags(hidden: true, tags: {'stacktrace'}),
+          ],
+        ),
       ],
     );
 
@@ -264,17 +276,13 @@ void f() {
       list4,
       data: LoggableObject(list4, collectionMaxCount: 2),
     );
-    // log[l].log(
-    //   'list',
-    //   data: LoggableObject(list([123, 234, 345, 456]), collectionMaxCount: 3),
-    // );
   }
 
   // log.d('LogTheme', data: theme);
   // // log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
   log.e(
-    '   Debug LogLevelTheme',
-    data: theme[LogLevels.debug],
+    'Error LogLevelTheme',
+    data: theme[LogLevels.error],
     error: Exception('test'),
     stackTrace: StackTrace.current,
   );

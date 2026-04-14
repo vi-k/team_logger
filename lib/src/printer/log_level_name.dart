@@ -1,48 +1,50 @@
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
-import 'log_formatter.dart';
-import 'text_align.dart';
+import 'log_block.dart';
+import 'log_row.dart';
+import 'log_text_align.dart';
+import 'log_vertical_align.dart';
 
-abstract interface class LogLevelFormatter implements LogFormatter {
-  const factory LogLevelFormatter.full({
+abstract interface class LogLevelName implements LogBlock {
+  const factory LogLevelName.full({
     LogStyle? style,
     Constraints constraints,
-    TextAlign textAlign,
-    VerticalAlign verticalAlign,
+    LogTextAlign textAlign,
+    LogVerticalAlign verticalAlign,
     String open,
     String close,
     bool upperCase,
     bool stretch,
-  }) = _FullLogLevelFormatter;
+  }) = _FullLevelName;
 
-  const factory LogLevelFormatter.short({
+  const factory LogLevelName.short({
     LogStyle? style,
     Constraints constraints,
-    TextAlign textAlign,
-    VerticalAlign verticalAlign,
+    LogTextAlign textAlign,
+    LogVerticalAlign verticalAlign,
     String open,
     String close,
     bool upperCase,
     bool stretch,
-  }) = _ShortLogLevelFormatter;
+  }) = _ShortLevelName;
 }
 
-final class _FullLogLevelFormatter implements LogLevelFormatter {
+final class _FullLevelName implements LogLevelName {
   final LogStyle? style;
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
   final String open;
   final String close;
   final bool upperCase;
   final bool stretch;
 
-  const _FullLogLevelFormatter({
+  const _FullLevelName({
     this.style,
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
     this.open = '[',
     this.close = ']',
     this.upperCase = true,
@@ -50,12 +52,17 @@ final class _FullLogLevelFormatter implements LogLevelFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) {
     final style = this.style?[log.level] ?? theme.levelNameStyle;
     final levelName = upperCase ? log.levelName.toUpperCase() : log.levelName;
     final levelNameStr = '$open$levelName$close';
 
-    return LogFormatterBox(
+    return LogBox(
       log,
       theme,
       [style(levelNameStr)],
@@ -68,21 +75,21 @@ final class _FullLogLevelFormatter implements LogLevelFormatter {
   }
 }
 
-final class _ShortLogLevelFormatter implements LogLevelFormatter {
+final class _ShortLevelName implements LogLevelName {
   final LogStyle? style;
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
   final String open;
   final String close;
   final bool upperCase;
   final bool stretch;
 
-  const _ShortLogLevelFormatter({
+  const _ShortLevelName({
     this.style,
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
     this.open = '[',
     this.close = ']',
     this.upperCase = false,
@@ -90,13 +97,18 @@ final class _ShortLogLevelFormatter implements LogLevelFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) {
     final style = this.style?[log.level] ?? theme.levelNameStyle;
     final levelName =
         upperCase ? log.shortLevelName.toUpperCase() : log.shortLevelName;
     final levelNameStr = '$open$levelName$close';
 
-    return LogFormatterBox(
+    return LogBox(
       log,
       theme,
       [style(levelNameStr)],

@@ -7,29 +7,34 @@ import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
 import 'extensions.dart';
-import 'text_align.dart';
+import 'log_row.dart';
+import 'log_text_align.dart';
+import 'log_vertical_align.dart';
 
-abstract interface class LogFormatter {
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength);
+abstract interface class LogBlock {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  );
 }
 
-enum VerticalAlign { top, bottom, center }
-
-final class LogFormatterBox with Loggable {
+final class LogBox with Loggable {
   final String? debugName;
   final int width;
   final List<String> lines;
-  final VerticalAlign verticalAlign;
+  final LogVerticalAlign verticalAlign;
   final String? verticalFiller;
 
-  factory LogFormatterBox(
+  factory LogBox(
     Log log,
     LogLevelTheme theme,
     List<String> lines, {
     Constraints constraints = const Constraints.unlimited(),
-    TextAlign textAlign = TextAlign.left,
+    LogTextAlign textAlign = LogTextAlign.left,
+    LogVerticalAlign verticalAlign = LogVerticalAlign.top,
     String? verticalFiller,
-    VerticalAlign verticalAlign = VerticalAlign.top,
     bool showEllipsis = true,
     String? debugName,
   }) {
@@ -63,7 +68,7 @@ final class LogFormatterBox with Loggable {
       );
     }
 
-    return LogFormatterBox.raw(
+    return LogBox.raw(
       width,
       boxLines,
       verticalFiller: boxVerticalFiller,
@@ -72,29 +77,29 @@ final class LogFormatterBox with Loggable {
     );
   }
 
-  LogFormatterBox.empty({this.debugName})
+  LogBox.empty({this.debugName})
       : width = 0,
         lines = [],
         verticalFiller = null,
-        verticalAlign = VerticalAlign.top;
+        verticalAlign = LogVerticalAlign.top;
 
-  LogFormatterBox.raw(
+  LogBox.raw(
     this.width,
     this.lines, {
     this.verticalFiller,
-    this.verticalAlign = VerticalAlign.top,
+    this.verticalAlign = LogVerticalAlign.top,
     this.debugName,
   });
 
-  factory LogFormatterBox.fromText(
+  factory LogBox.fromText(
     Log log,
     LogLevelTheme theme,
     String text, {
     required int? maxLines,
     String? verticalFiller,
     Constraints constraints = const Constraints.unlimited(),
-    TextAlign textAlign = TextAlign.left,
-    VerticalAlign verticalAlign = VerticalAlign.top,
+    LogTextAlign textAlign = LogTextAlign.left,
+    LogVerticalAlign verticalAlign = LogVerticalAlign.top,
     String? debugName,
   }) {
     final lines = text.split('\n');
@@ -103,12 +108,12 @@ final class LogFormatterBox with Loggable {
     boxWidth = constraints.apply(boxWidth);
 
     if (boxWidth == 0) {
-      return LogFormatterBox.empty(debugName: debugName);
+      return LogBox.empty(debugName: debugName);
     }
 
     final textWidth = boxWidth - theme.common.lineBreak.length;
     if (textWidth <= 0) {
-      return LogFormatterBox.raw(
+      return LogBox.raw(
         boxWidth,
         [' ' * boxWidth],
         debugName: debugName,
@@ -174,7 +179,7 @@ final class LogFormatterBox with Loggable {
       );
     }
 
-    return LogFormatterBox(
+    return LogBox(
       log,
       theme,
       boxLines,
@@ -192,7 +197,7 @@ final class LogFormatterBox with Loggable {
     }
 
     switch (verticalAlign) {
-      case VerticalAlign.top:
+      case LogVerticalAlign.top:
         if (lines.length > linesCount) {
           lines.removeRange(linesCount, lines.length);
         } else {
@@ -204,7 +209,7 @@ final class LogFormatterBox with Loggable {
           );
         }
 
-      case VerticalAlign.bottom:
+      case LogVerticalAlign.bottom:
         if (lines.length > linesCount) {
           lines.removeRange(0, lines.length - linesCount);
         } else {
@@ -217,7 +222,7 @@ final class LogFormatterBox with Loggable {
           );
         }
 
-      case VerticalAlign.center:
+      case LogVerticalAlign.center:
         if (lines.length > linesCount) {
           final removeCount = lines.length - linesCount;
           final removeTop = removeCount ~/ 2;

@@ -1,34 +1,41 @@
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
-import 'log_formatter.dart';
-import 'text_align.dart';
+import 'log_block.dart';
+import 'log_row.dart';
+import 'log_text_align.dart';
+import 'log_vertical_align.dart';
 
-final class LogPathFormatter implements LogFormatter {
+final class LogPath implements LogBlock {
   final LogStyle? style;
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
   final String open;
   final String close;
   final bool stretch;
 
-  const LogPathFormatter({
+  const LogPath({
     this.style,
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
     this.open = '[',
     this.close = ']',
     this.stretch = true,
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) {
     final style = this.style?[log.level] ?? theme.pathStyle;
     final pathStr = '$open${log.path}$close';
 
-    return LogFormatterBox(
+    return LogBox(
       log,
       theme,
       [style(pathStr)],

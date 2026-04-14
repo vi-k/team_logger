@@ -4,14 +4,14 @@ import '../loggable/loggable.dart';
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
-import 'text_align.dart';
+import 'log_text_align.dart';
 
 extension AnsiStringExtensions on String {
   String applyConstraints(
     Log log,
     LogLevelTheme theme,
     Constraints constraints, {
-    TextAlign textAlign = TextAlign.left,
+    LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,
   }) =>
       ansi.Parser(this).applyConstraints(
@@ -28,7 +28,7 @@ extension AnsiParserExtensions on ansi.Parser {
     Log log,
     LogLevelTheme theme,
     Constraints constraints, {
-    TextAlign textAlign = TextAlign.left,
+    LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,
   }) {
     var newLength = length;
@@ -40,13 +40,13 @@ extension AnsiParserExtensions on ansi.Parser {
 
     if (newLength > length) {
       switch (textAlign) {
-        case TextAlign.left:
+        case LogTextAlign.left:
           return padRight(newLength, theme.styledPadding);
 
-        case TextAlign.right:
+        case LogTextAlign.right:
           return padLeft(newLength, theme.styledPadding);
 
-        case TextAlign.center:
+        case LogTextAlign.center:
           final needToAdd = newLength - length;
           final left = needToAdd ~/ 2;
           final right = needToAdd - left;

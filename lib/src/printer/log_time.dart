@@ -1,47 +1,49 @@
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
-import 'log_formatter.dart';
-import 'text_align.dart';
+import 'log_block.dart';
+import 'log_row.dart';
+import 'log_text_align.dart';
+import 'log_vertical_align.dart';
 
-abstract interface class LogTimeFormatter implements LogFormatter {
-  const factory LogTimeFormatter.dateTime({
+abstract interface class LogTime implements LogBlock {
+  const factory LogTime.dateTime({
     DateTime Function(Log log)? getTime,
     LogStyle? style,
     Constraints constraints,
-    TextAlign textAlign,
-    VerticalAlign verticalAlign,
+    LogTextAlign textAlign,
+    LogVerticalAlign verticalAlign,
     String open,
     String close,
     bool microseconds,
     bool utc,
     bool stretch,
-  }) = _DateTimeLogTimeFormatter;
+  }) = _DateTime;
 
-  const factory LogTimeFormatter.iso8601({
+  const factory LogTime.iso8601({
     DateTime Function(Log log)? getTime,
     LogStyle? style,
     Constraints constraints,
-    TextAlign textAlign,
-    VerticalAlign verticalAlign,
+    LogTextAlign textAlign,
+    LogVerticalAlign verticalAlign,
     String open,
     String close,
     bool utc,
     bool stretch,
-  }) = _Iso8601LogTimeFormatter;
+  }) = _Iso8601;
 
-  const factory LogTimeFormatter.onlyTime({
+  const factory LogTime.onlyTime({
     DateTime Function(Log log)? getTime,
     LogStyle? style,
     Constraints constraints,
-    TextAlign textAlign,
-    VerticalAlign verticalAlign,
+    LogTextAlign textAlign,
+    LogVerticalAlign verticalAlign,
     String open,
     String close,
     bool microseconds,
     bool utc,
     bool stretch,
-  }) = _OnlyTimeLogTimeFormatter;
+  }) = _OnlyTime;
 
   static String dateToString(DateTime time) => '${time.year}'
       '-${_d2(time.month)}'
@@ -60,24 +62,24 @@ abstract interface class LogTimeFormatter implements LogFormatter {
   static String _d3(int n) => n.toString().padLeft(3, '0');
 }
 
-final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
+final class _DateTime implements LogTime {
   final DateTime Function(Log log)? getTime;
   final LogStyle? style;
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
   final String open;
   final String close;
   final bool microseconds;
   final bool utc;
   final bool stretch;
 
-  const _DateTimeLogTimeFormatter({
+  const _DateTime({
     this.getTime,
     this.style,
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
     this.open = '',
     this.close = '',
     this.microseconds = false,
@@ -86,7 +88,12 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
@@ -95,11 +102,11 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
     final timeStr = microseconds
         ? '$open$time$close'
         : '$open'
-            '${LogTimeFormatter.dateToString(time)}'
-            ' ${LogTimeFormatter.timeToString(time, microseconds: microseconds)}'
+            '${LogTime.dateToString(time)}'
+            ' ${LogTime.timeToString(time, microseconds: microseconds)}'
             '$close';
 
-    return LogFormatterBox(
+    return LogBox(
       log,
       theme,
       [style(timeStr)],
@@ -111,23 +118,23 @@ final class _DateTimeLogTimeFormatter implements LogTimeFormatter {
   }
 }
 
-final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
+final class _Iso8601 implements LogTime {
   final DateTime Function(Log log)? getTime;
   final LogStyle? style;
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
   final String open;
   final String close;
   final bool utc;
   final bool stretch;
 
-  const _Iso8601LogTimeFormatter({
+  const _Iso8601({
     this.getTime,
     this.style,
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
     this.open = '',
     this.close = '',
     this.utc = false,
@@ -135,7 +142,12 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
@@ -143,7 +155,7 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
     }
     final timeStr = '$open${time.toIso8601String()}$close';
 
-    return LogFormatterBox(
+    return LogBox(
       log,
       theme,
       [style(timeStr)],
@@ -155,24 +167,24 @@ final class _Iso8601LogTimeFormatter implements LogTimeFormatter {
   }
 }
 
-final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
+final class _OnlyTime implements LogTime {
   final DateTime Function(Log log)? getTime;
   final LogStyle? style;
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
   final String open;
   final String close;
   final bool microseconds;
   final bool utc;
   final bool stretch;
 
-  const _OnlyTimeLogTimeFormatter({
+  const _OnlyTime({
     this.getTime,
     this.style,
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
     this.open = '',
     this.close = '',
     this.microseconds = false,
@@ -181,17 +193,22 @@ final class _OnlyTimeLogTimeFormatter implements LogTimeFormatter {
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) {
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) {
     final style = this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
     }
     final timeStr = '$open'
-        '${LogTimeFormatter.timeToString(time, microseconds: microseconds)}'
+        '${LogTime.timeToString(time, microseconds: microseconds)}'
         '$close';
 
-    return LogFormatterBox(
+    return LogBox(
       log,
       theme,
       [style(timeStr)],

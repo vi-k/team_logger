@@ -1,14 +1,16 @@
 import '../logger/log.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
-import 'log_formatter.dart';
-import 'text_align.dart';
+import 'log_block.dart';
+import 'log_row.dart';
+import 'log_text_align.dart';
+import 'log_vertical_align.dart';
 
-final class LogDivider implements LogFormatter {
+final class LogDivider implements LogBlock {
   final LogStyle style;
   final Constraints constraints;
-  final TextAlign textAlign;
-  final VerticalAlign verticalAlign;
+  final LogTextAlign textAlign;
+  final LogVerticalAlign verticalAlign;
   final String divider;
   final bool stretch;
 
@@ -16,14 +18,19 @@ final class LogDivider implements LogFormatter {
     this.divider, {
     this.style = LogStyle.noColors,
     this.constraints = const Constraints.unlimited(),
-    this.textAlign = TextAlign.left,
-    this.verticalAlign = VerticalAlign.top,
+    this.textAlign = LogTextAlign.left,
+    this.verticalAlign = LogVerticalAlign.top,
     this.stretch = true,
   });
 
   @override
-  LogFormatterBox call(Log log, LogLevelTheme theme, int? remainingLength) =>
-      LogFormatterBox(
+  LogBox call(
+    Log log,
+    LogLevelTheme theme,
+    LogRow row,
+    int? remainingLength,
+  ) =>
+      LogBox(
         log,
         theme,
         [style[log.level](divider)],
@@ -31,6 +38,7 @@ final class LogDivider implements LogFormatter {
         showEllipsis: false,
         textAlign: textAlign,
         verticalAlign: verticalAlign,
+        verticalFiller: stretch ? theme.common.hiddenStyle(divider) : null,
         debugName: 'divider',
       );
 }

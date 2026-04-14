@@ -3,18 +3,16 @@ import 'dart:math' as math;
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import 'package:logger_builder/logger_builder.dart';
 
-import '../log_formatters/log_divider.dart';
-import '../log_formatters/log_formatter.dart';
 import '../logger/log.dart';
 import '../logger/log_levels.dart';
 import '../theme/log_theme.dart';
+import 'log_block.dart';
+import 'log_divider.dart';
+import 'log_row.dart';
 
 final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogTheme theme;
-  final List<LogFormatter> formatters;
-  final List<LogFormatter> stackTraceFormatters;
-  final List<LogFormatter> tagsFormatters;
-  final LogDivider defaultDivider;
+  final List<LogRow> rows;
   void Function(int linesCount)? beforeOutput;
   void Function(String) output;
   void Function(int linesCount)? afterOutput;
@@ -23,10 +21,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
 
   ConsoleLogPrinter({
     this.theme = LogTheme.defaultActiveTheme,
-    this.defaultDivider = const LogDivider(' '),
-    required this.formatters,
-    required this.stackTraceFormatters,
-    required this.tagsFormatters,
+    required this.rows,
     this.beforeOutput,
     this.output = print,
     this.afterOutput,
@@ -61,60 +56,53 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
 
   @override
   void publish(Log log) {
-    printLog(log, formatters, alignTags: true);
-
-    if (log.stackTrace != null) {
-      printLog(log, stackTraceFormatters, alignTags: false);
+    for (final row in rows) {
+      if (row.when?.call(log) ?? true) {
+        printRow(log, row);
+      }
     }
   }
 
-  void printLog(
-    Log log,
-    List<LogFormatter> formatters, {
-    required bool alignTags,
-  }) {
+  void printRow(Log log, LogRow row) {
     final levelTheme = theme[log.level];
-    late final defaultDividerBox = defaultDivider(log, levelTheme, null);
+    late final defaultDividerBox =
+        row.defaultDivider(log, levelTheme, row, null);
 
-    // tags always a top priority
+    // tail first
 
-    final tagsBoxes = <LogFormatterBox>[];
-    var tagsLength = 0;
-    LogFormatter? lastFormatter;
+    final tailBoxes = <LogBox>[];
+    var tailLength = 0;
+    LogBlock? lastBlock;
 
-    for (final formatter in tagsFormatters) {
-      final box = formatter(log, levelTheme, null);
+    for (final block in row.tail) {
+      final box = block(log, levelTheme, row, null);
       if (box.width > 0) {
-        if (lastFormatter != null &&
-            lastFormatter is! LogDivider &&
-            formatter is! LogDivider) {
-          tagsBoxes.add(defaultDividerBox);
-          tagsLength += defaultDividerBox.width;
+        if ((lastBlock == null || lastBlock is! LogDivider) &&
+            block is! LogDivider) {
+          tailBoxes.add(defaultDividerBox);
+          tailLength += defaultDividerBox.width;
         }
-        tagsBoxes.add(box);
-        tagsLength += box.width;
-        lastFormatter = formatter;
+        tailBoxes.add(box);
+        tailLength += box.width;
+        lastBlock = block;
       }
     }
-    if (tagsLength > 0) {
-      tagsLength++; // for divider
-    }
 
-    // other formatters
+    // other blocks
 
-    final boxes = <LogFormatterBox>[];
-    var remainingLength = switch (theme.maxLength) {
+    final boxes = <LogBox>[];
+    var remainingLength = switch (row.maxLength) {
       null => null,
-      final maxLength => maxLength - tagsLength,
+      final maxLength => maxLength - tailLength,
     };
     var linesCount = 0;
-    lastFormatter = null;
+    lastBlock = null;
 
-    for (final formatter in formatters) {
-      final innerBoxes = <LogFormatterBox>[];
-      if (lastFormatter != null &&
-          lastFormatter is! LogDivider &&
-          formatter is! LogDivider) {
+    for (final block in row.children) {
+      final innerBoxes = <LogBox>[];
+      if (lastBlock != null &&
+          lastBlock is! LogDivider &&
+          block is! LogDivider) {
         innerBoxes.add(defaultDividerBox);
 
         if (remainingLength != null) {
@@ -125,7 +113,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
         }
       }
 
-      final box = formatter(log, levelTheme, remainingLength);
+      final box = block(log, levelTheme, row, remainingLength);
       if (box.width > 0) {
         innerBoxes.add(box);
         if (remainingLength != null) {
@@ -136,11 +124,11 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
         }
         boxes.addAll(innerBoxes);
         linesCount = math.max(linesCount, box.lines.length);
-        lastFormatter = formatter;
+        lastBlock = block;
       }
     }
 
-    if (theme.maxLines case final maxLines? when maxLines < linesCount) {
+    if (row.maxLines case final maxLines? when maxLines < linesCount) {
       linesCount = maxLines;
     }
 
@@ -148,7 +136,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       box.applyHeight(linesCount);
     }
 
-    for (final box in tagsBoxes) {
+    for (final box in tailBoxes) {
       box.applyHeight(linesCount);
     }
 
@@ -158,12 +146,10 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       for (final box in boxes) {
         printer.write(box.lines[i]);
       }
-      if (remainingLength != null && alignTags) {
-        printer.write(theme.padding * (remainingLength + 1));
-      } else {
-        printer.write(theme.padding);
+      if (remainingLength != null && row.alignTail) {
+        printer.write(theme.padding * remainingLength);
       }
-      for (final box in tagsBoxes) {
+      for (final box in tailBoxes) {
         printer.write(box.lines[i]);
       }
       printer.writeln();
