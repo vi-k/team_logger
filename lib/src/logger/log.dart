@@ -1,12 +1,15 @@
 import 'package:clock/clock.dart';
 import 'package:logger_builder/logger_builder.dart';
 
+import 'trace_id.dart';
+
 final class Log extends CustomLog {
   static int _lastSequenceNum = 0;
 
   final DateTime time;
   final int sequenceNum;
   final String path;
+  final List<TraceId> traceIds;
   final String message;
   final Object? data;
   final Set<String> tags;
@@ -14,6 +17,7 @@ final class Log extends CustomLog {
   Log(
     super.levelLogger, {
     required this.path,
+    required this.traceIds,
     required this.message,
     required this.data,
     required this.tags,

@@ -154,7 +154,6 @@ final class LogTheme with Loggable {
   static const _activeVerboseEmphasisColor = ansi.Color256.gray10;
   static const _activeVerboseDimColor = ansi.Color256.gray5;
   static const _activeVerboseSuperDimColor = ansi.Color256.gray4;
-  static const _activeVerbosePunctuationColor = ansi.Color256.rgb023;
   static const _activeVerboseLevels0Color = ansi.Color256.rgb310;
   static const _activeVerboseLevels1Color = ansi.Color256.rgb130;
   static const _activeVerboseLevels2Color = ansi.Color256.rgb023;
@@ -176,6 +175,8 @@ final class LogTheme with Loggable {
       ansi.Style(foreground: _activeVerboseSuperDimColor);
   static const _activeVerbosePunctuationStyle =
       ansi.Style(foreground: _activeVerbosePunctuationColor);
+  static const _activeVerboseTraceIdStyle =
+      ansi.Style(foreground: _activeVerboseTraceIdColor);
 
   // active debug
 
@@ -183,7 +184,6 @@ final class LogTheme with Loggable {
   static const _activeDebugEmphasisColor = ansi.Color256.gray15;
   static const _activeDebugDimColor = ansi.Color256.gray8;
   static const _activeDebugSuperDimColor = ansi.Color256.gray4;
-  static const _activeDebugPunctuationColor = ansi.Color256.rgb034;
   static const _activeDebugLevels0Color = ansi.Color256.rgb420;
   static const _activeDebugLevels1Color = ansi.Color256.rgb240;
   static const _activeDebugLevels2Color = ansi.Color256.rgb034;
@@ -205,6 +205,8 @@ final class LogTheme with Loggable {
       ansi.Style(foreground: _activeDebugSuperDimColor);
   static const _activeDebugPunctuationStyle =
       ansi.Style(foreground: _activeDebugPunctuationColor);
+  static const _activeDebugTraceIdStyle =
+      ansi.Style(foreground: _activeDebugTraceIdColor);
 
   // active info
 
@@ -229,6 +231,8 @@ final class LogTheme with Loggable {
       ansi.Style(foreground: _activeInfoSuperDimColor);
   static const _activeInfoPunctuationStyle =
       ansi.Style(foreground: _activePunctuationColor);
+  static const _activeInfoTraceIdStyle =
+      ansi.Style(foreground: _activeTraceIdColor);
 
   // active warning
 
@@ -249,6 +253,8 @@ final class LogTheme with Loggable {
       ansi.Style(foreground: _activeWarningSuperDimColor);
   static const _activeWarningPunctuationStyle =
       ansi.Style(foreground: _activePunctuationColor);
+  static const _activeWarningTraceIdStyle =
+      ansi.Style(foreground: _activeTraceIdColor);
 
   // active error
 
@@ -269,6 +275,8 @@ final class LogTheme with Loggable {
       ansi.Style(foreground: _activeErrorSuperDimColor);
   static const _activeErrorPunctuationStyle =
       ansi.Style(foreground: _activePunctuationColor);
+  static const _activeErrorTraceIdStyle =
+      ansi.Style(foreground: _activeTraceIdColor);
 
   // active critical
 
@@ -289,10 +297,18 @@ final class LogTheme with Loggable {
       ansi.Style(foreground: _activeCriticalSuperDimColor);
   static const _activeCriticalPunctuationStyle =
       ansi.Style(foreground: _activePunctuationColor);
+  static const _activeCriticalTraceIdStyle =
+      ansi.Style(foreground: _activeTraceIdColor);
 
   // active common
 
+  static const _activeVerbosePunctuationColor = ansi.Color256.rgb023;
+  static const _activeDebugPunctuationColor = ansi.Color256.rgb034;
   static const _activePunctuationColor = ansi.Color256.rgb045;
+
+  static const _activeVerboseTraceIdColor = ansi.Color256.rgb420;
+  static const _activeDebugTraceIdColor = ansi.Color256.rgb420;
+  static const _activeTraceIdColor = ansi.Color256.rgb530;
 
   static const _activeLevels0Color = ansi.Color256.rgb530;
   static const _activeLevels0DimColor = ansi.Color256.rgb420;
@@ -311,6 +327,7 @@ final class LogTheme with Loggable {
       dimStyle: _activeVerboseDimStyle,
       superDimStyle: _activeVerboseSuperDimStyle,
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: _activeVerboseTraceIdStyle,
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeVerboseNormalColor,
@@ -364,6 +381,7 @@ final class LogTheme with Loggable {
       dimStyle: _activeDebugDimStyle,
       superDimStyle: _activeDebugSuperDimStyle,
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: _activeDebugTraceIdStyle,
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeDebugNormalColor,
@@ -417,6 +435,7 @@ final class LogTheme with Loggable {
       dimStyle: _activeInfoDimStyle,
       superDimStyle: _activeInfoSuperDimStyle,
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: _activeInfoTraceIdStyle,
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeInfoNormalColor,
@@ -470,6 +489,7 @@ final class LogTheme with Loggable {
       dimStyle: _activeWarningDimStyle,
       superDimStyle: _activeWarningSuperDimStyle,
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: _activeWarningTraceIdStyle,
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeWarningNormalColor,
@@ -523,6 +543,7 @@ final class LogTheme with Loggable {
       dimStyle: _activeErrorDimStyle,
       superDimStyle: _activeErrorSuperDimStyle,
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: _activeErrorTraceIdStyle,
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeErrorNormalColor,
@@ -576,6 +597,7 @@ final class LogTheme with Loggable {
       dimStyle: _activeCriticalDimStyle,
       superDimStyle: _activeCriticalSuperDimStyle,
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: _activeCriticalTraceIdStyle,
       levelNameStyle: ansi.Style(
         foreground: _black,
         background: _activeCriticalNormalColor,
@@ -633,6 +655,7 @@ final class LogTheme with Loggable {
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -668,6 +691,7 @@ final class LogTheme with Loggable {
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -703,6 +727,7 @@ final class LogTheme with Loggable {
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -738,6 +763,7 @@ final class LogTheme with Loggable {
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -773,6 +799,7 @@ final class LogTheme with Loggable {
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),
@@ -808,6 +835,7 @@ final class LogTheme with Loggable {
       dimStyle: ansi.NoStyle(),
       superDimStyle: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
+      traceIdStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
       pathStyle: ansi.NoStyle(),

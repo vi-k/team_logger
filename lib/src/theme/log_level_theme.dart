@@ -9,6 +9,7 @@ final class LogLevelTheme with Loggable {
   final ansi.Style dimStyle;
   final ansi.Style superDimStyle;
   final ansi.Style sequenceNumStyle;
+  final ansi.Style traceIdStyle;
   final ansi.Style levelNameStyle;
   final ansi.Style timeStyle;
   final ansi.Style pathStyle;
@@ -41,6 +42,7 @@ final class LogLevelTheme with Loggable {
     ansi.Style? dimStyle,
     ansi.Style? superDimStyle,
     this.sequenceNumStyle = const ansi.NoStyle(),
+    this.traceIdStyle = const ansi.NoStyle(),
     ansi.Style? levelNameStyle,
     this.timeStyle = const ansi.NoStyle(),
     this.pathStyle = const ansi.NoStyle(),
@@ -97,6 +99,7 @@ final class LogLevelTheme with Loggable {
     required this.dimStyle,
     required this.superDimStyle,
     required this.sequenceNumStyle,
+    required this.traceIdStyle,
     required this.levelNameStyle,
     required this.timeStyle,
     required this.pathStyle,
@@ -178,6 +181,7 @@ final class LogLevelTheme with Loggable {
     dimStyle: ansi.NoStyle(),
     superDimStyle: ansi.NoStyle(),
     sequenceNumStyle: ansi.NoStyle(),
+    traceIdStyle: ansi.NoStyle(),
     levelNameStyle: ansi.NoStyle(),
     timeStyle: ansi.NoStyle(),
     pathStyle: ansi.NoStyle(),
@@ -212,6 +216,7 @@ final class LogLevelTheme with Loggable {
     ansi.Style? dimStyle,
     ansi.Style? superDimStyle,
     ansi.Style? sequenceNumStyle,
+    ansi.Style? traceIdStyle,
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
@@ -252,6 +257,7 @@ final class LogLevelTheme with Loggable {
       dimStyle: dimStyle ?? this.dimStyle,
       superDimStyle: superDimStyle ?? this.superDimStyle,
       sequenceNumStyle: sequenceNumStyle ?? this.sequenceNumStyle,
+      traceIdStyle: traceIdStyle ?? this.traceIdStyle,
       levelNameStyle: levelNameStyle ?? this.levelNameStyle,
       timeStyle: timeStyle ?? this.timeStyle,
       pathStyle: pathStyle ?? this.pathStyle,
@@ -292,6 +298,7 @@ final class LogLevelTheme with Loggable {
       ..style('dimStyle', dimStyle)
       ..style('superDimStyle', superDimStyle)
       ..style('sequenceNumStyle', sequenceNumStyle)
+      ..style('traceIdStyle', traceIdStyle)
       ..style('levelNameStyle', levelNameStyle)
       ..style('timeStyle', timeStyle)
       ..style('pathStyle', pathStyle)

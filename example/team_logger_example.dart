@@ -43,6 +43,7 @@ void f() {
             LogLevelName.short(),
             LogTime.onlyTime(),
             LogPath(),
+            LogTraceId(),
             LogMessage(),
           ],
           tail: [
@@ -160,28 +161,38 @@ void f() {
 
   for (var i = 0; i < 1; i++) {
     for (final level in LogLevels.values) {
-      eventLog[level].log('Loggable object', data: loggableObject);
+      log.scope(
+        traceId: TraceId.auto('feature'),
+        () {
+          eventLog[level].log('Loggable object', data: loggableObject);
 
-      networkLog[level].log(
-        'POST https://test-api.tezapp.org/[b]locations/address-by-point[/b]',
-        data: LoggableMultiData(
-          {
-            'HEADERS': postHeaders,
-            'BODY': postBody,
-          },
-          collectionMaxCount: 2,
-        ),
-        tags: ['post'],
-      );
-      networkLog[level].log(
-        '[success][200 OK][/success] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
-        tags: ['response'],
-        data: LoggableObject(succesResponse, collectionMaxCount: 2),
-      );
-      log[level].log(
-        '[error][500][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
-        tags: ['response', 'error'],
-        data: errorResponse,
+          final httpTraceId = TraceId.auto('http');
+
+          networkLog[level].log(
+            'POST https://test-api.tezapp.org/[b]locations/address-by-point[/b]',
+            traceId: httpTraceId,
+            data: LoggableMultiData(
+              {
+                'HEADERS': postHeaders,
+                'BODY': postBody,
+              },
+              collectionMaxCount: 2,
+            ),
+            tags: ['post'],
+          );
+          networkLog[level].log(
+            '[success][200 OK][/success] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
+            traceId: httpTraceId,
+            data: LoggableObject(succesResponse, collectionMaxCount: 2),
+            tags: ['response'],
+          );
+          log[level].log(
+            '[error][500][/error] RESPONSE for https://test-api.tezapp.org/[b]clients/addresses?[/b]',
+            traceId: httpTraceId,
+            data: errorResponse,
+            tags: ['response', 'error'],
+          );
+        },
       );
     }
   }

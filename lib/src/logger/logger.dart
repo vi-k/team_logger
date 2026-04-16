@@ -4,9 +4,11 @@ import 'package:logger_builder/logger_builder.dart';
 
 import 'log.dart';
 import 'log_levels.dart';
+import 'trace_id.dart';
 
 typedef LogFn = bool Function(
   Object message, {
+  TraceId? traceId,
   Object? data,
   Object? tags,
   String? overridePath,
@@ -21,6 +23,7 @@ final class LevelLogger
       : super(
           noLog: (
             _, {
+            traceId,
             data,
             tags,
             overridePath,
@@ -34,6 +37,7 @@ final class LevelLogger
   @override
   LogFn get processLog => (
         message, {
+        traceId,
         data,
         tags,
         overridePath,
@@ -41,10 +45,16 @@ final class LevelLogger
         stackTrace,
         zone,
       }) {
+        final traceIds = switch (Zone.current[TraceId]) {
+          final List<TraceId> list => list,
+          _ => const <TraceId>[],
+        };
+
         publisher.publish(
           Log(
             this,
             path: overridePath ?? logger._lazyPath.value,
+            traceIds: traceId == null ? traceIds : [...traceIds, traceId],
             message: LazyString(message, '').value,
             data: Lazy(data).resolved,
             tags: {...logger.tags, ...LazyTags(tags).value},
@@ -135,4 +145,18 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   LogFn get w => _w.log;
   LogFn get e => _e.log;
   LogFn get critical => _critical.log;
+
+  T scope<T extends Object?>(
+    T Function() fn, {
+    required TraceId traceId,
+  }) =>
+      runZoned(
+        fn,
+        zoneValues: {
+          TraceId: switch (Zone.current[TraceId]) {
+            final List<TraceId> list => [...list, traceId],
+            _ => [traceId],
+          },
+        },
+      );
 }
