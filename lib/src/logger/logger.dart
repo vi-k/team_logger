@@ -45,13 +45,20 @@ final class LevelLogger
         stackTrace,
         zone,
       }) {
+        final currentTraceIds = logger.currentScopeTraceIds;
+        final newTraceIds =
+            traceId == null ? currentTraceIds : [...currentTraceIds, traceId];
+        for (final traceId in newTraceIds) {
+          traceId.resolve();
+        }
+
         publisher.publish(
           Log(
             this,
             path: overridePath ?? logger._lazyPath.value,
             traceIds: traceId == null
-                ? logger.currentScopeTraceIds
-                : [...logger.currentScopeTraceIds, traceId],
+                ? currentTraceIds
+                : [...currentTraceIds, traceId],
             message: LazyString(message, '').value,
             data: Lazy(data).resolved,
             tags: {...logger.tags, ...LazyTags(tags).value},

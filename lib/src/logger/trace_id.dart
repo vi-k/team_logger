@@ -1,3 +1,5 @@
+import 'log.dart';
+
 /// Идентификатор трассировки в виде: #123 или #Group-123
 ///
 /// Группа и номер могут быть заданы вручную: Trace.manual(group, num). Или
@@ -10,11 +12,17 @@ sealed class TraceId {
   /// Ручная установка номера.
   const factory TraceId.manual(String group, int num) = _ConstTraceId;
 
-  /// Автоматическая нумерация.
-  factory TraceId.auto(String group, {int initial}) = _AutoTraceId;
+  /// Ленивая автоматическая нумерация.
+  ///
+  /// Нумерация увеличивается лениво только при использовании, чтобы не считать
+  /// отключенные логи. Если необходимо зафиксировать значение, используйте
+  /// метод [resolve]. В [Log] traceId's попадают уже зафиксированными.
+  factory TraceId.auto(String group, {int initial}) = _LazyAutoTraceId;
 
-  /// Автоматическая нумерация без группы.
-  factory TraceId.global({int initial}) = _AutoTraceId.global;
+  /// Ленивая автоматическая нумерация без группы.
+  ///
+  /// See also [TraceId.auto].
+  factory TraceId.global({int initial}) = _LazyAutoTraceId.global;
 
   String? get group;
 
@@ -23,6 +31,8 @@ sealed class TraceId {
   String? get suffix;
 
   TraceId withSuffix(String suffix);
+
+  void resolve();
 
   static String _buildSuffix(String? currentSuffix, String addedSuffix) =>
       '${currentSuffix ?? ''}.$addedSuffix';
@@ -51,9 +61,12 @@ final class _ConstTraceId extends TraceId {
   @override
   TraceId withSuffix(String suffix) =>
       _ConstTraceId._(group, num, TraceId._buildSuffix(this.suffix, suffix));
+
+  @override
+  void resolve() {}
 }
 
-final class _AutoTraceId extends TraceId {
+final class _LazyAutoTraceId extends TraceId {
   static final Map<String?, int> _autoNums = {};
 
   @override
@@ -66,16 +79,16 @@ final class _AutoTraceId extends TraceId {
 
   int? _num;
 
-  _AutoTraceId(String this.group, {this.initial = 1})
+  _LazyAutoTraceId(String this.group, {this.initial = 1})
       : suffix = null,
         super._();
 
-  _AutoTraceId.global({this.initial = 1})
+  _LazyAutoTraceId.global({this.initial = 1})
       : group = null,
         suffix = null,
         super._();
 
-  _AutoTraceId._(this.group, this.initial, this.suffix) : super._();
+  _LazyAutoTraceId._(this.group, this.initial, this.suffix) : super._();
 
   @override
   int get num => _num ??= _nextNum(initial);
@@ -84,6 +97,14 @@ final class _AutoTraceId extends TraceId {
       _autoNums[group] = (_autoNums[group] ?? initial - 1) + 1;
 
   @override
-  TraceId withSuffix(String suffix) =>
-      _AutoTraceId._(group, initial, TraceId._buildSuffix(this.suffix, suffix));
+  TraceId withSuffix(String suffix) => _LazyAutoTraceId._(
+        group,
+        initial,
+        TraceId._buildSuffix(this.suffix, suffix),
+      );
+
+  @override
+  void resolve() {
+    num;
+  }
 }

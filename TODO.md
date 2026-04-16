@@ -1,8 +1,6 @@
 TODO
 
 - LogMultiBlock: блок, состоящий из других блоков: LogMessage, LogData, LogStackTrace
-  Если singleLine,
-- TraceId
 - LogData - отдельный блок для данных
 - обычную data выводить в одной строке, a MultiData в разных
   если есть и error, и data, то режим multiline:
