@@ -45,16 +45,13 @@ final class LevelLogger
         stackTrace,
         zone,
       }) {
-        final traceIds = switch (Zone.current[TraceId]) {
-          final List<TraceId> list => list,
-          _ => const <TraceId>[],
-        };
-
         publisher.publish(
           Log(
             this,
             path: overridePath ?? logger._lazyPath.value,
-            traceIds: traceId == null ? traceIds : [...traceIds, traceId],
+            traceIds: traceId == null
+                ? logger.currentScopeTraceIds
+                : [...logger.currentScopeTraceIds, traceId],
             message: LazyString(message, '').value,
             data: Lazy(data).resolved,
             tags: {...logger.tags, ...LazyTags(tags).value},
@@ -153,10 +150,12 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
       runZoned(
         fn,
         zoneValues: {
-          TraceId: switch (Zone.current[TraceId]) {
-            final List<TraceId> list => [...list, traceId],
-            _ => [traceId],
-          },
+          TraceId: [...currentScopeTraceIds, traceId],
         },
       );
+
+  List<TraceId> get currentScopeTraceIds => switch (Zone.current[TraceId]) {
+        final List<TraceId> list => list,
+        _ => const <TraceId>[],
+      };
 }
