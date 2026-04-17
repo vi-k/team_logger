@@ -41,6 +41,11 @@ final class LogStackTrace implements LogBlock {
       return LogBox.empty();
     }
 
+    // For debugging
+    // var trace = Trace.parse(
+    //   '#0      State._update (package:tez_taxi/feature/bottom_sheet_contents/on_map_scopes/track_driver_on_map/track_driver_on_map.dart:123:24)',
+    // );
+
     var trace = Trace.from(stackTrace);
     if (terse) {
       trace = trace.terse;
@@ -65,7 +70,8 @@ final class LogStackTrace implements LogBlock {
 
         final uri = frame.uri;
         var isActive = uri.scheme == 'file';
-        if (uri.scheme == 'package') {
+        final isPackage = uri.scheme == 'package';
+        if (isPackage) {
           isActive = controlledPackages.contains(uri.pathSegments.first);
         }
 
@@ -86,13 +92,13 @@ final class LogStackTrace implements LogBlock {
             indexStr.length -
             memberStr.length -
             posStr.length -
-            2;
-        if (fileStr.startsWith('package:') || fileStr.startsWith('dart:')) {
-          final index = fileStr.indexOf('/');
-          if (index != -1) {
+            2; // brackets
+        if (isPackage || uri.scheme == 'dart') {
+          final index = fileStr.indexOf('/') + 1;
+          if (index != 0) {
             availableWidth -= index;
-            packageStr = fileStr.substring(0, index + 1);
-            fileStr = fileStr.substring(index + 1);
+            packageStr = fileStr.substring(0, index);
+            fileStr = fileStr.substring(index);
           }
         }
         if (fileStr.length <= availableWidth) {
