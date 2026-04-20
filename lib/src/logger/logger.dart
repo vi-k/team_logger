@@ -45,7 +45,7 @@ final class LevelLogger
         stackTrace,
         zone,
       }) {
-        final currentTraceIds = logger.currentScopeTraceIds;
+        final currentTraceIds = logger.currentTraceIds;
         final newTraceIds =
             traceId == null ? currentTraceIds : [...currentTraceIds, traceId];
         for (final traceId in newTraceIds) {
@@ -150,18 +150,14 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   LogFn get e => _e.log;
   LogFn get critical => _critical.log;
 
-  T scope<T extends Object?>(
-    T Function() fn, {
-    required TraceId traceId,
-  }) =>
-      runZoned(
+  T trace<T extends Object?>(TraceId traceId, T Function() fn) => runZoned(
         fn,
         zoneValues: {
-          TraceId: [...currentScopeTraceIds, traceId],
+          TraceId: [...currentTraceIds, traceId],
         },
       );
 
-  List<TraceId> get currentScopeTraceIds => switch (Zone.current[TraceId]) {
+  List<TraceId> get currentTraceIds => switch (Zone.current[TraceId]) {
         final List<TraceId> list => list,
         _ => const <TraceId>[],
       };
