@@ -14,14 +14,21 @@ final class LogRow {
   const LogRow({
     required this.children,
     this.tail = const [],
-    bool singleLine = false,
-    int? maxLength,
-    int? maxLines,
+    required int this.maxLength,
+    this.maxLines,
     this.when,
     this.defaultDivider = const LogDivider(' '),
     this.alignTail = true,
-  })  : maxLength = singleLine ? null : maxLength,
-        maxLines = singleLine ? 1 : maxLines;
+  });
+
+  const LogRow.singleLine({
+    required this.children,
+    this.tail = const [],
+    this.when,
+    this.defaultDivider = const LogDivider(' '),
+    this.alignTail = true,
+  })  : maxLength = null,
+        maxLines = 1;
 
   bool get singleLine => maxLines == 1 && maxLength == null;
 }

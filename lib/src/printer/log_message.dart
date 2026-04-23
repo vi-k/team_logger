@@ -37,8 +37,8 @@ final class LogMessage implements LogBlock {
       final error => theme.formatMessage(theme.formatValue(error.toString())),
     };
 
-    final dataOnNewLine = theme.common.dataOnNewLine && row.maxLines != 1;
-    final errorOnNewLine = theme.common.errorOnNewLine && row.maxLines != 1;
+    final dataOnNewLine = theme.common.dataOnNewLine && !row.singleLine;
+    final errorOnNewLine = theme.common.errorOnNewLine && !row.singleLine;
 
     var dataStr = '';
     var dataSectionName = '';

@@ -44,6 +44,10 @@ final class LogBox with Loggable {
     var width = parsers.fold(0, (w, parser) => math.max(w, parser.length));
     width = constraints.apply(width);
 
+    if (width <= 0) {
+      return LogBox.empty();
+    }
+
     final boxLines = parsers
         .map(
           (parser) => parser.applyConstraints(
