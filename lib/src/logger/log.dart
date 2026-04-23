@@ -1,7 +1,13 @@
-import 'package:clock/clock.dart';
-import 'package:logger_builder/logger_builder.dart';
+part of 'logger.dart';
 
-import 'trace_id.dart';
+final class _NoData {
+  const _NoData._();
+
+  @override
+  String toString() => 'no data';
+}
+
+const _noData = _NoData._();
 
 final class Log extends CustomLog {
   static int _lastSequenceNum = 0;
@@ -26,6 +32,8 @@ final class Log extends CustomLog {
     super.zone,
   })  : sequenceNum = ++_lastSequenceNum,
         time = clock.now();
+
+  bool get hasData => data is! _NoData;
 }
 
 final class LazyTags extends TypedLazy<Set<String>> {

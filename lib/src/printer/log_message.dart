@@ -1,7 +1,7 @@
 import '../loggable/loggable.dart';
 import '../loggable/loggable_multi_data.dart';
 import '../loggable/loggable_named_data.dart';
-import '../logger/log.dart';
+import '../logger/logger.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
@@ -41,9 +41,10 @@ final class LogMessage implements LogBlock {
     final errorOnNewLine = theme.common.errorOnNewLine && row.maxLines != 1;
 
     var dataStr = '';
-    if (log.data case final data?) {
-      var dataSectionName = '';
+    var dataSectionName = '';
 
+    if (log.hasData) {
+      final data = log.data;
       switch (data) {
         case LoggableNamedData():
           dataSectionName =
@@ -83,9 +84,9 @@ final class LogMessage implements LogBlock {
           }
           dataStr = Loggable.objectToString(data, theme: theme);
       }
-
-      dataStr = '$dataSectionName$dataStr';
     }
+
+    dataStr = '$dataSectionName$dataStr';
 
     return LogBox.fromText(
       log,

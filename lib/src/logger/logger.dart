@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:logger_builder/logger_builder.dart';
 
-import 'log.dart';
 import 'log_levels.dart';
 import 'trace_id.dart';
+
+part 'log.dart';
 
 typedef LogFn = bool Function(
   Object message, {
@@ -24,7 +26,7 @@ final class LevelLogger
           noLog: (
             _, {
             traceId,
-            data,
+            data = _noData,
             tags,
             overridePath,
             error,
@@ -38,7 +40,7 @@ final class LevelLogger
   LogFn get processLog => (
         message, {
         traceId,
-        data,
+        data = _noData,
         tags,
         overridePath,
         error,
