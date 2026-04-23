@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:ansi_escape_codes/parsing.dart' as ansi;
 
 import '../loggable/loggable.dart';
-import '../logger/log.dart';
+import '../logger/logger.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
 import 'extensions.dart';

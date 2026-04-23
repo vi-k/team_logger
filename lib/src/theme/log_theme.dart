@@ -5,8 +5,8 @@ import '../log_preformatters/bb_code_formatter.dart';
 import '../log_preformatters/control_code_formatter.dart';
 import '../log_preformatters/log_pre_formatter.dart';
 import '../loggable/loggable.dart';
-import '../logger/log.dart';
 import '../logger/log_levels.dart';
+import '../logger/logger.dart';
 import '../printer/extensions.dart';
 
 part 'log_level_theme.dart';

@@ -1,4 +1,4 @@
-import '../logger/log.dart';
+import '../logger/logger.dart';
 import 'log_block.dart';
 import 'log_divider.dart';
 

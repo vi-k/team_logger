@@ -1,6 +1,6 @@
 import 'package:stack_trace/stack_trace.dart';
 
-import '../logger/log.dart';
+import '../logger/logger.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';

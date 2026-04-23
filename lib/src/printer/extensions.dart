@@ -1,7 +1,7 @@
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 
 import '../loggable/loggable.dart';
-import '../logger/log.dart';
+import '../logger/logger.dart';
 import '../theme/log_theme.dart';
 import 'constraints.dart';
 import 'log_text_align.dart';

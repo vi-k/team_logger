@@ -1,4 +1,4 @@
-import 'log.dart';
+import 'logger.dart';
 
 /// Идентификатор трассировки в виде: #123 или #Group-123
 ///
