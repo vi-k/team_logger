@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import 'package:logger_builder/logger_builder.dart';
 
-import '../logger/log.dart';
 import '../logger/log_levels.dart';
+import '../logger/logger.dart';
 import '../theme/log_theme.dart';
 import 'log_block.dart';
 import 'log_divider.dart';
@@ -100,27 +100,30 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
 
     for (final block in row.children) {
       final innerBoxes = <LogBox>[];
+      var currentWidth = 0;
+
       if (lastBlock != null &&
           lastBlock is! LogDivider &&
           block is! LogDivider) {
         innerBoxes.add(defaultDividerBox);
-
-        if (remainingLength != null) {
-          if (remainingLength < defaultDividerBox.width) {
-            break;
-          }
-          remainingLength -= defaultDividerBox.width;
-        }
+        currentWidth += defaultDividerBox.width;
       }
 
-      final box = block(log, levelTheme, row, remainingLength);
+      final box = block(
+        log,
+        levelTheme,
+        row,
+        remainingLength == null ? null : remainingLength - currentWidth,
+      );
       if (box.width > 0) {
         innerBoxes.add(box);
+        currentWidth += box.width;
+
         if (remainingLength != null) {
-          if (remainingLength < box.width) {
+          if (remainingLength < currentWidth) {
             break;
           }
-          remainingLength -= box.width;
+          remainingLength -= currentWidth;
         }
         boxes.addAll(innerBoxes);
         linesCount = math.max(linesCount, box.lines.length);

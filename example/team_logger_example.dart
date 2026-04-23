@@ -19,13 +19,8 @@ void f() {
   // final theme = LogTheme.defaultInactiveTheme.copyWith(
   final theme = LogTheme.defaultActiveTheme.copyWith(
     // padding: '.',
-    // paddingStyle: const LogStyle.oneForAll(ansi.rgb012),
     // showIndexes: false,
     // showCount: false,
-    // maxLines: 1,
-    // includeLevelNameTag: false,
-    // levelNameTagFormatter: (theme, levelName, shortLevelName) =>
-    //     '[$shortLevelName]',
     hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
   );
 
@@ -66,6 +61,10 @@ void f() {
         ),
       ],
     );
+
+  log.d('test');
+  log.d('test', data: null, traceId: TraceId.global());
+  // return;
 
   final postHeaders = {
     'content-type': 'application/json',
