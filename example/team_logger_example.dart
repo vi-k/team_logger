@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
 
 void main() {
@@ -29,10 +30,10 @@ void f() {
     ..publisher = ConsoleLogPrinter(
       theme: theme,
       rows: [
-        const LogRow.singleLine(
-          // const LogRow(
-          // maxLength: 140,
-          // maxLines: 20,
+        // const LogRow.singleLine(
+        const LogRow(
+          maxLength: 140,
+          maxLines: 20,
           children: [
             LogSequenceNum(),
             LogLevelName.short(),
@@ -103,7 +104,9 @@ void f() {
       'address': 'ул. Кабанбай батыра, 91',
       'address_ru': 'ул. Кабанбай батыра, 91',
       'address_kk': '',
-      'point': {'lat': '43.249473', 'lon': '76.939319'},
+      'points': [
+        {'lat': '43.249473', 'lon': '76.939319'},
+      ],
       'client_name': 'Кондитер',
     },
     {
@@ -113,7 +116,9 @@ void f() {
       'address': 'пр. Сейфуллина, 404',
       'address_ru': 'пр. Сейфуллина, 404',
       'address_kk': '',
-      'point': {'lat': '43.267741', 'lon': '76.932179'},
+      'points': [
+        {'lat': '43.267741', 'lon': '76.932179'},
+      ],
       'client_name': 'Бассейн треня',
     },
     {
@@ -123,7 +128,9 @@ void f() {
       'address': 'улица Байтурсынова, 147а',
       'address_ru': 'улица Байтурсынова, 147а',
       'address_kk': 'Байтұрсынов көшесі, 147а',
-      'point': {'lat': '43.23288724409935', 'lon': '76.93205011077225'},
+      'points': [
+        {'lat': '43.23288724409935', 'lon': '76.93205011077225'},
+      ],
       'client_name': 'Salon',
     }
   ];
@@ -280,6 +287,7 @@ void f() {
   final list2 = [list1, ...list1];
   final list3 = [list2, ...list1];
   final list4 = [list3, ...list1];
+  final list5 = [list4, ...list1];
   for (final l in LogLevels.values) {
     log[l].log(
       list4,
@@ -288,19 +296,38 @@ void f() {
   }
 
   // log.d('LogTheme', data: theme);
-  // // log.v(' Verbose LogLevelTheme', data: theme[LogLevels.verbose]);
-  const level = LogLevels.error;
-  log[level].log(
-    'LogLevelTheme',
-    data: theme[level],
-    error: Exception('test'),
-    stackTrace: StackTrace.current,
-  );
+  for (final l in LogLevels.values) {
+    log[l].log(
+      'LogLevelTheme',
+      traceId: TraceId.auto('theme'),
+      data: theme[l],
+      error: Exception('test'),
+      stackTrace: StackTrace.current,
+    );
+  }
 
   // // log.d('    Info LogLevelTheme', data: theme[LogLevels.info]);
   // // log.w(' Warning LogLevelTheme', data: theme[LogLevels.warning]);
   // // log.e('   Error LogLevelTheme', data: theme[LogLevels.error]);
   // // log.critical('Critical LogLevelTheme', data: theme[LogLevels.critical]);
+
+  print(
+    ansi.bold(
+      '${ansi.rgb540('[]')}' //+ yellow
+      '${ansi.rgb051('[]')}' //+ green
+      '${ansi.rgb025('[]')}' //+ blue
+      // '${ansi.rgb530('[]')}' // +orange
+      '${ansi.rgb145('[]')}' //+ cyan
+      '${ansi.rgb515('[]')}' //+ magenta
+      // '${ansi.rgb045('[]')}'
+      // '${ansi.rgb035('[]')}'
+      // '${ansi.rgb025('[]')}'
+      // '${ansi.rgb115('[]')}' //?
+      // '${ansi.rgb415('[]')}' //?
+      // '${ansi.rgb425('[]')}'
+      ,
+    ),
+  );
 }
 
 final class LoggableTest with Loggable {

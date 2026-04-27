@@ -44,7 +44,7 @@ final class LogTraceId implements LogBlock {
         log.traceIds.map((e) => '$open$e$close').join(separator);
     final style = hidden
         ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.traceIdStyle;
+        : this.style?[log.level] ?? theme.common.traceIdStyle;
 
     return LogBox(
       log,

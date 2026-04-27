@@ -43,7 +43,7 @@ final class LogTags implements LogBlock {
     final tagsStr = '$open${tags.map((tag) => '#$tag').join(' ')}$close';
     final style = hidden
         ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.tagsStyle;
+        : this.style?[log.level] ?? theme.common.tagsStyle;
 
     return LogBox(
       log,

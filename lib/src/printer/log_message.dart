@@ -73,7 +73,7 @@ final class LogMessage implements LogBlock {
             );
             return '${theme.sectionStyle(theme.formatSectionName(e.key))} $value';
           }).join(
-            dataOnNewLine ? '\n' : theme.punctuationStyle(', '),
+            dataOnNewLine ? '\n' : theme.punctuation(', '),
           );
 
         default:

@@ -17,41 +17,42 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   void Function(String) output;
   void Function(int linesCount)? afterOutput;
 
-  final Map<int, ansi.StackedPrinter> _printers;
+  final _printers = <int, ansi.StackedPrinter>{};
 
   ConsoleLogPrinter({
-    this.theme = LogTheme.defaultActiveTheme,
+    LogTheme? theme,
     required this.rows,
     this.beforeOutput,
     this.output = print,
     this.afterOutput,
-  }) : _printers = {
-          LogLevels.verbose: ansi.StackedPrinter(
-            defaultStyle: theme.verbose.normalStyle,
-            output: output,
-          ),
-          LogLevels.debug: ansi.StackedPrinter(
-            defaultStyle: theme.debug.normalStyle,
-            output: output,
-          ),
-          LogLevels.info: ansi.StackedPrinter(
-            defaultStyle: theme.info.normalStyle,
-            output: output,
-          ),
-          LogLevels.warning: ansi.StackedPrinter(
-            defaultStyle: theme.warning.normalStyle,
-            output: output,
-          ),
-          LogLevels.error: ansi.StackedPrinter(
-            defaultStyle: theme.error.normalStyle,
-            output: output,
-          ),
-          LogLevels.critical: ansi.StackedPrinter(
-            defaultStyle: theme.critical.normalStyle,
-            output: output,
-          ),
-        } {
-    theme.registerLevelThemes();
+  }) : theme = theme ?? LogTheme.defaultActiveTheme {
+    _printers.addAll({
+      LogLevels.verbose: ansi.StackedPrinter(
+        defaultStyle: this.theme.verbose.normal,
+        output: output,
+      ),
+      LogLevels.debug: ansi.StackedPrinter(
+        defaultStyle: this.theme.debug.normal,
+        output: output,
+      ),
+      LogLevels.info: ansi.StackedPrinter(
+        defaultStyle: this.theme.info.normal,
+        output: output,
+      ),
+      LogLevels.warning: ansi.StackedPrinter(
+        defaultStyle: this.theme.warning.normal,
+        output: output,
+      ),
+      LogLevels.error: ansi.StackedPrinter(
+        defaultStyle: this.theme.error.normal,
+        output: output,
+      ),
+      LogLevels.critical: ansi.StackedPrinter(
+        defaultStyle: this.theme.critical.normal,
+        output: output,
+      ),
+    });
+    this.theme.registerLevelThemes();
   }
 
   @override

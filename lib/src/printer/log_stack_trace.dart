@@ -43,9 +43,8 @@ final class LogStackTrace implements LogBlock {
 
     // For debugging
     // var trace = Trace.parse(
-    //   '#0      State._update (package:tez_taxi/feature/bottom_sheet_contents/on_map_scopes/track_driver_on_map/track_driver_on_map.dart:123:24)',
+    //   '#0      State._update (package:tez_taxi/feature/bottom_sheet_contents/on_map_scopes/track_driver_on_map/aaaaaa_bbbbbb_track_driver_on_map.dart:12:123)',
     // );
-
     var trace = Trace.from(stackTrace);
     if (terse) {
       trace = trace.terse;
@@ -123,13 +122,13 @@ final class LogStackTrace implements LogBlock {
     ).toList();
 
     if (row.singleLine) {
-      lines = [lines.join(theme.punctuationStyle(', '))];
+      lines = [lines.join(theme.punctuation(', '))];
     }
 
     if (showTitle) {
       lines.insert(0, theme.sectionStyle('$title${theme.common.colon}'));
       if (row.singleLine) {
-        lines = [lines.join(theme.punctuationStyle(' '))];
+        lines = [lines.join(theme.punctuation(' '))];
       }
     }
 

@@ -40,8 +40,7 @@ mixin Loggable {
     showCount ??= theme.common.showCount;
     showIndexes ??= theme.common.showIndexes;
 
-    final brackets = theme.dataBracketsStyle(level);
-    final punctuation = theme.dataPunctuationStyle(level);
+    final blockStyle = theme.dataBlockStyle(level);
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -62,7 +61,7 @@ mixin Loggable {
         final key => obj2str(key),
       };
 
-      return '${theme.dataKeyStyle(key)}${punctuation(':')}'
+      return '${theme.dataKeyStyle(key)}${blockStyle.punctuation(':')}'
           ' ${theme.dataValueStyle(obj2str(e.value))}${units2str()}';
     }
 
@@ -98,9 +97,9 @@ mixin Loggable {
           showIndexes: showIndexes,
           units: units,
         ),
-      Map<Object?, Object?>() => '${brackets('{')}'
-          '${obj.entries.map(map2str).join(punctuation(', '))}'
-          '${brackets('}')}',
+      Map<Object?, Object?>() => '${blockStyle.brackets('{')}'
+          '${obj.entries.map(map2str).join(blockStyle.punctuation(', '))}'
+          '${blockStyle.brackets('}')}',
       Loggable() => obj.logClassInfo().toLogString(
             theme: theme,
             level: level,
@@ -130,7 +129,7 @@ mixin Loggable {
             units: obj.units ?? units,
           );
           return '${theme.sectionStyle(theme.formatSectionName(e.key))} $value';
-        }).join(punctuation(', ')),
+        }).join(blockStyle.punctuation(', ')),
       _ => '${theme.formatValue(obj.toString())}${units2str()}',
     };
   }
@@ -220,10 +219,8 @@ mixin Loggable {
     showIndexes ??= theme.common.showIndexes;
     showCount ??= theme.common.showCount;
 
-    final brackets = theme.dataBracketsStyle(level);
-    final description = theme.dataDescriptionStyle(level);
-    final punctuation = theme.dataPunctuationStyle(level);
-    final delimiter = punctuation(', ');
+    final blockStyle = theme.dataBlockStyle(level);
+    final delimiter = blockStyle.punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -236,18 +233,19 @@ mixin Loggable {
           units: units,
         );
 
-    String index2str(int index) => description(theme.formatIndex(index));
+    String index2str(int index) =>
+        blockStyle.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
 
     final count = iterable.length;
-    var buf = StringBuffer(brackets(start));
+    var buf = StringBuffer(blockStyle.brackets(start));
     var startLength = start.length;
     if (count > 1 && showCount) {
       final prefix = theme.formatCount(count);
       startLength += prefix.length;
-      buf.write(description(prefix));
+      buf.write(blockStyle.description(prefix));
     }
 
     if (maxLength == null && maxCount == null) {
@@ -314,7 +312,7 @@ mixin Loggable {
 
             buf
               ..write(delimiter)
-              ..write(punctuation(theme.common.ellipsis));
+              ..write(blockStyle.punctuation(theme.common.ellipsis));
           }
 
           buf
@@ -324,7 +322,7 @@ mixin Loggable {
       }
     }
 
-    buf.write(brackets(end));
+    buf.write(blockStyle.brackets(end));
 
     return buf.toString();
   }
@@ -354,10 +352,8 @@ mixin Loggable {
 
     showIndexes ??= theme.common.showIndexes;
 
-    final brackets = theme.dataBracketsStyle(level);
-    final description = theme.dataDescriptionStyle(level);
-    final punctuation = theme.dataPunctuationStyle(level);
-    final delimiter = punctuation(', ');
+    final blockStyle = theme.dataBlockStyle(level);
+    final delimiter = blockStyle.punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -369,12 +365,13 @@ mixin Loggable {
           units: units,
         );
 
-    String index2str(int index) => description(theme.formatIndex(index));
+    String index2str(int index) =>
+        blockStyle.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
 
-    var buf = StringBuffer(brackets(start));
+    var buf = StringBuffer(blockStyle.brackets(start));
 
     if (maxLength == null && maxCount == null) {
       buf.write(
@@ -438,13 +435,13 @@ mixin Loggable {
 
             buf
               ..write(delimiter)
-              ..write(punctuation(theme.common.ellipsis));
+              ..write(blockStyle.punctuation(theme.common.ellipsis));
           }
         }
       }
     }
 
-    buf.write(brackets(end));
+    buf.write(blockStyle.brackets(end));
 
     return buf.toString();
   }

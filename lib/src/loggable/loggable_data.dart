@@ -95,8 +95,7 @@ final class LoggableData {
     bool? showIndexes,
     String? units,
   }) {
-    final brackets = theme.dataBracketsStyle(level);
-    final punctuation = theme.dataPunctuationStyle(level);
+    final blockStyle = theme.dataBlockStyle(level);
 
     String name2str() {
       final name = _type.view ?? _type.value.toString();
@@ -114,9 +113,9 @@ final class LoggableData {
         );
 
     return '${_type.showName ? name2str() : ''}'
-        '${brackets(_type.openingBracket)}'
-        '${props.map(prop2str).join(punctuation(', '))}'
-        '${brackets(_type.closingBracket)}';
+        '${blockStyle.brackets(_type.openingBracket)}'
+        '${props.map(prop2str).join(blockStyle.punctuation(', '))}'
+        '${blockStyle.brackets(_type.closingBracket)}';
   }
 
   @override
@@ -175,8 +174,9 @@ final class Prop<T extends Object?> {
         );
     final styledValueStr = theme.formatValue(valueStr);
 
-    final punctuation = theme.dataPunctuationStyle(level);
-    final prefix = showName ? '${name2str()}${punctuation(':')} ' : '';
+    final blockStyle = theme.dataBlockStyle(level);
+    final prefix =
+        showName ? '${name2str()}${blockStyle.punctuation(':')} ' : '';
 
     return '$prefix$styledValueStr';
   }
