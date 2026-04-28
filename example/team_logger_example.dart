@@ -269,32 +269,13 @@ void f() {
   log.d('', data: LoggableObject(json, collectionMaxCount: 2));
   log.i('json', data: LoggableObject(json, collectionMaxCount: 2));
 
-  const list = [
-    [
-      [
-        [
-          [
-            [
-              [
-                [123],
-              ]
-            ]
-          ]
-        ]
-      ]
-    ]
-  ];
-
-  for (final l in LogLevels.values) {
-    log[l].log('list', data: LoggableObject(list));
-  }
-  const list1 = [123, 234, 345];
+  const list1 = [1, 2, 3];
   final list2 = [list1, ...list1];
   final list3 = [list2, ...list1];
   final list4 = [list3, ...list1];
   for (final l in LogLevels.values) {
     log[l].log(
-      list4,
+      'list',
       data: LoggableObject(list4, collectionMaxCount: 2),
     );
   }

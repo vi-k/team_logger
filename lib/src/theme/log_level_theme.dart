@@ -222,8 +222,8 @@ final class LogLevelTheme with Loggable {
     description: ansi.Style(foreground: ansi.Color256.rgb303),
   );
 
-  static const defaultPunctuation = ansi.rgb055;
-  static const defaultMutedPunctuation = ansi.rgb044;
+  static const defaultPunctuation = ansi.rgb044;
+  static const defaultMutedPunctuation = ansi.rgb033;
 
   static const defaultDataBlockThemesWoBM = [
     _yellowDataBlockTheme,
