@@ -40,6 +40,7 @@ final class LogTheme with Loggable {
   final String lineBreak;
   final String padding;
   final bool errorOnNewLine;
+  final bool enumDotShorthand;
   final bool showCount;
   final bool showIndexes;
   final LogThemeFormatter<int> countFormatter;
@@ -63,6 +64,7 @@ final class LogTheme with Loggable {
     this.lineBreak = defaultLineBreak,
     this.padding = defaultPadding,
     this.errorOnNewLine = false,
+    this.enumDotShorthand = true,
     this.showCount = true,
     this.showIndexes = true,
     this.countFormatter = _defaultCountFormatter,
@@ -93,6 +95,7 @@ final class LogTheme with Loggable {
         lineBreak = defaultLineBreak,
         padding = defaultPadding,
         errorOnNewLine = false,
+        enumDotShorthand = true,
         showCount = true,
         showIndexes = true,
         countFormatter = _defaultCountFormatter,
@@ -455,6 +458,7 @@ final class LogTheme with Loggable {
     String? padding,
     bool? errorOnNewLine,
     String? dataSectionName,
+    bool? enumDotShorthand,
     bool? showCount,
     bool? showIndexes,
     LogThemeFormatter<int>? countFormatter,
@@ -478,6 +482,7 @@ final class LogTheme with Loggable {
         lineBreak: lineBreak ?? this.lineBreak,
         padding: padding ?? this.padding,
         errorOnNewLine: errorOnNewLine ?? this.errorOnNewLine,
+        enumDotShorthand: enumDotShorthand ?? this.enumDotShorthand,
         showCount: showCount ?? this.showCount,
         showIndexes: showIndexes ?? this.showIndexes,
         countFormatter: countFormatter ?? this.countFormatter,
@@ -534,6 +539,7 @@ final class LogTheme with Loggable {
       ..prop('lineBreak', lineBreak)
       ..prop('padding', padding)
       ..prop('errorOnNewLine', errorOnNewLine)
+      ..prop('enumDotShorthand', enumDotShorthand)
       ..prop('showCount', showCount)
       ..prop('showIndexes', showIndexes)
       ..prop('tags', tags);

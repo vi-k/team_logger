@@ -28,6 +28,7 @@ void f() {
     // debug: LogTheme.defaultActiveTheme.debug.copyWith(
     //   quotesStyle: ansi.rgb033,
     // ),
+    // enumDotShorthand: false,
   );
 
   final log = Logger('app')
@@ -305,6 +306,8 @@ void f() {
     error: StateError('test'),
     stackTrace: StackTrace.current,
   );
+
+  log.d('Enum', data: LogTextAlign.left);
 }
 
 final class LoggableTest with Loggable {

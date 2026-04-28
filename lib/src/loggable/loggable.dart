@@ -67,6 +67,10 @@ mixin Loggable {
 
     return switch (obj) {
       null => theme.formatValue('null'),
+      Enum() => theme.common.enumDotShorthand
+          ? '.${theme.formatValue(obj.name)}'
+          : '${theme.formatValue(obj.runtimeType.toString())}'
+              '${theme.emphasis('.${theme.formatValue(obj.name)}')}',
       String() => '${theme.styledOpeningQuote}'
           '${theme.formatValue(obj)}'
           '${theme.styledClosingQuote}'
