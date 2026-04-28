@@ -22,7 +22,6 @@ final class LogTheme with Loggable {
   static const String defaultEllipsis = '…';
   static const String defaultLineBreak = '-';
   static const String defaultPadding = ' ';
-  static const String defaulDataSectionName = 'DATA';
 
   final LogLevelTheme verbose;
   final LogLevelTheme debug;
@@ -38,8 +37,6 @@ final class LogTheme with Loggable {
   final String lineBreak;
   final String padding;
   final bool errorOnNewLine;
-  final bool dataOnNewLine;
-  final String dataSectionName;
   final bool showCount;
   final bool showIndexes;
   final LogThemeFormatter<String> sectionNameFormatter;
@@ -62,8 +59,6 @@ final class LogTheme with Loggable {
     this.lineBreak = defaultLineBreak,
     this.padding = defaultPadding,
     this.errorOnNewLine = false,
-    this.dataOnNewLine = true,
-    this.dataSectionName = defaulDataSectionName,
     this.showCount = true,
     this.showIndexes = true,
     this.sectionNameFormatter = _defaultSectionNameFormatter,
@@ -91,8 +86,6 @@ final class LogTheme with Loggable {
         lineBreak = defaultLineBreak,
         padding = defaultPadding,
         errorOnNewLine = false,
-        dataOnNewLine = true,
-        dataSectionName = defaulDataSectionName,
         showCount = true,
         showIndexes = true,
         sectionNameFormatter = _defaultSectionNameFormatter,
@@ -453,7 +446,6 @@ final class LogTheme with Loggable {
     String? lineBreak,
     String? padding,
     bool? errorOnNewLine,
-    bool? dataOnNewLine,
     String? dataSectionName,
     bool? showCount,
     bool? showIndexes,
@@ -477,8 +469,6 @@ final class LogTheme with Loggable {
         lineBreak: lineBreak ?? this.lineBreak,
         padding: padding ?? this.padding,
         errorOnNewLine: errorOnNewLine ?? this.errorOnNewLine,
-        dataOnNewLine: dataOnNewLine ?? this.dataOnNewLine,
-        dataSectionName: dataSectionName ?? this.dataSectionName,
         showCount: showCount ?? this.showCount,
         showIndexes: showIndexes ?? this.showIndexes,
         sectionNameFormatter: sectionNameFormatter ?? this.sectionNameFormatter,
@@ -534,8 +524,6 @@ final class LogTheme with Loggable {
       ..prop('lineBreak', lineBreak)
       ..prop('padding', padding)
       ..prop('errorOnNewLine', errorOnNewLine)
-      ..prop('dataOnNewLine', dataOnNewLine)
-      ..prop('dataSectionName', dataSectionName)
       ..prop('showCount', showCount)
       ..prop('showIndexes', showIndexes)
       ..prop('tags', tags);

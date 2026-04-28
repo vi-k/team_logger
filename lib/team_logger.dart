@@ -10,7 +10,6 @@ export 'src/log_preformatters/log_pre_formatter.dart';
 export 'src/log_preformatters/multi_log_pre_formatter.dart';
 export 'src/loggable/loggable.dart';
 export 'src/loggable/loggable_multi_data.dart';
-export 'src/loggable/loggable_named_data.dart';
 export 'src/logger/log_levels.dart';
 export 'src/logger/logger.dart';
 export 'src/logger/trace_id.dart';

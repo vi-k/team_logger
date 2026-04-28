@@ -13,7 +13,6 @@ final class LogStackTrace implements LogBlock {
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final bool terse;
-  final bool showTitle;
   final String title;
   final bool showIndexes;
   final Set<String> controlledPackages;
@@ -23,7 +22,6 @@ final class LogStackTrace implements LogBlock {
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.terse = true,
-    this.showTitle = true,
     this.title = 'STACKTRACE',
     this.showIndexes = false,
     this.controlledPackages = const {},
@@ -125,8 +123,8 @@ final class LogStackTrace implements LogBlock {
       lines = [lines.join(theme.punctuation(', '))];
     }
 
-    if (showTitle) {
-      lines.insert(0, theme.sectionStyle('$title${theme.common.colon}'));
+    if (title.isNotEmpty) {
+      lines.insert(0, theme.sectionStyle('$title${theme.styledColon}'));
       if (row.singleLine) {
         lines = [lines.join(theme.punctuation(' '))];
       }

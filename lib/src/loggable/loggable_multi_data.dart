@@ -25,7 +25,8 @@ final class LoggableMultiData {
   }) =>
       data.entries.map((e) {
         final value = Loggable.objectToString(e.value);
-        return '${keyFormatter?.call(e.key) ?? e.key}:'
-            ' ${valueFormatter?.call(value) ?? value}';
+        final key = e.key;
+        return '${key.isEmpty ? '' : '${keyFormatter?.call(key) ?? key}: '}'
+            '${valueFormatter?.call(value) ?? value}';
       }).join(wrapLines ? '\n' : ', ');
 }

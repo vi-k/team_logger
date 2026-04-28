@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
 
 void main() {
@@ -23,6 +22,7 @@ void f() {
     // showIndexes: false,
     // showCount: false,
     hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
+    // errorOnNewLine: true,
   );
 
   final log = Logger('app')
@@ -260,7 +260,7 @@ void f() {
   };
 
   log.v('json', data: LoggableObject(json, collectionMaxCount: 2));
-  log.d('', data: LoggableNamedData('JSON', json, collectionMaxCount: 2));
+  log.d('', data: LoggableMultiData({'JSON': json}, collectionMaxCount: 2));
   log.d('', data: LoggableObject(json, collectionMaxCount: 2));
   log.i('json', data: LoggableObject(json, collectionMaxCount: 2));
 
@@ -287,7 +287,6 @@ void f() {
   final list2 = [list1, ...list1];
   final list3 = [list2, ...list1];
   final list4 = [list3, ...list1];
-  final list5 = [list4, ...list1];
   for (final l in LogLevels.values) {
     log[l].log(
       list4,
@@ -306,27 +305,19 @@ void f() {
     );
   }
 
-  // // log.d('    Info LogLevelTheme', data: theme[LogLevels.info]);
-  // // log.w(' Warning LogLevelTheme', data: theme[LogLevels.warning]);
-  // // log.e('   Error LogLevelTheme', data: theme[LogLevels.error]);
-  // // log.critical('Critical LogLevelTheme', data: theme[LogLevels.critical]);
-
-  print(
-    ansi.bold(
-      '${ansi.rgb540('[]')}' //+ yellow
-      '${ansi.rgb051('[]')}' //+ green
-      '${ansi.rgb025('[]')}' //+ blue
-      // '${ansi.rgb530('[]')}' // +orange
-      '${ansi.rgb145('[]')}' //+ cyan
-      '${ansi.rgb515('[]')}' //+ magenta
-      // '${ansi.rgb045('[]')}'
-      // '${ansi.rgb035('[]')}'
-      // '${ansi.rgb025('[]')}'
-      // '${ansi.rgb115('[]')}' //?
-      // '${ansi.rgb415('[]')}' //?
-      // '${ansi.rgb425('[]')}'
-      ,
-    ),
+  log.i('', error: StateError('test'), stackTrace: StackTrace.current);
+  log.i('Error', error: StateError('test'), stackTrace: StackTrace.current);
+  log.i(
+    'Error',
+    data: 'data',
+    error: StateError('test'),
+    stackTrace: StackTrace.current,
+  );
+  log.i(
+    'Error',
+    data: const LoggableMultiData({'DATA': 'data'}),
+    error: StateError('test'),
+    stackTrace: StackTrace.current,
   );
 }
 
