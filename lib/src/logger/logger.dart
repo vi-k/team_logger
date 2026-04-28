@@ -26,7 +26,7 @@ final class LevelLogger
           noLog: (
             _, {
             traceId,
-            data = _noData,
+            data = Log.noData,
             tags,
             overridePath,
             error,
@@ -40,7 +40,7 @@ final class LevelLogger
   LogFn get processLog => (
         message, {
         traceId,
-        data = _noData,
+        data = Log.noData,
         tags,
         overridePath,
         error,

@@ -1,16 +1,15 @@
 part of 'logger.dart';
 
-final class _NoData {
-  const _NoData._();
+final class LogNoData {
+  const LogNoData._();
 
   @override
   String toString() => 'no data';
 }
 
-const _noData = _NoData._();
-
 final class Log extends CustomLog {
   static int _lastSequenceNum = 0;
+  static const noData = LogNoData._();
 
   final DateTime time;
   final int sequenceNum;
@@ -33,7 +32,7 @@ final class Log extends CustomLog {
   })  : sequenceNum = ++_lastSequenceNum,
         time = clock.now();
 
-  bool get hasData => data is! _NoData;
+  bool get hasData => data is! LogNoData;
 }
 
 final class LazyTags extends TypedLazy<Set<String>> {
