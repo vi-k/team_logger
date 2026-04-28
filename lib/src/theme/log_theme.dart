@@ -18,6 +18,7 @@ typedef LogThemeFormatter<T extends Object?> = String Function(
 );
 
 final class LogTheme with Loggable {
+  static const String defaultQuote = '"';
   static const String defaultColon = ':';
   static const String defaultEllipsis = '…';
   static const String defaultLineBreak = '-';
@@ -32,6 +33,8 @@ final class LogTheme with Loggable {
   final ansi.Style traceIdStyle;
   final ansi.Style tagsStyle;
   final ansi.Style hiddenStyle;
+  final String openingQuote;
+  final String closingQuote;
   final String colon;
   final String ellipsis;
   final String lineBreak;
@@ -39,7 +42,6 @@ final class LogTheme with Loggable {
   final bool errorOnNewLine;
   final bool showCount;
   final bool showIndexes;
-  final LogThemeFormatter<String> sectionNameFormatter;
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
   final Set<String> tags;
@@ -54,6 +56,8 @@ final class LogTheme with Loggable {
     this.traceIdStyle = _traceIdStyle,
     this.tagsStyle = _tagsStyle,
     this.hiddenStyle = _hiddenStyle,
+    this.openingQuote = defaultQuote,
+    this.closingQuote = defaultQuote,
     this.colon = defaultColon,
     this.ellipsis = defaultEllipsis,
     this.lineBreak = defaultLineBreak,
@@ -61,11 +65,12 @@ final class LogTheme with Loggable {
     this.errorOnNewLine = false,
     this.showCount = true,
     this.showIndexes = true,
-    this.sectionNameFormatter = _defaultSectionNameFormatter,
     this.countFormatter = _defaultCountFormatter,
     this.indexFormatter = _defaultIndexFormatter,
     this.tags = const {},
-  })  : assert(!colon.ansiHasEscapeCodes),
+  })  : assert(!openingQuote.ansiHasEscapeCodes),
+        assert(!closingQuote.ansiHasEscapeCodes),
+        assert(!colon.ansiHasEscapeCodes),
         assert(!ellipsis.ansiHasEscapeCodes),
         assert(!lineBreak.ansiHasEscapeCodes),
         assert(!padding.ansiHasEscapeCodes),
@@ -81,14 +86,15 @@ final class LogTheme with Loggable {
     this.traceIdStyle = const ansi.NoStyle(),
     this.tagsStyle = const ansi.NoStyle(),
     this.hiddenStyle = const ansi.NoStyle(),
-  })  : colon = defaultColon,
+  })  : openingQuote = defaultQuote,
+        closingQuote = defaultQuote,
+        colon = defaultColon,
         ellipsis = defaultEllipsis,
         lineBreak = defaultLineBreak,
         padding = defaultPadding,
         errorOnNewLine = false,
         showCount = true,
         showIndexes = true,
-        sectionNameFormatter = _defaultSectionNameFormatter,
         countFormatter = _defaultCountFormatter,
         indexFormatter = _defaultIndexFormatter,
         tags = const {'log'};
@@ -146,7 +152,7 @@ final class LogTheme with Loggable {
       ansi.Style(foreground: _inactiveCriticalNormalColor);
 
   static final LogTheme defaultActiveTheme = LogTheme._(
-    verbose: LogLevelTheme.gray7,
+    verbose: LogLevelTheme.gray8,
     debug: LogLevelTheme.gray12,
     info: LogLevelTheme.rgb234,
     warning: LogLevelTheme.rgb431,
@@ -167,6 +173,7 @@ final class LogTheme with Loggable {
       bold: ansi.NoStyle(),
       emphasis: ansi.NoStyle(),
       dim: ansi.NoStyle(),
+      punctuation: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
@@ -179,7 +186,7 @@ final class LogTheme with Loggable {
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
       controlCodesStyle: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
+      quotesStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
       ellipsisStyle: ansi.NoStyle(),
       lineBreakStyle: ansi.NoStyle(),
@@ -208,6 +215,7 @@ final class LogTheme with Loggable {
       bold: ansi.NoStyle(),
       emphasis: ansi.NoStyle(),
       dim: ansi.NoStyle(),
+      punctuation: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
@@ -220,7 +228,7 @@ final class LogTheme with Loggable {
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
       controlCodesStyle: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
+      quotesStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
       ellipsisStyle: ansi.NoStyle(),
       lineBreakStyle: ansi.NoStyle(),
@@ -249,6 +257,7 @@ final class LogTheme with Loggable {
       bold: ansi.NoStyle(),
       emphasis: ansi.NoStyle(),
       dim: ansi.NoStyle(),
+      punctuation: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
@@ -261,7 +270,7 @@ final class LogTheme with Loggable {
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
       controlCodesStyle: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
+      quotesStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
       ellipsisStyle: ansi.NoStyle(),
       lineBreakStyle: ansi.NoStyle(),
@@ -290,6 +299,7 @@ final class LogTheme with Loggable {
       bold: ansi.NoStyle(),
       emphasis: ansi.NoStyle(),
       dim: ansi.NoStyle(),
+      punctuation: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
@@ -302,7 +312,7 @@ final class LogTheme with Loggable {
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
       controlCodesStyle: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
+      quotesStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
       ellipsisStyle: ansi.NoStyle(),
       lineBreakStyle: ansi.NoStyle(),
@@ -331,6 +341,7 @@ final class LogTheme with Loggable {
       bold: ansi.NoStyle(),
       emphasis: ansi.NoStyle(),
       dim: ansi.NoStyle(),
+      punctuation: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
@@ -343,7 +354,7 @@ final class LogTheme with Loggable {
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
       controlCodesStyle: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
+      quotesStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
       ellipsisStyle: ansi.NoStyle(),
       lineBreakStyle: ansi.NoStyle(),
@@ -372,6 +383,7 @@ final class LogTheme with Loggable {
       bold: ansi.NoStyle(),
       emphasis: ansi.NoStyle(),
       dim: ansi.NoStyle(),
+      punctuation: ansi.NoStyle(),
       sequenceNumStyle: ansi.NoStyle(),
       levelNameStyle: ansi.NoStyle(),
       timeStyle: ansi.NoStyle(),
@@ -384,7 +396,7 @@ final class LogTheme with Loggable {
       valueFormatter: ControlCodeFormatter(),
       messageFormatter: BbCodeFormatter(),
       controlCodesStyle: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
+      quotesStyle: ansi.NoStyle(),
       colonStyle: ansi.NoStyle(),
       ellipsisStyle: ansi.NoStyle(),
       lineBreakStyle: ansi.NoStyle(),
@@ -408,12 +420,6 @@ final class LogTheme with Loggable {
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,
   );
-
-  static String _defaultSectionNameFormatter(
-    LogLevelTheme theme,
-    String name,
-  ) =>
-      '$name${theme.common.colon}';
 
   static String _defaultCountFormatter(LogLevelTheme theme, int count) =>
       '₌${subscript(count)} ';
@@ -441,6 +447,8 @@ final class LogTheme with Loggable {
     ansi.Style? traceIdStyle,
     ansi.Style? tagsStyle,
     ansi.Style? hiddenStyle,
+    String? openingQuote,
+    String? closingQuote,
     String? colon,
     String? ellipsis,
     String? lineBreak,
@@ -449,7 +457,6 @@ final class LogTheme with Loggable {
     String? dataSectionName,
     bool? showCount,
     bool? showIndexes,
-    LogThemeFormatter<String>? sectionNameFormatter,
     LogThemeFormatter<int>? countFormatter,
     LogThemeFormatter<int>? indexFormatter,
     Set<String>? tags,
@@ -464,6 +471,8 @@ final class LogTheme with Loggable {
         traceIdStyle: traceIdStyle ?? this.traceIdStyle,
         tagsStyle: tagsStyle ?? this.tagsStyle,
         hiddenStyle: hiddenStyle ?? this.hiddenStyle,
+        openingQuote: openingQuote ?? this.openingQuote,
+        closingQuote: closingQuote ?? this.closingQuote,
         colon: colon ?? this.colon,
         ellipsis: ellipsis ?? this.ellipsis,
         lineBreak: lineBreak ?? this.lineBreak,
@@ -471,7 +480,6 @@ final class LogTheme with Loggable {
         errorOnNewLine: errorOnNewLine ?? this.errorOnNewLine,
         showCount: showCount ?? this.showCount,
         showIndexes: showIndexes ?? this.showIndexes,
-        sectionNameFormatter: sectionNameFormatter ?? this.sectionNameFormatter,
         countFormatter: countFormatter ?? this.countFormatter,
         indexFormatter: indexFormatter ?? this.indexFormatter,
         tags: tags ?? this.tags,
@@ -519,6 +527,8 @@ final class LogTheme with Loggable {
       ..style('traceIdStyle', null, traceIdStyle)
       ..style('tagsStyle', null, tagsStyle)
       ..style('hiddenStyle', null, hiddenStyle, showName: true)
+      ..prop('openingQuote', openingQuote)
+      ..prop('closingQuote', closingQuote)
       ..prop('colon', colon)
       ..prop('ellipsis', ellipsis)
       ..prop('lineBreak', lineBreak)

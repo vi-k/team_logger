@@ -17,6 +17,7 @@ final class LogLevelTheme with Loggable {
   final LogPreFormatter valueFormatter;
   final LogPreFormatter messageFormatter;
   final ansi.Style controlCodesStyle;
+  final ansi.Style quotesStyle;
   final ansi.Style colonStyle;
   final ansi.Style ellipsisStyle;
   final ansi.Style lineBreakStyle;
@@ -46,6 +47,7 @@ final class LogLevelTheme with Loggable {
     required this.valueFormatter,
     required this.messageFormatter,
     required this.controlCodesStyle,
+    required this.quotesStyle,
     required this.colonStyle,
     required this.ellipsisStyle,
     required this.lineBreakStyle,
@@ -76,6 +78,7 @@ final class LogLevelTheme with Loggable {
     this.valueFormatter = const ControlCodeFormatter(),
     this.messageFormatter = const BbCodeFormatter(),
     ansi.Style? controlCodesStyle,
+    ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
     ansi.Style? ellipsisStyle,
     ansi.Style? lineBreakStyle,
@@ -104,6 +107,7 @@ final class LogLevelTheme with Loggable {
         pathStyle = pathStyle ?? emphasis,
         messageStyles = Map.of(messageStyles)..['b'] = emphasis.bold,
         controlCodesStyle = controlCodesStyle ?? punctuation,
+        quotesStyle = quotesStyle ?? punctuation,
         colonStyle = colonStyle ?? punctuation,
         ellipsisStyle = ellipsisStyle ?? punctuation,
         lineBreakStyle = lineBreakStyle ?? punctuation,
@@ -129,6 +133,7 @@ final class LogLevelTheme with Loggable {
     valueFormatter: ControlCodeFormatter(),
     messageFormatter: BbCodeFormatter(),
     controlCodesStyle: ansi.NoStyle(),
+    quotesStyle: ansi.NoStyle(),
     colonStyle: ansi.NoStyle(),
     ellipsisStyle: ansi.NoStyle(),
     lineBreakStyle: ansi.NoStyle(),
@@ -1575,6 +1580,16 @@ final class LogLevelTheme with Loggable {
 
   LogTheme get common => _mainThemeExpando[this] ?? LogTheme.noColors;
 
+  String get styledOpeningQuote => quotesStyle(common.openingQuote);
+
+  AnsiPair get openingQuoteAnsiPair =>
+      AnsiPair(common.openingQuote, quotesStyle);
+
+  String get styledClosingQuote => quotesStyle(common.closingQuote);
+
+  AnsiPair get closingQuoteAnsiPair =>
+      AnsiPair(common.closingQuote, quotesStyle);
+
   String get styledColon => colonStyle(common.colon);
 
   AnsiPair get colonAnsiPair => AnsiPair(common.colon, colonStyle);
@@ -1594,9 +1609,6 @@ final class LogLevelTheme with Loggable {
   String formatValue(String value) => valueFormatter(this, value);
 
   String formatMessage(String value) => messageFormatter(this, value);
-
-  String formatSectionName(String name) =>
-      common.sectionNameFormatter(this, name);
 
   String formatIndex(int index) => common.indexFormatter(this, index);
 
@@ -1623,6 +1635,7 @@ final class LogLevelTheme with Loggable {
     ansi.Style? controlCodesStyle,
     ansi.Style? punctuation,
     String? colon,
+    ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
     String? ellipsis,
     ansi.Style? ellipsisStyle,
@@ -1657,6 +1670,7 @@ final class LogLevelTheme with Loggable {
       messageFormatter: messageFormatter ?? this.messageFormatter,
       controlCodesStyle: controlCodesStyle ?? this.controlCodesStyle,
       punctuation: punctuation ?? this.punctuation,
+      quotesStyle: quotesStyle ?? this.quotesStyle,
       colonStyle: colonStyle ?? this.colonStyle,
       ellipsisStyle: ellipsisStyle ?? this.ellipsisStyle,
       lineBreakStyle: lineBreakStyle ?? this.lineBreakStyle,
@@ -1710,6 +1724,7 @@ final class LogLevelTheme with Loggable {
   LogLevelTheme copyWithPunctuation(
     ansi.Style punctuation, {
     bool setForControlCodes = true,
+    bool setForQuotes = true,
     bool setForColon = true,
     bool setForEllipsis = true,
     bool setForLineBreak = true,
@@ -1718,6 +1733,7 @@ final class LogLevelTheme with Loggable {
       copyWith(
         punctuation: punctuation,
         controlCodesStyle: setForControlCodes ? punctuation : null,
+        quotesStyle: setForQuotes ? punctuation : null,
         colonStyle: setForColon ? punctuation : null,
         ellipsisStyle: setForEllipsis ? punctuation : null,
         lineBreakStyle: setForLineBreak ? punctuation : null,
@@ -1741,6 +1757,7 @@ final class LogLevelTheme with Loggable {
       ..prop('valueFormatter', valueFormatter)
       ..prop('messageFormatter', messageFormatter)
       ..style('controlCodesStyle', this, controlCodesStyle)
+      ..style('quotesStyle', this, quotesStyle)
       ..style('colonStyle', this, colonStyle)
       ..style('ellipsisStyle', this, ellipsisStyle)
       ..style('lineBreakStyle', this, lineBreakStyle)

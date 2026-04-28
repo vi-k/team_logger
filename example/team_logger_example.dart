@@ -23,6 +23,11 @@ void f() {
     // showCount: false,
     hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
     // errorOnNewLine: true,
+    // openingQuote: '«',
+    // closingQuote: '»',
+    // debug: LogTheme.defaultActiveTheme.debug.copyWith(
+    //   quotesStyle: ansi.rgb033,
+    // ),
   );
 
   final log = Logger('app')
@@ -64,7 +69,7 @@ void f() {
     );
 
   log.d('test');
-  log.d('test', data: null, traceId: TraceId.global());
+  log.d('test', data: 'data', traceId: TraceId.global());
   // return;
 
   final postHeaders = {

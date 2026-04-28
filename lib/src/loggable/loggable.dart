@@ -67,7 +67,10 @@ mixin Loggable {
 
     return switch (obj) {
       null => theme.formatValue('null'),
-      String() => '"${theme.formatValue(obj)}"${units2str()}',
+      String() => '${theme.styledOpeningQuote}'
+          '${theme.formatValue(obj)}'
+          '${theme.styledClosingQuote}'
+          '${units2str()}',
       List<Object?>() => listToString(
           obj,
           level: level,
@@ -128,7 +131,12 @@ mixin Loggable {
             showIndexes: obj.showIndexes ?? showIndexes,
             units: obj.units ?? units,
           );
-          return '${theme.sectionStyle(theme.formatSectionName(e.key))} $value';
+
+          return switch (e.key) {
+            '' => value,
+            final key =>
+              '${theme.sectionStyle(key)}${theme.styledColon} $value',
+          };
         }).join(blockStyle.punctuation(', ')),
       _ => '${theme.formatValue(obj.toString())}${units2str()}',
     };
