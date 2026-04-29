@@ -13,9 +13,47 @@ part 'loggable_data.dart';
 ///   [Loggable.objectToString] или [toString]
 /// - получить с помощью [logClassInfo] описание класса в виде списка параметров,
 ///   которые можно потом наглядно показать в UI
-mixin Loggable {
+abstract mixin class Loggable {
   /// Метод должен заполнить [data] описанием исследуемого класса.
   void collectLoggableData(LoggableData data);
+
+  factory Loggable.from(
+    Object? obj, {
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
+    String? units,
+  }) =>
+      _LoggableWrapper(
+        obj,
+        enumDotShorthand: enumDotShorthand,
+        collectionMaxLength: collectionMaxLength,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowLength: collectionShowLength,
+        collectionShowIndexes: collectionShowIndexes,
+        units: units,
+      );
+
+  static LoggableData builder(
+    Object? value, {
+    String? name,
+    bool showName = true,
+    bool showBrackets = true,
+    String? openingBracket,
+    String? closingBracket,
+  }) =>
+      _LoggableBuilder(
+        value,
+        name: name,
+        showName: showName,
+        showBrackets: showBrackets,
+        openingBracket: openingBracket,
+        closingBracket: closingBracket,
+      );
+
+  static LoggableData mapBuilder() => _LoggableMapBuilder();
 
   @nonVirtual
   LoggableData logClassInfo() {
@@ -498,14 +536,44 @@ mixin Loggable {
 
     return theme.dataUnitsStyle(theme.formatValue(unitsStr));
   }
+}
 
-  // static final _reDigits = RegExp('[0-9]');
-  // static final _normal0Code = '0'.codeUnitAt(0);
-  // static final _small0Code = '₀'.codeUnitAt(0);
-  // static String subscript(int n) => n.toString().replaceAllMapped(
-  //       _reDigits,
-  //       (m) => String.fromCharCode(
-  //         m[0]!.codeUnitAt(0) - _normal0Code + _small0Code,
-  //       ),
-  //     );
+final class _LoggableWrapper with Loggable {
+  final LoggableData _data;
+
+  _LoggableWrapper(
+    Object? obj, {
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
+    String? units,
+  }) : _data = LoggableData._(
+          const TypeProp(
+            Object,
+            showName: false,
+            showBrackets: false,
+          ),
+        ) {
+    _data.prop(
+      'obj',
+      obj,
+      showName: false,
+      enumDotShorthand: enumDotShorthand,
+      collectionMaxLength: collectionMaxLength,
+      collectionMaxStringLength: collectionMaxStringLength,
+      collectionShowLength: collectionShowLength,
+      collectionShowIndexes: collectionShowIndexes,
+      units: units,
+      levelCorrection: -1,
+    );
+  }
+
+  @override
+  // ignore: invalid_override_of_non_virtual_member
+  LoggableData logClassInfo() => _data;
+
+  @override
+  void collectLoggableData(LoggableData data) {}
 }

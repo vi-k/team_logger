@@ -208,6 +208,16 @@ final class Point with Loggable {
   void collectLoggableData(LoggableData data) => data
     ..name = 'Point'
     ..showName = false
-    ..prop('lat', lat, showName: false, view: lat.toStringAsFixed(5))
-    ..prop('lon', lon, showName: false, view: lon.toStringAsFixed(5));
+    ..fixed('lat', lat, 5, showName: false)
+    ..fixed('lon', lon, 5, showName: false);
+}
+
+final class NotLoggableData {
+  final String name;
+  final List<int> list;
+
+  const NotLoggableData(this.name, this.list);
+
+  @override
+  String toString() => '$NotLoggableData(name: $name, list: $list)';
 }

@@ -206,10 +206,10 @@ final class TypeProp extends Prop<Type> {
     String? name,
     super.showName = true,
     this.showBrackets = true,
-    String? openingBrackets,
-    String? closingBrackets,
-  })  : _openingBracket = openingBrackets ?? '(',
-        _closingBracket = closingBrackets ?? ')',
+    String? openingBracket,
+    String? closingBracket,
+  })  : _openingBracket = openingBracket ?? '(',
+        _closingBracket = closingBracket ?? ')',
         super('type', type, view: name);
 
   String get openingBracket => showBrackets ? _openingBracket : '';
@@ -226,63 +226,39 @@ final class TypeProp extends Prop<Type> {
         name: name ?? view,
         showName: showName ?? this.showName,
         showBrackets: showBrackets ?? this.showBrackets,
+        openingBracket: openingBracket,
+        closingBracket: closingBracket,
       );
 }
 
-final class LoggableWrap<T extends Object?> extends LoggableData {
-  LoggableWrap(
-    T value, {
-    String? name,
-    bool showName = true,
-    bool showBrackets = true,
-    String? openingBrackets,
-    String? closingBrackets,
-  })  : assert(value is! Loggable),
-        super._(
+final class _LoggableBuilder extends LoggableData {
+  _LoggableBuilder(
+    Object? obj, {
+    required String? name,
+    required bool showName,
+    required bool showBrackets,
+    required String? openingBracket,
+    required String? closingBracket,
+  }) : super._(
           TypeProp(
-            value.runtimeType,
+            obj.runtimeType,
             name: name,
             showName: showName,
             showBrackets: showBrackets,
-            openingBrackets: openingBrackets,
-            closingBrackets: closingBrackets,
+            openingBracket: openingBracket,
+            closingBracket: closingBracket,
           ),
         );
 }
 
-final class LoggableMap<T extends Object?> extends LoggableData {
-  LoggableMap()
+final class _LoggableMapBuilder extends LoggableData {
+  _LoggableMapBuilder()
       : super._(
           TypeProp(
-            Map<String, T>,
+            Map<String, Object?>,
             showName: false,
-            openingBrackets: '{',
-            closingBrackets: '}',
+            openingBracket: '{',
+            closingBracket: '}',
           ),
         );
-}
-
-final class LoggableObject<T extends Object?> extends LoggableData {
-  LoggableObject(
-    T obj, {
-    bool? enumDotShorthand,
-    int? collectionMaxLength,
-    int? collectionMaxStringLength,
-    bool? collectionShowLength,
-    bool? collectionShowIndexes,
-    String? units,
-  }) : super._(TypeProp(T, showName: false, showBrackets: false)) {
-    prop<T>(
-      'obj',
-      obj,
-      showName: false,
-      enumDotShorthand: enumDotShorthand,
-      collectionMaxLength: collectionMaxLength,
-      collectionMaxStringLength: collectionMaxStringLength,
-      collectionShowLength: collectionShowLength,
-      collectionShowIndexes: collectionShowIndexes,
-      units: units,
-      levelCorrection: -1,
-    );
-  }
 }

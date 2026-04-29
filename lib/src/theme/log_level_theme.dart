@@ -1920,11 +1920,11 @@ extension on LoggableData {
   }
 
   void mapStyles(String name, Map<String, ansi.Style> styles) {
-    final map = LoggableMap();
+    final mapBuilder = Loggable.mapBuilder();
     for (final MapEntry(:key, value: style) in styles.entries) {
-      map.prop(key, style, showName: false, view: style(key));
+      mapBuilder.prop(key, style, showName: false, view: style(key));
     }
 
-    prop(name, map);
+    prop(name, mapBuilder);
   }
 }

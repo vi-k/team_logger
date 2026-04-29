@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:team_logger/team_logger.dart';
+import 'package:team_logger/team_logger.dart' as team;
 
 import 'data.dart';
 
@@ -101,7 +102,7 @@ void f() {
         httpLog[level].log(
           '[success][200 OK][/success] ${Data.postUrl}',
           traceId: httpTraceId,
-          data: LoggableObject(Data.succesResponse, collectionMaxLength: 2),
+          data: Loggable.from(Data.succesResponse, collectionMaxLength: 2),
           tags: ['response'],
         );
 
@@ -117,17 +118,17 @@ void f() {
     }
   }
 
-  log.d('json', data: LoggableObject(Data.json, collectionMaxLength: 2));
+  log.d('json', data: Loggable.from(Data.json, collectionMaxLength: 2));
   log.d(
     '',
     data: const LoggableMultiData({'JSON': Data.json}, collectionMaxLength: 2),
   );
-  log.d('', data: LoggableObject(Data.json, collectionMaxLength: 2));
+  log.d('', data: Loggable.from(Data.json, collectionMaxLength: 2));
 
   for (final l in LogLevels.values) {
     log[l].log(
       '',
-      data: LoggableObject(Data.listOfLists, collectionMaxLength: 2),
+      data: Loggable.from(Data.listOfLists, collectionMaxLength: 2),
     );
   }
 
@@ -163,10 +164,50 @@ void f() {
   );
 
   log.d(
-    'Enums',
+    'enums',
     data: {
       'textAlign': LogTextAlign.left,
       'verticalAlign': LogVerticalAlign.top,
     },
+  );
+  log.d(
+    'wrapped enums',
+    data: Loggable.from(
+      {
+        'textAlign': LogTextAlign.left,
+        'verticalAlign': LogVerticalAlign.top,
+      },
+      enumDotShorthand: false,
+    ),
+  );
+
+  log.d('list', data: [1, 2, 3]);
+  log.d(
+    'wrapped list',
+    data: team.Loggable.from(
+      [1, 2, 3],
+      collectionMaxLength: 2,
+    ),
+  );
+
+  const data = NotLoggableData('abc', [1, 2, 3]);
+  log.d('object', data: data);
+  log.d(
+    'built object',
+    data: team.Loggable.builder(data)
+      ..prop('name', data.name)
+      ..prop('list', data.list),
+  );
+
+  log.d(
+    'map',
+    data: {'a': 1, 'b': 2, 'c': 3},
+  );
+  log.d(
+    'built map',
+    data: team.Loggable.mapBuilder()
+      ..prop('a', 1, units: 'kg')
+      ..prop('b', 2, units: 'm')
+      ..prop('c', 3, units: 'sec'),
   );
 }
