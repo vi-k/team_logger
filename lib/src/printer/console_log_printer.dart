@@ -46,26 +46,30 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     inactiveTheme?.registerLevelThemes();
   }
 
+  bool _isActive(Log log) =>
+      inactiveTheme == null ||
+      log.level >= activeLevel ||
+      (isActive?.call(log) ?? false) ||
+      log.tags.any(activeTags.contains) ||
+      log.traceIds.any((e) => activeTraceGroups.contains(e.group)) ||
+      activePaths.any((e) => log.path.startsWith(e));
+
   @override
   void publish(Log log) {
+    final isActive = _isActive(log);
+    final theme = (isActive ? this.theme : inactiveTheme ?? this.theme);
+    if (log.level < theme.minLevel) {
+      return;
+    }
+
     for (final row in rows) {
       if (row.when?.call(log) ?? true) {
-        printRow(log, row);
+        printRow(log, row, isActive, theme);
       }
     }
   }
 
-  bool _isActive(Log log) =>
-      inactiveTheme == null ||
-      log.level >= activeLevel ||
-      activePaths.any((e) => log.path.startsWith(e)) ||
-      log.traceIds.any((e) => activeTraceGroups.contains(e.group)) ||
-      log.tags.any(activeTags.contains) ||
-      (isActive?.call(log) ?? false);
-
-  void printRow(Log log, LogRow row) {
-    final isActive = _isActive(log);
-    final theme = (isActive ? this.theme : inactiveTheme ?? this.theme);
+  void printRow(Log log, LogRow row, bool isActive, LogTheme theme) {
     final levelTheme = theme[log.level];
     final printer = _printers[(isActive, log.level)] ??= ansi.StackedPrinter(
       defaultStyle: levelTheme.normal,

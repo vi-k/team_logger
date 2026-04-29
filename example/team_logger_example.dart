@@ -25,6 +25,7 @@ void f() {
   );
   final inactiveTheme = LogTheme.defaultInactiveTheme.copyWith(
     hiddenStyle: LogTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
+    minLevel: LogLevels.debug,
   );
 
   final log = Logger('app')
@@ -32,12 +33,12 @@ void f() {
     ..publisher = ConsoleLogPrinter(
       theme: theme,
       inactiveTheme: inactiveTheme,
+      isActive: (log) => true,
       // activeLevel: LogLevels.error,
       // activePaths: {'events'},
       // activeTraceGroups: {'feature'},
       // activeTags: {'response'},
       // isActive: (log) => log.hasData,
-      isActive: (log) => true,
       rows: const [
         // LogRow.singleLine(
         LogRow(

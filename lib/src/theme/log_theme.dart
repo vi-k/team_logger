@@ -24,6 +24,7 @@ final class LogTheme with Loggable {
   static const String defaultLineBreak = '-';
   static const String defaultPadding = ' ';
 
+  final int minLevel;
   final LogLevelTheme verbose;
   final LogLevelTheme debug;
   final LogLevelTheme info;
@@ -48,6 +49,7 @@ final class LogTheme with Loggable {
   final Set<String> tags;
 
   LogTheme({
+    this.minLevel = LogLevels.all,
     this.verbose = LogLevelTheme.noColors,
     this.debug = LogLevelTheme.noColors,
     this.info = LogLevelTheme.noColors,
@@ -88,7 +90,8 @@ final class LogTheme with Loggable {
     this.traceIdStyle = const ansi.NoStyle(),
     this.tagsStyle = const ansi.NoStyle(),
     this.hiddenStyle = const ansi.NoStyle(),
-  })  : openingQuote = defaultQuote,
+  })  : minLevel = LogLevels.all,
+        openingQuote = defaultQuote,
         closingQuote = defaultQuote,
         colon = defaultColon,
         ellipsis = defaultEllipsis,
@@ -175,6 +178,7 @@ final class LogTheme with Loggable {
       );
 
   LogTheme copyWith({
+    int? minLevel,
     LogLevelTheme? verbose,
     LogLevelTheme? debug,
     LogLevelTheme? info,
@@ -200,6 +204,7 @@ final class LogTheme with Loggable {
     Set<String>? tags,
   }) =>
       LogTheme(
+        minLevel: minLevel ?? this.minLevel,
         verbose: verbose ?? this.verbose,
         debug: debug ?? this.debug,
         info: info ?? this.info,
@@ -228,42 +233,13 @@ final class LogTheme with Loggable {
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..prop(
-        'verbose',
-        verbose,
-        showName: false,
-        view: verbose.normal('verbose'),
-      )
-      ..prop(
-        'debug',
-        debug,
-        showName: false,
-        view: debug.normal('debug'),
-      )
-      ..prop(
-        'info',
-        info,
-        showName: false,
-        view: info.normal('info'),
-      )
-      ..prop(
-        'warning',
-        warning,
-        showName: false,
-        view: warning.normal('warning'),
-      )
-      ..prop(
-        'error',
-        error,
-        showName: false,
-        view: error.normal('error'),
-      )
-      ..prop(
-        'critical',
-        critical,
-        showName: false,
-        view: critical.normal('critical'),
-      )
+      ..prop('minLevel', minLevel)
+      ..theme('verbose', verbose)
+      ..theme('debug', debug)
+      ..theme('info', info)
+      ..theme('warning', warning)
+      ..theme('error', error)
+      ..theme('critical', critical)
       ..style('traceIdStyle', null, traceIdStyle)
       ..style('tagsStyle', null, tagsStyle)
       ..style('hiddenStyle', null, hiddenStyle, showName: true)

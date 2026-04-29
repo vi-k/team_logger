@@ -1847,6 +1847,10 @@ final class LogDataLevelTheme {
 }
 
 extension on LoggableData {
+  void theme(String name, LogLevelTheme theme) {
+    prop(name, theme, showName: false, view: theme.normal(name));
+  }
+
   void style(
     String name,
     LogLevelTheme? theme,
