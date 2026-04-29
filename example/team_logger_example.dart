@@ -25,7 +25,7 @@ void f() {
   );
   final inactiveTheme = LogTheme.defaultInactiveTheme.copyWith(
     hiddenStyle: LogTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
-    minLevel: LogLevels.debug,
+    // minLevel: LogLevels.debug,
   );
 
   final log = Logger('app')

@@ -146,15 +146,23 @@ final class LogTheme with Loggable {
   );
 
   static final LogTheme defaultInactiveTheme = LogTheme._(
+    verbose: LogLevelTheme.inactiveSeed(normal: ansi.gray5),
+    debug: LogLevelTheme.inactiveSeed(normal: ansi.gray7),
+    info: LogLevelTheme.inactiveSeed(normal: ansi.rgb123),
+    warning: LogLevelTheme.inactiveSeed(normal: ansi.rgb320),
+    error: LogLevelTheme.inactiveSeed(normal: ansi.rgb300),
+    critical: LogLevelTheme.inactiveSeed(normal: ansi.rgb303),
+    traceIdStyle: _inactiveTraceIdStyle,
+    tagsStyle: _tagsStyle,
+    hiddenStyle: _hiddenStyle,
+  );
+
+  static final LogTheme defaultInactiveTheme2 = LogTheme._(
     verbose: LogLevelTheme.inactiveSeed(normal: ansi.gray4),
     debug: LogLevelTheme.inactiveSeed(normal: ansi.gray6),
-    // info: LogLevelTheme.inactiveSeed(normal: ansi.rgb123),
     info: LogLevelTheme.inactiveSeed(normal: ansi.rgb012),
-    // warning: LogLevelTheme.inactiveSeed(normal: ansi.rgb320),
     warning: LogLevelTheme.inactiveSeed(normal: ansi.rgb210),
-    // error: LogLevelTheme.inactiveSeed(normal: ansi.rgb300),
     error: LogLevelTheme.inactiveSeed(normal: ansi.rgb200),
-    // critical: LogLevelTheme.inactiveSeed(normal: ansi.rgb303),
     critical: LogLevelTheme.inactiveSeed(normal: ansi.rgb202),
     traceIdStyle: _inactiveTraceIdStyle,
     tagsStyle: _tagsStyle,
