@@ -39,6 +39,8 @@ final class LogStackTrace implements LogBlock {
       return LogBox.empty();
     }
 
+    final stackTraceTheme = log.error == null ? theme : theme.common.error;
+
     // For debugging
     // var trace = Trace.parse(
     //   '#0      State._update (package:tez_taxi/feature/bottom_sheet_contents/on_map_scopes/track_driver_on_map/aaaaaa_bbbbbb_track_driver_on_map.dart:12:123)',
@@ -74,8 +76,8 @@ final class LogStackTrace implements LogBlock {
 
         String stackTraceLine(String file) {
           final style = isActive
-              ? theme.stackTraceActiveStyle
-              : theme.stackTraceInactiveStyle;
+              ? stackTraceTheme.stackTraceActiveStyle
+              : stackTraceTheme.stackTraceInactiveStyle;
           return style('$indexStr$memberStr($packageStr$file$posStr)');
         }
 
@@ -102,7 +104,7 @@ final class LogStackTrace implements LogBlock {
           return stackTraceLine(fileStr);
         }
 
-        final ellipsis = theme.common.ellipsis;
+        final ellipsis = stackTraceTheme.common.ellipsis;
 
         var truncated = false;
         while (fileStr.length + ellipsis.length + 1 > availableWidth) {
@@ -112,7 +114,7 @@ final class LogStackTrace implements LogBlock {
           fileStr = fileStr.substring(index + 1);
         }
         if (truncated) {
-          fileStr = '${theme.ellipsisStyle(ellipsis)}/$fileStr';
+          fileStr = '${stackTraceTheme.ellipsisStyle(ellipsis)}/$fileStr';
         }
 
         return stackTraceLine(fileStr);
@@ -120,19 +122,22 @@ final class LogStackTrace implements LogBlock {
     ).toList();
 
     if (row.singleLine) {
-      lines = [lines.join(theme.punctuation(', '))];
+      lines = [lines.join(stackTraceTheme.punctuation(', '))];
     }
 
     if (title.isNotEmpty) {
-      lines.insert(0, theme.sectionStyle('$title${theme.styledColon}'));
+      lines.insert(
+        0,
+        stackTraceTheme.sectionStyle('$title${theme.styledColon}'),
+      );
       if (row.singleLine) {
-        lines = [lines.join(theme.punctuation(' '))];
+        lines = [lines.join(stackTraceTheme.punctuation(' '))];
       }
     }
 
     return LogBox(
       log,
-      theme,
+      stackTraceTheme,
       lines,
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,

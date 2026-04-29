@@ -12,47 +12,38 @@ import 'log_row.dart';
 
 final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogTheme theme;
+  final LogTheme? inactiveTheme;
+  final bool Function(Log log)? isActive;
+  final int activeLevel;
+  final Set<String> activePaths;
+  final Set<String> activeTraceGroups;
+  final Set<String> activeTags;
   final List<LogRow> rows;
-  void Function(int linesCount)? beforeOutput;
   void Function(String) output;
-  void Function(int linesCount)? afterOutput;
 
-  final _printers = <int, ansi.StackedPrinter>{};
+  final _printers = <(bool, int), ansi.StackedPrinter>{};
 
   ConsoleLogPrinter({
     LogTheme? theme,
+    this.inactiveTheme,
+    this.activeLevel = LogLevels.off,
+    this.activePaths = const {},
+    this.activeTraceGroups = const {},
+    this.activeTags = const {},
+    this.isActive,
     required this.rows,
-    this.beforeOutput,
     this.output = print,
-    this.afterOutput,
-  }) : theme = theme ?? LogTheme.defaultActiveTheme {
-    _printers.addAll({
-      LogLevels.verbose: ansi.StackedPrinter(
-        defaultStyle: this.theme.verbose.normal,
-        output: output,
-      ),
-      LogLevels.debug: ansi.StackedPrinter(
-        defaultStyle: this.theme.debug.normal,
-        output: output,
-      ),
-      LogLevels.info: ansi.StackedPrinter(
-        defaultStyle: this.theme.info.normal,
-        output: output,
-      ),
-      LogLevels.warning: ansi.StackedPrinter(
-        defaultStyle: this.theme.warning.normal,
-        output: output,
-      ),
-      LogLevels.error: ansi.StackedPrinter(
-        defaultStyle: this.theme.error.normal,
-        output: output,
-      ),
-      LogLevels.critical: ansi.StackedPrinter(
-        defaultStyle: this.theme.critical.normal,
-        output: output,
-      ),
-    });
+  })  : assert(
+          inactiveTheme != null ||
+              activePaths.isEmpty &&
+                  activeTraceGroups.isEmpty &&
+                  activeTags.isEmpty &&
+                  isActive == null,
+          'inactiveTheme must be set first',
+        ),
+        theme = theme ?? LogTheme.defaultActiveTheme {
     this.theme.registerLevelThemes();
+    inactiveTheme?.registerLevelThemes();
   }
 
   @override
@@ -64,8 +55,23 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     }
   }
 
+  bool _isActive(Log log) =>
+      inactiveTheme == null ||
+      log.level >= activeLevel ||
+      activePaths.any((e) => log.path.startsWith(e)) ||
+      log.traceIds.any((e) => activeTraceGroups.contains(e.group)) ||
+      log.tags.any(activeTags.contains) ||
+      (isActive?.call(log) ?? false);
+
   void printRow(Log log, LogRow row) {
+    final isActive = _isActive(log);
+    final theme = (isActive ? this.theme : inactiveTheme ?? this.theme);
     final levelTheme = theme[log.level];
+    final printer = _printers[(isActive, log.level)] ??= ansi.StackedPrinter(
+      defaultStyle: levelTheme.normal,
+      output: output,
+    );
+
     late final defaultDividerBox =
         row.defaultDivider(log, levelTheme, row, null);
 
@@ -144,8 +150,6 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       box.applyHeight(linesCount);
     }
 
-    beforeOutput?.call(linesCount);
-    final printer = _printers[log.level]!;
     for (var i = 0; i < linesCount; i++) {
       for (final box in boxes) {
         printer.write(box.lines[i]);
@@ -158,6 +162,5 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       }
       printer.writeln();
     }
-    afterOutput?.call(linesCount);
   }
 }

@@ -18,6 +18,7 @@ abstract interface class LogTime implements LogBlock {
     bool microseconds,
     bool utc,
     bool stretch,
+    bool hidden,
   }) = _DateTime;
 
   const factory LogTime.iso8601({
@@ -30,6 +31,7 @@ abstract interface class LogTime implements LogBlock {
     String close,
     bool utc,
     bool stretch,
+    bool hidden,
   }) = _Iso8601;
 
   const factory LogTime.onlyTime({
@@ -43,6 +45,7 @@ abstract interface class LogTime implements LogBlock {
     bool microseconds,
     bool utc,
     bool stretch,
+    bool hidden,
   }) = _OnlyTime;
 
   static String dateToString(DateTime time) => '${time.year}'
@@ -73,6 +76,7 @@ final class _DateTime implements LogTime {
   final bool microseconds;
   final bool utc;
   final bool stretch;
+  final bool hidden;
 
   const _DateTime({
     this.getTime,
@@ -85,6 +89,7 @@ final class _DateTime implements LogTime {
     this.microseconds = false,
     this.utc = false,
     this.stretch = true,
+    this.hidden = false,
   });
 
   @override
@@ -94,7 +99,9 @@ final class _DateTime implements LogTime {
     LogRow row,
     int? remainingLength,
   ) {
-    final style = this.style?[log.level] ?? theme.timeStyle;
+    final style = hidden
+        ? theme.common.hiddenStyle
+        : this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -128,6 +135,7 @@ final class _Iso8601 implements LogTime {
   final String close;
   final bool utc;
   final bool stretch;
+  final bool hidden;
 
   const _Iso8601({
     this.getTime,
@@ -139,6 +147,7 @@ final class _Iso8601 implements LogTime {
     this.close = '',
     this.utc = false,
     this.stretch = true,
+    this.hidden = false,
   });
 
   @override
@@ -148,7 +157,9 @@ final class _Iso8601 implements LogTime {
     LogRow row,
     int? remainingLength,
   ) {
-    final style = this.style?[log.level] ?? theme.timeStyle;
+    final style = hidden
+        ? theme.common.hiddenStyle
+        : this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -178,6 +189,7 @@ final class _OnlyTime implements LogTime {
   final bool microseconds;
   final bool utc;
   final bool stretch;
+  final bool hidden;
 
   const _OnlyTime({
     this.getTime,
@@ -190,6 +202,7 @@ final class _OnlyTime implements LogTime {
     this.microseconds = false,
     this.utc = false,
     this.stretch = true,
+    this.hidden = false,
   });
 
   @override
@@ -199,7 +212,9 @@ final class _OnlyTime implements LogTime {
     LogRow row,
     int? remainingLength,
   ) {
-    final style = this.style?[log.level] ?? theme.timeStyle;
+    final style = hidden
+        ? theme.common.hiddenStyle
+        : this.style?[log.level] ?? theme.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();

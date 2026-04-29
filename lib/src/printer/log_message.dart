@@ -58,10 +58,12 @@ final class LogMessage implements LogBlock {
           final value = Loggable.objectToString(
             e.value,
             theme: theme,
-            collectionMaxCount: data.collectionMaxCount,
             collectionMaxLength: data.collectionMaxLength,
-            showCount: data.showCount ?? theme.common.showCount,
-            showIndexes: data.showIndexes ?? theme.common.showIndexes,
+            collectionMaxStringLength: data.collectionMaxStringLength,
+            collectionShowLength:
+                data.collectionShowLength ?? theme.common.collectionShowLength,
+            collectionShowIndexes: data.collectionShowIndexes ??
+                theme.common.collectionShowIndexes,
             units: data.units,
           );
 
@@ -86,9 +88,9 @@ final class LogMessage implements LogBlock {
           .normal(theme.formatMessage(theme.formatValue(error.toString())));
       if (messageStr.isNotEmpty || log.hasData) {
         final colon = errorTheme.styledColon;
-        final errorOnNewLine =
-            !row.singleLine && (theme.common.errorOnNewLine || log.hasData);
-        errorStr = switch (errorOnNewLine) {
+        final newLine = !row.singleLine &&
+            (theme.common.errorAlwaysOnNewLine || log.hasData);
+        errorStr = switch (newLine) {
           true when errorTitle.isNotEmpty =>
             '\n${errorTheme.sectionStyle(errorTitle)}$colon $errorStr',
           true => '\n$errorStr',
@@ -120,12 +122,7 @@ final class LogMessage implements LogBlock {
         showIndexes: stackTraceShowIndexes,
         controlledPackages: controlledPackages,
       );
-      final stackTraceBox = stackTracer(
-        log,
-        errorStr.isEmpty ? theme : theme.common.error,
-        row,
-        remainingLength,
-      );
+      final stackTraceBox = stackTracer(log, theme, row, remainingLength);
 
       messageBox = LogBox(
         log,

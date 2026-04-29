@@ -43,10 +43,11 @@ final class LoggableData {
     bool showName = true,
     String? view,
     String Function(T value, int level, LogLevelTheme theme)? convert,
-    int? collectionMaxCount,
+    bool? enumDotShorthand,
     int? collectionMaxLength,
-    bool? showCount,
-    bool? showIndexes,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
     int levelCorrection = 0,
   }) {
@@ -59,10 +60,11 @@ final class LoggableData {
         showName: showName,
         view: view,
         convert: convert,
-        collectionMaxCount: collectionMaxCount,
+        enumDotShorthand: enumDotShorthand,
         collectionMaxLength: collectionMaxLength,
-        showCount: showCount,
-        showIndexes: showIndexes,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowLength: collectionShowLength,
+        collectionShowIndexes: collectionShowIndexes,
         units: units,
         levelCorrection: levelCorrection,
       ),
@@ -89,10 +91,11 @@ final class LoggableData {
     LogLevelTheme theme = LogLevelTheme.noColors,
     int level = 0,
     String Function(String value)? valueFormat,
-    int? collectionMaxCount,
+    bool? enumDotShorthand,
     int? collectionMaxLength,
-    bool? showCount,
-    bool? showIndexes,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
   }) {
     final blockStyle = theme.dataBlockStyle(level);
@@ -105,10 +108,11 @@ final class LoggableData {
     String prop2str(Prop<Object?> p) => p.toLogString(
           theme: theme,
           level: level,
-          collectionMaxCount: collectionMaxCount,
+          enumDotShorthand: enumDotShorthand,
           collectionMaxLength: collectionMaxLength,
-          showCount: showCount,
-          showIndexes: showIndexes,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
           units: units,
         );
 
@@ -127,10 +131,11 @@ final class Prop<T extends Object?> {
   final T value;
   final String? view;
   final bool showName;
-  final int? collectionMaxCount;
+  final bool? enumDotShorthand;
   final int? collectionMaxLength;
-  final bool? showCount;
-  final bool? showIndexes;
+  final int? collectionMaxStringLength;
+  final bool? collectionShowLength;
+  final bool? collectionShowIndexes;
   final String? units;
   final String Function(T value, int level, LogLevelTheme theme)? convert;
   final int levelCorrection;
@@ -141,10 +146,11 @@ final class Prop<T extends Object?> {
     this.showName = true,
     this.view,
     this.convert,
-    this.collectionMaxCount,
+    this.enumDotShorthand,
     this.collectionMaxLength,
-    this.showCount,
-    this.showIndexes,
+    this.collectionMaxStringLength,
+    this.collectionShowLength,
+    this.collectionShowIndexes,
     this.units,
     this.levelCorrection = 0,
   });
@@ -152,10 +158,11 @@ final class Prop<T extends Object?> {
   String toLogString({
     int level = 0,
     LogLevelTheme theme = LogLevelTheme.noColors,
-    int? collectionMaxCount,
+    bool? enumDotShorthand,
     int? collectionMaxLength,
-    bool? showCount,
-    bool? showIndexes,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
   }) {
     String name2str() => theme.dataKeyStyle(theme.formatValue(name));
@@ -166,10 +173,14 @@ final class Prop<T extends Object?> {
           value,
           level: level + 1 + levelCorrection,
           theme: theme,
-          collectionMaxCount: this.collectionMaxCount ?? collectionMaxCount,
+          enumDotShorthand: this.enumDotShorthand ?? enumDotShorthand,
           collectionMaxLength: this.collectionMaxLength ?? collectionMaxLength,
-          showCount: this.showCount ?? showCount,
-          showIndexes: this.showIndexes ?? showIndexes,
+          collectionMaxStringLength:
+              this.collectionMaxStringLength ?? collectionMaxStringLength,
+          collectionShowLength:
+              this.collectionShowLength ?? collectionShowLength,
+          collectionShowIndexes:
+              this.collectionShowIndexes ?? collectionShowIndexes,
           units: this.units ?? units,
         );
     final styledValueStr = theme.formatValue(valueStr);
@@ -254,20 +265,22 @@ final class LoggableMap<T extends Object?> extends LoggableData {
 final class LoggableObject<T extends Object?> extends LoggableData {
   LoggableObject(
     T obj, {
-    int? collectionMaxCount,
+    bool? enumDotShorthand,
     int? collectionMaxLength,
-    bool? showCount,
-    bool? showIndexes,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
   }) : super._(TypeProp(T, showName: false, showBrackets: false)) {
     prop<T>(
       'obj',
       obj,
       showName: false,
-      collectionMaxCount: collectionMaxCount,
+      enumDotShorthand: enumDotShorthand,
       collectionMaxLength: collectionMaxLength,
-      showCount: showCount,
-      showIndexes: showIndexes,
+      collectionMaxStringLength: collectionMaxStringLength,
+      collectionShowLength: collectionShowLength,
+      collectionShowIndexes: collectionShowIndexes,
       units: units,
       levelCorrection: -1,
     );

@@ -14,6 +14,7 @@ final class LogPath implements LogBlock {
   final String open;
   final String close;
   final bool stretch;
+  final bool hidden;
 
   const LogPath({
     this.style,
@@ -23,6 +24,7 @@ final class LogPath implements LogBlock {
     this.open = '[',
     this.close = ']',
     this.stretch = true,
+    this.hidden = false,
   });
 
   @override
@@ -32,7 +34,9 @@ final class LogPath implements LogBlock {
     LogRow row,
     int? remainingLength,
   ) {
-    final style = this.style?[log.level] ?? theme.pathStyle;
+    final style = hidden
+        ? theme.common.hiddenStyle
+        : this.style?[log.level] ?? theme.pathStyle;
     final pathStr = '$open${log.path}$close';
 
     return LogBox(

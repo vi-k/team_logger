@@ -31,14 +31,16 @@ mixin Loggable {
     Object? obj, {
     int level = 0,
     LogLevelTheme theme = LogLevelTheme.noColors,
-    int? collectionMaxCount,
+    bool? enumDotShorthand,
     int? collectionMaxLength,
-    bool? showCount,
-    bool? showIndexes,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
   }) {
-    showCount ??= theme.common.showCount;
-    showIndexes ??= theme.common.showIndexes;
+    enumDotShorthand ??= theme.common.enumDotShorthand;
+    collectionShowLength ??= theme.common.collectionShowLength;
+    collectionShowIndexes ??= theme.common.collectionShowIndexes;
 
     final blockStyle = theme.dataBlockStyle(level);
 
@@ -46,10 +48,11 @@ mixin Loggable {
           obj,
           level: level + 1,
           theme: theme,
-          collectionMaxCount: collectionMaxCount,
+          enumDotShorthand: enumDotShorthand,
           collectionMaxLength: collectionMaxLength,
-          showCount: showCount,
-          showIndexes: showIndexes,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
           units: units,
         );
 
@@ -67,7 +70,7 @@ mixin Loggable {
 
     return switch (obj) {
       null => theme.formatValue('null'),
-      Enum() => theme.common.enumDotShorthand
+      Enum() => enumDotShorthand
           ? '.${theme.formatValue(obj.name)}'
           : '${theme.formatValue(obj.runtimeType.toString())}'
               '${theme.emphasis('.${theme.formatValue(obj.name)}')}',
@@ -79,29 +82,33 @@ mixin Loggable {
           obj,
           level: level,
           theme: theme,
-          maxCount: collectionMaxCount,
-          maxLength: collectionMaxLength,
-          showCount: showCount,
-          showIndexes: showIndexes,
+          enumDotShorthand: enumDotShorthand,
+          collectionMaxLength: collectionMaxLength,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
           units: units,
         ),
       Set<Object?>() => setToString(
           obj,
           level: level,
           theme: theme,
-          maxCount: collectionMaxCount,
-          maxLength: collectionMaxLength,
-          showCount: showCount,
-          showIndexes: showIndexes,
+          enumDotShorthand: enumDotShorthand,
+          collectionMaxLength: collectionMaxLength,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
           units: units,
         ),
       Iterable<Object?>() => iterableToString(
           obj,
           level: level,
           theme: theme,
-          maxCount: collectionMaxCount,
-          maxLength: collectionMaxLength,
-          showIndexes: showIndexes,
+          enumDotShorthand: enumDotShorthand,
+          collectionMaxLength: collectionMaxLength,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
           units: units,
         ),
       Map<Object?, Object?>() => '${blockStyle.brackets('{')}'
@@ -110,29 +117,35 @@ mixin Loggable {
       Loggable() => obj.logClassInfo().toLogString(
             theme: theme,
             level: level,
-            collectionMaxCount: collectionMaxCount,
+            enumDotShorthand: enumDotShorthand,
             collectionMaxLength: collectionMaxLength,
-            showCount: showCount,
-            showIndexes: showIndexes,
+            collectionMaxStringLength: collectionMaxStringLength,
+            collectionShowLength: collectionShowLength,
+            collectionShowIndexes: collectionShowIndexes,
             units: units,
           ),
       LoggableData() => obj.toLogString(
           theme: theme,
           level: level,
-          collectionMaxCount: collectionMaxCount,
+          enumDotShorthand: enumDotShorthand,
           collectionMaxLength: collectionMaxLength,
-          showCount: showCount,
-          showIndexes: showIndexes,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
           units: units,
         ),
       LoggableMultiData() => obj.data.entries.map((e) {
           final value = Loggable.objectToString(
             e.value,
             theme: theme,
-            collectionMaxCount: obj.collectionMaxCount ?? collectionMaxCount,
+            enumDotShorthand: obj.enumDotShorthand ?? enumDotShorthand,
             collectionMaxLength: obj.collectionMaxLength ?? collectionMaxLength,
-            showCount: obj.showCount ?? showCount,
-            showIndexes: obj.showIndexes ?? showIndexes,
+            collectionMaxStringLength:
+                obj.collectionMaxStringLength ?? collectionMaxStringLength,
+            collectionShowLength:
+                obj.collectionShowLength ?? collectionShowLength,
+            collectionShowIndexes:
+                obj.collectionShowIndexes ?? collectionShowIndexes,
             units: obj.units ?? units,
           );
 
@@ -148,17 +161,18 @@ mixin Loggable {
 
   /// Преобразует список в строку в виде `[first, …, last] (n=N)`.
   ///
-  /// Если кол-во элементов в списке больше [maxCount] или длина строки больше
-  /// [maxLength], то результат будет урезан. Первый и последний элементы, если
+  /// Если кол-во элементов в списке больше [collectionMaxLength] или длина строки больше
+  /// [collectionMaxStringLength], то результат будет урезан. Первый и последний элементы, если
   /// они есть, выводятся всегда.
   static String listToString(
     List<Object?> list, {
     int level = 0,
     LogLevelTheme theme = LogLevelTheme.noColors,
-    int? maxCount,
-    int? maxLength,
-    bool? showCount,
-    bool? showIndexes,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
   }) =>
       efficientLengthIterableToString(
@@ -167,26 +181,28 @@ mixin Loggable {
         theme: theme,
         start: '[',
         end: ']',
-        maxCount: maxCount,
-        maxLength: maxLength,
-        showCount: showCount,
-        showIndexes: showIndexes,
+        enumDotShorthand: enumDotShorthand,
+        collectionMaxLength: collectionMaxLength,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowLength: collectionShowLength,
+        collectionShowIndexes: collectionShowIndexes,
         units: units,
       );
 
   /// Преобразует набор в строку в виде `{first, …, last} (n=N)`.
   ///
-  /// Если кол-во элементов в наборе больше [maxCount] или длина строки больше
-  /// [maxLength], то результат будет урезан. Первый и последний элементы, если
+  /// Если кол-во элементов в наборе больше [collectionMaxLength] или длина строки больше
+  /// [collectionMaxStringLength], то результат будет урезан. Первый и последний элементы, если
   /// они есть, выводятся всегда.
   static String setToString(
     Set<Object?> set, {
     int level = 0,
     LogLevelTheme theme = LogLevelTheme.noColors,
-    int? maxCount,
-    int? maxLength,
-    bool? showCount,
-    bool? showIndexes,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
   }) =>
       efficientLengthIterableToString(
@@ -195,17 +211,18 @@ mixin Loggable {
         theme: theme,
         start: '{',
         end: '}',
-        maxCount: maxCount,
-        maxLength: maxLength,
-        showCount: showCount,
-        showIndexes: showIndexes,
+        enumDotShorthand: enumDotShorthand,
+        collectionMaxLength: collectionMaxLength,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowLength: collectionShowLength,
+        collectionShowIndexes: collectionShowIndexes,
         units: units,
       );
 
   /// Преобразует коллекцию в строку в виде `(first, …, last) (n=N)`.
   ///
-  /// Если кол-во элементов в коллекции больше [maxCount] или длина строки
-  /// больше [maxLength], то результат будет урезан. Первый и последний
+  /// Если кол-во элементов в коллекции больше [collectionMaxLength] или длина строки
+  /// больше [collectionMaxStringLength], то результат будет урезан. Первый и последний
   /// элементы, если они есть, выводятся всегда.
   ///
   /// Метод предназначен только для коллекций, которые имеют эффективную
@@ -217,19 +234,21 @@ mixin Loggable {
     LogLevelTheme theme = LogLevelTheme.noColors,
     String start = '(',
     String end = ')',
-    int? maxCount,
-    int? maxLength,
-    bool? showCount,
-    bool? showIndexes,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     String? units,
   }) {
-    assert(maxCount == null || maxCount >= 2);
-    assert(maxLength == null || maxLength > 0);
+    assert(collectionMaxLength == null || collectionMaxLength >= 2);
+    assert(collectionMaxStringLength == null || collectionMaxStringLength > 0);
     assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
 
-    showIndexes ??= theme.common.showIndexes;
-    showCount ??= theme.common.showCount;
+    enumDotShorthand ??= theme.common.enumDotShorthand;
+    collectionShowIndexes ??= theme.common.collectionShowIndexes;
+    collectionShowLength ??= theme.common.collectionShowLength;
 
     final blockStyle = theme.dataBlockStyle(level);
     final delimiter = blockStyle.punctuation(', ');
@@ -238,10 +257,11 @@ mixin Loggable {
           obj,
           level: level + 1,
           theme: theme,
-          collectionMaxCount: maxCount,
-          collectionMaxLength: maxLength,
-          showCount: showCount,
-          showIndexes: showIndexes,
+          enumDotShorthand: enumDotShorthand,
+          collectionMaxLength: collectionMaxLength,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
           units: units,
         );
 
@@ -254,15 +274,15 @@ mixin Loggable {
     final count = iterable.length;
     var buf = StringBuffer(blockStyle.brackets(start));
     var startLength = start.length;
-    if (count > 1 && showCount) {
+    if (count > 1 && collectionShowLength) {
       final prefix = theme.formatCount(count);
       startLength += prefix.length;
       buf.write(blockStyle.description(prefix));
     }
 
-    if (maxLength == null && maxCount == null) {
+    if (collectionMaxStringLength == null && collectionMaxLength == null) {
       buf.write(
-        showIndexes && count > 1
+        collectionShowIndexes && count > 1
             ? iterable.indexed
                 .map((e) => indexedObj2str(e.$1, e.$2))
                 .join(delimiter)
@@ -277,13 +297,13 @@ mixin Loggable {
           buf.write(obj2str(iterator.current));
         } else if (count > 1) {
           // Первый выводим всегда.
-          final first = showIndexes
+          final first = collectionShowIndexes
               ? indexedObj2str(0, iterator.current)
               : obj2str(iterator.current);
           buf.write(first);
 
           // Последний, если есть, тоже выводим всегда.
-          final last = showIndexes
+          final last = collectionShowIndexes
               ? indexedObj2str(count - 1, iterable.last)
               : obj2str(iterable.last);
           var length = startLength +
@@ -294,17 +314,19 @@ mixin Loggable {
               last.lengthWithoutEscapeCodes +
               end.length;
           var index = 1;
-          maxCount ??= count;
+          collectionMaxLength ??= count;
           (StringBuffer, int)? copy;
 
-          while (index < maxCount - 1 && index < count - 1) {
+          while (index < collectionMaxLength - 1 && index < count - 1) {
             iterator.moveNext();
-            final item = showIndexes
+            final item = collectionShowIndexes
                 ? indexedObj2str(index, iterator.current)
                 : obj2str(iterator.current);
             length += 2 + item.lengthWithoutEscapeCodes;
-            if (maxLength != null && length > maxLength) {
-              if (length - 2 - theme.common.ellipsis.length > maxLength) {
+            if (collectionMaxStringLength != null &&
+                length > collectionMaxStringLength) {
+              if (length - 2 - theme.common.ellipsis.length >
+                  collectionMaxStringLength) {
                 break;
               } else {
                 copy ??= (StringBuffer(buf.toString()), index);
@@ -341,8 +363,8 @@ mixin Loggable {
 
   /// Преобразует коллекцию в строку в виде `(first, …) (n=N)`.
   ///
-  /// Если кол-во элементов в коллекции больше [maxCount] или длина строки больше
-  /// [maxLength], то результат будет урезан. Первый и последний элементы, если
+  /// Если кол-во элементов в коллекции больше [collectionMaxLength] или длина строки больше
+  /// [collectionMaxStringLength], то результат будет урезан. Первый и последний элементы, если
   /// они есть, выводятся всегда.
   ///
   /// Метод предназначен только для коллекций, которые имеют эффективную
@@ -354,15 +376,19 @@ mixin Loggable {
     LogLevelTheme theme = LogLevelTheme.noColors,
     String start = '(',
     String end = ')',
-    int? maxCount,
-    int? maxLength,
-    bool? showIndexes,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowIndexes,
+    bool? collectionShowLength,
     String? units,
   }) {
-    assert(maxCount == null || maxCount >= 2);
-    assert(maxLength == null || maxLength > 0);
+    assert(collectionMaxLength == null || collectionMaxLength >= 2);
+    assert(collectionMaxStringLength == null || collectionMaxStringLength > 0);
 
-    showIndexes ??= theme.common.showIndexes;
+    enumDotShorthand ??= theme.common.enumDotShorthand;
+    collectionShowIndexes ??= theme.common.collectionShowIndexes;
+    collectionShowLength ??= theme.common.collectionShowLength;
 
     final blockStyle = theme.dataBlockStyle(level);
     final delimiter = blockStyle.punctuation(', ');
@@ -371,9 +397,11 @@ mixin Loggable {
           obj,
           level: level + 1,
           theme: theme,
-          collectionMaxCount: maxCount,
-          collectionMaxLength: maxLength,
-          showIndexes: showIndexes,
+          enumDotShorthand: enumDotShorthand,
+          collectionMaxLength: collectionMaxLength,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowIndexes: collectionShowIndexes,
+          collectionShowLength: collectionShowLength,
           units: units,
         );
 
@@ -385,9 +413,9 @@ mixin Loggable {
 
     var buf = StringBuffer(blockStyle.brackets(start));
 
-    if (maxLength == null && maxCount == null) {
+    if (collectionMaxStringLength == null && collectionMaxLength == null) {
       buf.write(
-        showIndexes
+        collectionShowIndexes
             ? iterable.indexed
                 .map((e) => indexedObj2str(e.$1, e.$2))
                 .join(delimiter)
@@ -405,8 +433,9 @@ mixin Loggable {
           buf.write(obj2str(firstItem));
         } else {
           // Первый выводим всегда.
-          final first =
-              showIndexes ? indexedObj2str(0, firstItem) : obj2str(firstItem);
+          final first = collectionShowIndexes
+              ? indexedObj2str(0, firstItem)
+              : obj2str(firstItem);
           buf.write(first);
 
           var index = 1;
@@ -418,13 +447,16 @@ mixin Loggable {
           var truncated = false;
           (StringBuffer, int)? copy;
 
-          while ((maxCount == null || index < maxCount) && hasNext) {
-            final item = showIndexes
+          while ((collectionMaxLength == null || index < collectionMaxLength) &&
+              hasNext) {
+            final item = collectionShowIndexes
                 ? indexedObj2str(index, iterator.current)
                 : obj2str(iterator.current);
             length += 2 + item.lengthWithoutEscapeCodes;
-            if (maxLength != null && length > maxLength) {
-              if (length - 2 - theme.common.ellipsis.length > maxLength) {
+            if (collectionMaxStringLength != null &&
+                length > collectionMaxStringLength) {
+              if (length - 2 - theme.common.ellipsis.length >
+                  collectionMaxStringLength) {
                 truncated = true;
                 break;
               } else {

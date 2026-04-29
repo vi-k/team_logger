@@ -16,6 +16,7 @@ abstract interface class LogLevelName implements LogBlock {
     String close,
     bool upperCase,
     bool stretch,
+    bool hidden,
   }) = _FullLevelName;
 
   const factory LogLevelName.short({
@@ -27,6 +28,7 @@ abstract interface class LogLevelName implements LogBlock {
     String close,
     bool upperCase,
     bool stretch,
+    bool hidden,
   }) = _ShortLevelName;
 }
 
@@ -39,6 +41,7 @@ final class _FullLevelName implements LogLevelName {
   final String close;
   final bool upperCase;
   final bool stretch;
+  final bool hidden;
 
   const _FullLevelName({
     this.style,
@@ -49,6 +52,7 @@ final class _FullLevelName implements LogLevelName {
     this.close = ']',
     this.upperCase = true,
     this.stretch = true,
+    this.hidden = false,
   });
 
   @override
@@ -58,7 +62,9 @@ final class _FullLevelName implements LogLevelName {
     LogRow row,
     int? remainingLength,
   ) {
-    final style = this.style?[log.level] ?? theme.levelNameStyle;
+    final style = hidden
+        ? theme.common.hiddenStyle
+        : this.style?[log.level] ?? theme.levelNameStyle;
     final levelName = upperCase ? log.levelName.toUpperCase() : log.levelName;
     final levelNameStr = '$open$levelName$close';
 
@@ -84,6 +90,7 @@ final class _ShortLevelName implements LogLevelName {
   final String close;
   final bool upperCase;
   final bool stretch;
+  final bool hidden;
 
   const _ShortLevelName({
     this.style,
@@ -94,6 +101,7 @@ final class _ShortLevelName implements LogLevelName {
     this.close = ']',
     this.upperCase = false,
     this.stretch = true,
+    this.hidden = false,
   });
 
   @override
@@ -103,7 +111,9 @@ final class _ShortLevelName implements LogLevelName {
     LogRow row,
     int? remainingLength,
   ) {
-    final style = this.style?[log.level] ?? theme.levelNameStyle;
+    final style = hidden
+        ? theme.common.hiddenStyle
+        : this.style?[log.level] ?? theme.levelNameStyle;
     final levelName =
         upperCase ? log.shortLevelName.toUpperCase() : log.shortLevelName;
     final levelNameStr = '$open$levelName$close';

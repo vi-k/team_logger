@@ -39,10 +39,10 @@ final class LogTheme with Loggable {
   final String ellipsis;
   final String lineBreak;
   final String padding;
-  final bool errorOnNewLine;
+  final bool errorAlwaysOnNewLine;
   final bool enumDotShorthand;
-  final bool showCount;
-  final bool showIndexes;
+  final bool collectionShowLength;
+  final bool collectionShowIndexes;
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
   final Set<String> tags;
@@ -54,7 +54,7 @@ final class LogTheme with Loggable {
     this.warning = LogLevelTheme.noColors,
     this.error = LogLevelTheme.noColors,
     this.critical = LogLevelTheme.noColors,
-    this.traceIdStyle = _traceIdStyle,
+    this.traceIdStyle = _activeTraceIdStyle,
     this.tagsStyle = _tagsStyle,
     this.hiddenStyle = _hiddenStyle,
     this.openingQuote = defaultQuote,
@@ -63,10 +63,10 @@ final class LogTheme with Loggable {
     this.ellipsis = defaultEllipsis,
     this.lineBreak = defaultLineBreak,
     this.padding = defaultPadding,
-    this.errorOnNewLine = false,
+    this.errorAlwaysOnNewLine = false,
     this.enumDotShorthand = true,
-    this.showCount = true,
-    this.showIndexes = true,
+    this.collectionShowLength = true,
+    this.collectionShowIndexes = true,
     this.countFormatter = _defaultCountFormatter,
     this.indexFormatter = _defaultIndexFormatter,
     this.tags = const {},
@@ -94,10 +94,10 @@ final class LogTheme with Loggable {
         ellipsis = defaultEllipsis,
         lineBreak = defaultLineBreak,
         padding = defaultPadding,
-        errorOnNewLine = false,
+        errorAlwaysOnNewLine = false,
         enumDotShorthand = true,
-        showCount = true,
-        showIndexes = true,
+        collectionShowLength = true,
+        collectionShowIndexes = true,
         countFormatter = _defaultCountFormatter,
         indexFormatter = _defaultIndexFormatter,
         tags = const {'log'};
@@ -123,36 +123,12 @@ final class LogTheme with Loggable {
 
   static const LogTheme noColors = LogTheme._();
 
-  static const _traceIdStyle = ansi.rgb530;
+  static const _activeTraceIdStyle = ansi.rgb530;
+  static const _inactiveTraceIdStyle = ansi.rgb210;
+
   static const _tagsStyle = ansi.gray5;
   static const _hiddenStyle =
       ansi.Style(foreground: ansi.Color256.gray3, invisible: true);
-
-  // inactive
-
-  static const _inactiveVerboseNormalColor = ansi.Color256.gray5;
-  static const _inactiveVerboseNormalStyle =
-      ansi.Style(foreground: _inactiveVerboseNormalColor);
-
-  static const _inactiveDebugNormalColor = ansi.Color256.gray7;
-  static const _inactiveDebugNormalStyle =
-      ansi.Style(foreground: _inactiveDebugNormalColor);
-
-  static const _inactiveInfoNormalColor = ansi.Color256.rgb122;
-  static const _inactiveInfoNormalStyle =
-      ansi.Style(foreground: _inactiveInfoNormalColor);
-
-  static const _inactiveWarningNormalColor = ansi.Color256.rgb320;
-  static const _inactiveWarningNormalStyle =
-      ansi.Style(foreground: _inactiveWarningNormalColor);
-
-  static const _inactiveErrorNormalColor = ansi.Color256.rgb300;
-  static const _inactiveErrorNormalStyle =
-      ansi.Style(foreground: _inactiveErrorNormalColor);
-
-  static const _inactiveCriticalNormalColor = ansi.Color256.rgb303;
-  static const _inactiveCriticalNormalStyle =
-      ansi.Style(foreground: _inactiveCriticalNormalColor);
 
   static final LogTheme defaultActiveTheme = LogTheme._(
     verbose: LogLevelTheme.gray8,
@@ -161,265 +137,23 @@ final class LogTheme with Loggable {
     warning: LogLevelTheme.rgb431,
     error: LogLevelTheme.rgb411,
     critical: LogLevelTheme.rgb414,
-    traceIdStyle: _traceIdStyle,
+    traceIdStyle: _activeTraceIdStyle,
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,
   );
 
-  static const LogTheme defaultInactiveTheme = LogTheme._(
-    verbose: LogLevelTheme(
-      normal: _inactiveVerboseNormalStyle,
-      inverse: ansi.Style(
-        foreground: LogLevelTheme._black,
-        background: _inactiveVerboseNormalColor,
-      ),
-      bold: ansi.NoStyle(),
-      emphasis: ansi.NoStyle(),
-      dim: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
-      sequenceNumStyle: ansi.NoStyle(),
-      levelNameStyle: ansi.NoStyle(),
-      timeStyle: ansi.NoStyle(),
-      pathStyle: ansi.NoStyle(),
-      messageStyles: {
-        'b': ansi.Style(bold: true),
-        'success': ansi.NoStyle(),
-        'error': _inactiveErrorNormalStyle,
-      },
-      valueFormatter: ControlCodeFormatter(),
-      messageFormatter: BbCodeFormatter(),
-      controlCodesStyle: ansi.NoStyle(),
-      quotesStyle: ansi.NoStyle(),
-      colonStyle: ansi.NoStyle(),
-      ellipsisStyle: ansi.NoStyle(),
-      lineBreakStyle: ansi.NoStyle(),
-      paddingStyle: ansi.NoStyle(),
-      sectionStyle: ansi.NoStyle(),
-      dataNameStyle: ansi.NoStyle(),
-      dataKeyStyle: ansi.NoStyle(),
-      dataValueStyle: ansi.NoStyle(),
-      dataUnitsStyle: ansi.NoStyle(),
-      dataBlockTheme: [
-        LogDataBlockTheme(
-          brackets: ansi.NoStyle(),
-          description: ansi.NoStyle(),
-          punctuation: ansi.NoStyle(),
-        ),
-      ],
-      stackTraceActiveStyle: ansi.NoStyle(),
-      stackTraceInactiveStyle: ansi.NoStyle(),
-    ),
-    debug: LogLevelTheme(
-      normal: _inactiveDebugNormalStyle,
-      inverse: ansi.Style(
-        foreground: LogLevelTheme._black,
-        background: _inactiveDebugNormalColor,
-      ),
-      bold: ansi.NoStyle(),
-      emphasis: ansi.NoStyle(),
-      dim: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
-      sequenceNumStyle: ansi.NoStyle(),
-      levelNameStyle: ansi.NoStyle(),
-      timeStyle: ansi.NoStyle(),
-      pathStyle: ansi.NoStyle(),
-      messageStyles: {
-        'b': ansi.Style(bold: true),
-        'success': ansi.NoStyle(),
-        'error': _inactiveErrorNormalStyle,
-      },
-      valueFormatter: ControlCodeFormatter(),
-      messageFormatter: BbCodeFormatter(),
-      controlCodesStyle: ansi.NoStyle(),
-      quotesStyle: ansi.NoStyle(),
-      colonStyle: ansi.NoStyle(),
-      ellipsisStyle: ansi.NoStyle(),
-      lineBreakStyle: ansi.NoStyle(),
-      paddingStyle: ansi.NoStyle(),
-      sectionStyle: ansi.NoStyle(),
-      dataNameStyle: ansi.NoStyle(),
-      dataKeyStyle: ansi.NoStyle(),
-      dataValueStyle: ansi.NoStyle(),
-      dataUnitsStyle: ansi.NoStyle(),
-      dataBlockTheme: [
-        LogDataBlockTheme(
-          brackets: ansi.NoStyle(),
-          description: ansi.NoStyle(),
-          punctuation: ansi.NoStyle(),
-        ),
-      ],
-      stackTraceActiveStyle: ansi.NoStyle(),
-      stackTraceInactiveStyle: ansi.NoStyle(),
-    ),
-    info: LogLevelTheme(
-      normal: _inactiveInfoNormalStyle,
-      inverse: ansi.Style(
-        foreground: LogLevelTheme._black,
-        background: _inactiveInfoNormalColor,
-      ),
-      bold: ansi.NoStyle(),
-      emphasis: ansi.NoStyle(),
-      dim: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
-      sequenceNumStyle: ansi.NoStyle(),
-      levelNameStyle: ansi.NoStyle(),
-      timeStyle: ansi.NoStyle(),
-      pathStyle: ansi.NoStyle(),
-      messageStyles: {
-        'b': ansi.Style(bold: true),
-        'success': ansi.NoStyle(),
-        'error': _inactiveErrorNormalStyle,
-      },
-      valueFormatter: ControlCodeFormatter(),
-      messageFormatter: BbCodeFormatter(),
-      controlCodesStyle: ansi.NoStyle(),
-      quotesStyle: ansi.NoStyle(),
-      colonStyle: ansi.NoStyle(),
-      ellipsisStyle: ansi.NoStyle(),
-      lineBreakStyle: ansi.NoStyle(),
-      paddingStyle: ansi.NoStyle(),
-      sectionStyle: ansi.NoStyle(),
-      dataNameStyle: ansi.NoStyle(),
-      dataKeyStyle: ansi.NoStyle(),
-      dataValueStyle: ansi.NoStyle(),
-      dataUnitsStyle: ansi.NoStyle(),
-      dataBlockTheme: [
-        LogDataBlockTheme(
-          brackets: ansi.NoStyle(),
-          description: ansi.NoStyle(),
-          punctuation: ansi.NoStyle(),
-        ),
-      ],
-      stackTraceActiveStyle: ansi.NoStyle(),
-      stackTraceInactiveStyle: ansi.NoStyle(),
-    ),
-    warning: LogLevelTheme(
-      normal: _inactiveWarningNormalStyle,
-      inverse: ansi.Style(
-        foreground: LogLevelTheme._black,
-        background: _inactiveWarningNormalColor,
-      ),
-      bold: ansi.NoStyle(),
-      emphasis: ansi.NoStyle(),
-      dim: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
-      sequenceNumStyle: ansi.NoStyle(),
-      levelNameStyle: ansi.NoStyle(),
-      timeStyle: ansi.NoStyle(),
-      pathStyle: ansi.NoStyle(),
-      messageStyles: {
-        'b': ansi.Style(bold: true),
-        'success': ansi.NoStyle(),
-        'error': _inactiveErrorNormalStyle,
-      },
-      valueFormatter: ControlCodeFormatter(),
-      messageFormatter: BbCodeFormatter(),
-      controlCodesStyle: ansi.NoStyle(),
-      quotesStyle: ansi.NoStyle(),
-      colonStyle: ansi.NoStyle(),
-      ellipsisStyle: ansi.NoStyle(),
-      lineBreakStyle: ansi.NoStyle(),
-      paddingStyle: ansi.NoStyle(),
-      sectionStyle: ansi.NoStyle(),
-      dataNameStyle: ansi.NoStyle(),
-      dataKeyStyle: ansi.NoStyle(),
-      dataValueStyle: ansi.NoStyle(),
-      dataUnitsStyle: ansi.NoStyle(),
-      dataBlockTheme: [
-        LogDataBlockTheme(
-          brackets: ansi.NoStyle(),
-          description: ansi.NoStyle(),
-          punctuation: ansi.NoStyle(),
-        ),
-      ],
-      stackTraceActiveStyle: ansi.NoStyle(),
-      stackTraceInactiveStyle: ansi.NoStyle(),
-    ),
-    error: LogLevelTheme(
-      normal: _inactiveErrorNormalStyle,
-      inverse: ansi.Style(
-        foreground: LogLevelTheme._black,
-        background: _inactiveErrorNormalColor,
-      ),
-      bold: ansi.NoStyle(),
-      emphasis: ansi.NoStyle(),
-      dim: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
-      sequenceNumStyle: ansi.NoStyle(),
-      levelNameStyle: ansi.NoStyle(),
-      timeStyle: ansi.NoStyle(),
-      pathStyle: ansi.NoStyle(),
-      messageStyles: {
-        'b': ansi.Style(bold: true),
-        'success': ansi.NoStyle(),
-        'error': _inactiveErrorNormalStyle,
-      },
-      valueFormatter: ControlCodeFormatter(),
-      messageFormatter: BbCodeFormatter(),
-      controlCodesStyle: ansi.NoStyle(),
-      quotesStyle: ansi.NoStyle(),
-      colonStyle: ansi.NoStyle(),
-      ellipsisStyle: ansi.NoStyle(),
-      lineBreakStyle: ansi.NoStyle(),
-      paddingStyle: ansi.NoStyle(),
-      sectionStyle: ansi.NoStyle(),
-      dataNameStyle: ansi.NoStyle(),
-      dataKeyStyle: ansi.NoStyle(),
-      dataValueStyle: ansi.NoStyle(),
-      dataUnitsStyle: ansi.NoStyle(),
-      dataBlockTheme: [
-        LogDataBlockTheme(
-          brackets: ansi.NoStyle(),
-          description: ansi.NoStyle(),
-          punctuation: ansi.NoStyle(),
-        ),
-      ],
-      stackTraceActiveStyle: ansi.NoStyle(),
-      stackTraceInactiveStyle: ansi.NoStyle(),
-    ),
-    critical: LogLevelTheme(
-      normal: _inactiveCriticalNormalStyle,
-      inverse: ansi.Style(
-        foreground: LogLevelTheme._black,
-        background: _inactiveCriticalNormalColor,
-      ),
-      bold: ansi.NoStyle(),
-      emphasis: ansi.NoStyle(),
-      dim: ansi.NoStyle(),
-      punctuation: ansi.NoStyle(),
-      sequenceNumStyle: ansi.NoStyle(),
-      levelNameStyle: ansi.NoStyle(),
-      timeStyle: ansi.NoStyle(),
-      pathStyle: ansi.NoStyle(),
-      messageStyles: {
-        'b': ansi.Style(bold: true),
-        'success': ansi.NoStyle(),
-        'error': _inactiveErrorNormalStyle,
-      },
-      valueFormatter: ControlCodeFormatter(),
-      messageFormatter: BbCodeFormatter(),
-      controlCodesStyle: ansi.NoStyle(),
-      quotesStyle: ansi.NoStyle(),
-      colonStyle: ansi.NoStyle(),
-      ellipsisStyle: ansi.NoStyle(),
-      lineBreakStyle: ansi.NoStyle(),
-      paddingStyle: ansi.NoStyle(),
-      sectionStyle: ansi.NoStyle(),
-      dataNameStyle: ansi.NoStyle(),
-      dataKeyStyle: ansi.NoStyle(),
-      dataValueStyle: ansi.NoStyle(),
-      dataUnitsStyle: ansi.NoStyle(),
-      dataBlockTheme: [
-        LogDataBlockTheme(
-          brackets: ansi.NoStyle(),
-          description: ansi.NoStyle(),
-          punctuation: ansi.NoStyle(),
-        ),
-      ],
-      stackTraceActiveStyle: ansi.NoStyle(),
-      stackTraceInactiveStyle: ansi.NoStyle(),
-    ),
-    traceIdStyle: _traceIdStyle,
+  static final LogTheme defaultInactiveTheme = LogTheme._(
+    verbose: LogLevelTheme.inactiveSeed(normal: ansi.gray4),
+    debug: LogLevelTheme.inactiveSeed(normal: ansi.gray6),
+    // info: LogLevelTheme.inactiveSeed(normal: ansi.rgb123),
+    info: LogLevelTheme.inactiveSeed(normal: ansi.rgb012),
+    // warning: LogLevelTheme.inactiveSeed(normal: ansi.rgb320),
+    warning: LogLevelTheme.inactiveSeed(normal: ansi.rgb210),
+    // error: LogLevelTheme.inactiveSeed(normal: ansi.rgb300),
+    error: LogLevelTheme.inactiveSeed(normal: ansi.rgb200),
+    // critical: LogLevelTheme.inactiveSeed(normal: ansi.rgb303),
+    critical: LogLevelTheme.inactiveSeed(normal: ansi.rgb202),
+    traceIdStyle: _inactiveTraceIdStyle,
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,
   );
@@ -456,11 +190,11 @@ final class LogTheme with Loggable {
     String? ellipsis,
     String? lineBreak,
     String? padding,
-    bool? errorOnNewLine,
+    bool? errorAlwaysOnNewLine,
     String? dataSectionName,
     bool? enumDotShorthand,
-    bool? showCount,
-    bool? showIndexes,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
     LogThemeFormatter<int>? countFormatter,
     LogThemeFormatter<int>? indexFormatter,
     Set<String>? tags,
@@ -481,10 +215,11 @@ final class LogTheme with Loggable {
         ellipsis: ellipsis ?? this.ellipsis,
         lineBreak: lineBreak ?? this.lineBreak,
         padding: padding ?? this.padding,
-        errorOnNewLine: errorOnNewLine ?? this.errorOnNewLine,
+        errorAlwaysOnNewLine: errorAlwaysOnNewLine ?? this.errorAlwaysOnNewLine,
         enumDotShorthand: enumDotShorthand ?? this.enumDotShorthand,
-        showCount: showCount ?? this.showCount,
-        showIndexes: showIndexes ?? this.showIndexes,
+        collectionShowLength: collectionShowLength ?? this.collectionShowLength,
+        collectionShowIndexes:
+            collectionShowIndexes ?? this.collectionShowIndexes,
         countFormatter: countFormatter ?? this.countFormatter,
         indexFormatter: indexFormatter ?? this.indexFormatter,
         tags: tags ?? this.tags,
@@ -538,10 +273,10 @@ final class LogTheme with Loggable {
       ..prop('ellipsis', ellipsis)
       ..prop('lineBreak', lineBreak)
       ..prop('padding', padding)
-      ..prop('errorOnNewLine', errorOnNewLine)
+      ..prop('errorAlwaysOnNewLine', errorAlwaysOnNewLine)
       ..prop('enumDotShorthand', enumDotShorthand)
-      ..prop('showCount', showCount)
-      ..prop('showIndexes', showIndexes)
+      ..prop('collectionShowLength', collectionShowLength)
+      ..prop('collectionShowIndexes', collectionShowIndexes)
       ..prop('tags', tags);
   }
 }

@@ -2,18 +2,20 @@ import 'loggable.dart';
 
 final class LoggableMultiData {
   final Map<String, Object?> data;
-  final int? collectionMaxCount;
+  final bool? enumDotShorthand;
   final int? collectionMaxLength;
-  final bool? showCount;
-  final bool? showIndexes;
+  final int? collectionMaxStringLength;
+  final bool? collectionShowLength;
+  final bool? collectionShowIndexes;
   final String? units;
 
   const LoggableMultiData(
     this.data, {
-    this.collectionMaxCount,
+    this.enumDotShorthand,
     this.collectionMaxLength,
-    this.showCount,
-    this.showIndexes,
+    this.collectionMaxStringLength,
+    this.collectionShowLength,
+    this.collectionShowIndexes,
     this.units,
   });
 
@@ -24,7 +26,14 @@ final class LoggableMultiData {
     String Function(String value)? valueFormatter,
   }) =>
       data.entries.map((e) {
-        final value = Loggable.objectToString(e.value);
+        final value = Loggable.objectToString(
+          e.value,
+          enumDotShorthand: enumDotShorthand,
+          collectionMaxLength: collectionMaxLength,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
+        );
         final key = e.key;
         return '${key.isEmpty ? '' : '${keyFormatter?.call(key) ?? key}: '}'
             '${valueFormatter?.call(value) ?? value}';
