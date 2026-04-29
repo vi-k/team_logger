@@ -15,7 +15,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogTheme? inactiveTheme;
   final bool Function(Log log)? isActive;
   final int activeLevel;
-  final Set<String> activePaths;
+  final Set<String> activeLoggers;
   final Set<String> activeTraceGroups;
   final Set<String> activeTags;
   final List<LogRow> rows;
@@ -27,7 +27,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     LogTheme? theme,
     this.inactiveTheme,
     this.activeLevel = LogLevels.off,
-    this.activePaths = const {},
+    this.activeLoggers = const {},
     this.activeTraceGroups = const {},
     this.activeTags = const {},
     this.isActive,
@@ -35,7 +35,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     this.output = print,
   })  : assert(
           inactiveTheme != null ||
-              activePaths.isEmpty &&
+              activeLoggers.isEmpty &&
                   activeTraceGroups.isEmpty &&
                   activeTags.isEmpty &&
                   isActive == null,
@@ -50,9 +50,9 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       inactiveTheme == null ||
       log.level >= activeLevel ||
       (isActive?.call(log) ?? false) ||
-      log.tags.any(activeTags.contains) ||
+      activeLoggers.contains(log.path) ||
       log.traceIds.any((e) => activeTraceGroups.contains(e.group)) ||
-      activePaths.any((e) => log.path.startsWith(e));
+      log.tags.any(activeTags.contains);
 
   @override
   void publish(Log log) {

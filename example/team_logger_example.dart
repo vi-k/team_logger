@@ -35,7 +35,7 @@ void f() {
       inactiveTheme: inactiveTheme,
       isActive: (log) => true,
       // activeLevel: LogLevels.error,
-      // activePaths: {'events'},
+      // activeLoggers: {'events'},
       // activeTraceGroups: {'feature'},
       // activeTags: {'response'},
       // isActive: (log) => log.hasData,
