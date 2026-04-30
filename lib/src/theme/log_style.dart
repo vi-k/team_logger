@@ -94,7 +94,13 @@ final class LogStyle with Loggable {
     if (same) {
       data
         ..name = '$LogStyle.only'
-        ..prop('style', verbose, showName: false, view: verbose('style'));
+        ..computed('style', verbose('style'), showName: false)
+        ..hidden('verbose', verbose)
+        ..hidden('debug', debug)
+        ..hidden('info', info)
+        ..hidden('warning', warning)
+        ..hidden('error', error)
+        ..hidden('critical', critical);
       return;
     }
 

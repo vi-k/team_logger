@@ -248,11 +248,8 @@ final class LogBox with Loggable {
 
   @override
   void collectLoggableData(LoggableData data) {
-    if (debugName != null) {
-      data.prop('debugName', debugName, showName: false);
-    }
-
     data
+      ..prop('debugName', debugName, showName: false, hidden: debugName == null)
       ..prop('width', width)
       ..prop('lines', lines, view: lines.length.toString())
       ..prop('verticalAlign', verticalAlign);

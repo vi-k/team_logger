@@ -3,6 +3,8 @@
 part of 'loggable.dart';
 
 final class LoggableData {
+  static const _computed = _ComputedProp();
+
   /// Тип класса.
   ///
   /// Не используем [runtimeType], т.к.:
@@ -41,6 +43,7 @@ final class LoggableData {
     String name,
     T value, {
     bool showName = true,
+    bool hidden = false,
     String? view,
     String Function(T value, int level, LogLevelTheme theme)? convert,
     bool? enumDotShorthand,
@@ -51,15 +54,79 @@ final class LoggableData {
     String? units,
     int levelCorrection = 0,
   }) {
-    assert(!props.any((e) => e.name == name));
-
     props.add(
-      Prop<T>(
+      Prop<T>._(
         name,
         value,
         showName: showName,
+        hidden: hidden,
         view: view,
         convert: convert,
+        enumDotShorthand: enumDotShorthand,
+        collectionMaxLength: collectionMaxLength,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowLength: collectionShowLength,
+        collectionShowIndexes: collectionShowIndexes,
+        units: units,
+        levelCorrection: levelCorrection,
+      ),
+    );
+  }
+
+  void hidden<T extends Object?>(
+    String name,
+    T value, {
+    bool showName = true,
+    String? view,
+    String Function(T value, int level, LogLevelTheme theme)? convert,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
+    String? units,
+    int levelCorrection = 0,
+  }) {
+    props.add(
+      Prop<T>._(
+        name,
+        value,
+        showName: showName,
+        hidden: true,
+        view: view,
+        convert: convert,
+        enumDotShorthand: enumDotShorthand,
+        collectionMaxLength: collectionMaxLength,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowLength: collectionShowLength,
+        collectionShowIndexes: collectionShowIndexes,
+        units: units,
+        levelCorrection: levelCorrection,
+      ),
+    );
+  }
+
+  void computed(
+    String name,
+    String? view, {
+    bool showName = true,
+    String Function(int level, LogLevelTheme theme)? convert,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
+    String? units,
+    int levelCorrection = 0,
+  }) {
+    props.add(
+      Prop._(
+        name,
+        _computed,
+        showName: showName,
+        view: view,
+        convert:
+            convert == null ? null : (_, level, theme) => convert(level, theme),
         enumDotShorthand: enumDotShorthand,
         collectionMaxLength: collectionMaxLength,
         collectionMaxStringLength: collectionMaxStringLength,
@@ -118,7 +185,7 @@ final class LoggableData {
 
     return '${_type.showName ? name2str() : ''}'
         '${levelTheme.brackets(_type.openingBracket)}'
-        '${props.map(prop2str).join(levelTheme.punctuation(', '))}'
+        '${props.where((p) => !p.hidden).map(prop2str).join(levelTheme.punctuation(', '))}'
         '${levelTheme.brackets(_type.closingBracket)}';
   }
 
@@ -131,6 +198,7 @@ final class Prop<T extends Object?> {
   final T value;
   final String? view;
   final bool showName;
+  final bool hidden;
   final bool? enumDotShorthand;
   final int? collectionMaxLength;
   final int? collectionMaxStringLength;
@@ -140,10 +208,11 @@ final class Prop<T extends Object?> {
   final String Function(T value, int level, LogLevelTheme theme)? convert;
   final int levelCorrection;
 
-  const Prop(
+  const Prop._(
     this.name,
     this.value, {
     this.showName = true,
+    this.hidden = false,
     this.view,
     this.convert,
     this.enumDotShorthand,
@@ -210,7 +279,7 @@ final class TypeProp extends Prop<Type> {
     String? closingBracket,
   })  : _openingBracket = openingBracket ?? '(',
         _closingBracket = closingBracket ?? ')',
-        super('type', type, view: name);
+        super._('type', type, view: name);
 
   String get openingBracket => showBrackets ? _openingBracket : '';
 
@@ -261,4 +330,11 @@ final class _LoggableMapBuilder extends LoggableData {
             closingBracket: '}',
           ),
         );
+}
+
+final class _ComputedProp {
+  const _ComputedProp();
+
+  @override
+  String toString() => '<computed>';
 }
