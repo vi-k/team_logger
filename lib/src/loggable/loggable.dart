@@ -6,17 +6,31 @@ import 'loggable_multi_data.dart';
 
 part 'loggable_data.dart';
 
-/// Вспомогательный класс, помогающий получить описание класса для логирования
+/// Вспомогательный класс, помогающий получить описание класса для логирования.
 ///
 /// Позволяет:
+///
 /// - получить описание класса в виде строки, используя
-///   [Loggable.objectToString] или [toString]
-/// - получить с помощью [logClassInfo] описание класса в виде списка параметров,
-///   которые можно потом наглядно показать в UI
+///   [Loggable.objectToString] или [toString].
+/// - получить с помощью [logClassInfo] описание класса в виде списка
+///   параметров, которые можно потом наглядно показать в UI.
 abstract mixin class Loggable {
+  static final Map<Type, LoggableTypeConverter<Object?>> _converters = {};
+
   /// Метод должен заполнить [data] описанием исследуемого класса.
   void collectLoggableData(LoggableData data);
 
+  /// Создает [Loggable] из любого объекта.
+  ///
+  /// Имеет смысл использовать только для примитивных типов, enums, коллекций
+  /// и [Loggable] с целью передачи параметров логирования. Для других
+  /// объектов, не поддерживающих [Loggable] напрямую, используйте
+  /// [Loggable.builder].
+  ///
+  /// В случае [Loggable] выполняет роль обёртки, чтобы передать параметры,
+  /// не установленные самим объектом.
+  ///
+  /// Параметры будут переданы в [Loggable.objectToString].
   factory Loggable.from(
     Object? obj, {
     bool? enumDotShorthand,
@@ -36,6 +50,36 @@ abstract mixin class Loggable {
         units: units,
       );
 
+  /// Позволяет создать [LoggableData] для любого объекта, изначально
+  /// не поддерживающего [Loggable].
+  ///
+  /// ```dart
+  /// const obj = NotLoggableData(a: 'abc', b: [1, 2, 3]);
+  /// log.d(
+  ///   'object',
+  ///   data: Loggable.builder(obj)
+  ///     ..prop('a', obj.a)
+  ///     ..prop('b', obj.b, collectionMaxLength: 2),
+  /// );
+  /// // object: NotLoggableData(a: "abc", b: [₌₃ ₀:1, …, ₂:3])
+  /// ```
+  ///
+  /// В определённых случаях, возможно, вы захотите не показывать имя класса
+  /// или скобки. Для этого используйте параметры [showName] и [showBrackets]:
+  ///
+  /// ```dart
+  /// final point = Point(lat: 27.988056, lon: 86.925278);
+  /// log.d(
+  ///   'Mount Everest',
+  ///   data: Loggable.builder(point, showName: false, showBrackets: false)
+  ///     ..prop('lat', point.lat, showName: false)
+  ///     ..prop('lon', point.lon, showName: false),
+  /// );
+  /// // Mount Everest: 27.988056, 86.925278
+  /// ```
+  ///
+  /// Если вам нужны свои скобки, отличные от стандартных `()`, используйте
+  /// [openingBracket] и [closingBracket]:
   static LoggableData builder(
     Object? value, {
     String? name,
@@ -53,7 +97,30 @@ abstract mixin class Loggable {
         closingBracket: closingBracket,
       );
 
+  /// Позволяет создать из [LoggableData] структуру, схожую с [Map].
+  ///
+  /// ```dart
+  /// log.d('map', data: {'a': 1, 'b': 2, 'c': 3});
+  /// // map: {a: 1, b: 2, c: 3}
+  ///
+  /// log.d('map', data: Loggable.mapBuilder()
+  ///     ..prop('a', 1, units: 'kg')
+  ///     ..prop('b', 2, units: 'm')
+  ///     ..prop('c', 3, units: 'sec'),
+  /// );
+  /// // map: {a: 1kg, b: 2m, c: 3sec}
+  /// ```
   static LoggableData mapBuilder() => _LoggableMapBuilder();
+
+  static void registerTypeConverter<T extends Object?>(
+    LoggableTypeConverter<T> converter,
+  ) {
+    _converters[T] = converter as LoggableTypeConverter<Object?>;
+  }
+
+  static void unregisterTypeConverter<T>() {
+    _converters.remove(T);
+  }
 
   @nonVirtual
   LoggableData logClassInfo() {
@@ -65,6 +132,47 @@ abstract mixin class Loggable {
   @override
   String toString() => logClassInfo().toLogString();
 
+  /// Преобразует объект в строку, используя тему [theme].
+  ///
+  /// Параметры:
+  ///
+  /// [enumDotShorthand] - сокращенное представление enums в виде `.value`.
+  /// Значение по умолчанию берётся из [LogTheme.enumDotShorthand].
+  ///
+  /// [collectionMaxLength] - максимальное количество элементов в коллекции
+  /// (для List, Set и Iterable). По умолчанию без ограничений.
+  ///
+  /// [collectionMaxStringLength] - максимальная длина результирующей строки
+  /// после преобразования коллекции. В реальности строка может быть больше,
+  /// т.к. итерируемые объекты обязательно должны содержать первый элемент,
+  /// а списки первый и последний элемент без сокращений. По умолчанию без
+  /// ограничений.
+  ///
+  /// [collectionShowLength] - показывать ли длину коллекции в виде `₌₄`
+  /// (только для List и Set). Значение по умолчанию берётся из
+  /// [LogTheme.collectionShowLength].
+  ///
+  /// [collectionShowIndexes] - показывать ли индексы элементов в виде `₀:`,
+  /// `₁:` и т.д. Значение по умолчанию берётся из
+  /// [LogTheme.collectionShowIndexes].
+  ///
+  /// [units] - единицы измерения, будут добавлены к представлению объекта
+  /// в виде суффикса. По умолчанию без единиц.
+  ///
+  /// Все параметры действуют рекурсивно не только на сам объект,
+  /// но и на все вложенные в него объекты:
+  ///
+  /// ```dart
+  /// log.d(
+  ///   'data',
+  ///   data: Loggable.from(
+  ///     [1, 2, [3, 4, 5]],
+  ///     units: 'kg',
+  ///     collectionMaxLength: 2,
+  ///   ),
+  /// );
+  /// // data: [₌₃ ₀:1kg, …, ₂:[₌₃ ₀:3kg, …, ₂:5kg]]
+  /// ```
   static String objectToString(
     Object? obj, {
     int level = 0,
@@ -76,15 +184,41 @@ abstract mixin class Loggable {
     bool? collectionShowIndexes,
     String? units,
   }) {
-    enumDotShorthand ??= theme.common.enumDotShorthand;
-    collectionShowLength ??= theme.common.collectionShowLength;
-    collectionShowIndexes ??= theme.common.collectionShowIndexes;
+    final levelTheme = theme.dataLevelTheme(level);
 
-    final blockStyle = theme.dataBlockStyle(level);
+    final converter = _converters[obj.runtimeType];
+    if (converter != null) {
+      return converter(
+        obj,
+        level,
+        theme,
+        enumDotShorthand ?? theme.common.enumDotShorthand,
+        collectionMaxLength,
+        collectionMaxStringLength,
+        collectionShowLength ?? theme.common.collectionShowLength,
+        collectionShowIndexes ?? theme.common.collectionShowIndexes,
+        units,
+      );
+    }
 
-    String obj2str(Object? obj) => objectToString(
+    switch (obj) {
+      case null:
+        return theme.formatValue('null');
+
+      case Enum():
+        return enumToString(
           obj,
-          level: level + 1,
+          theme: theme,
+          enumDotShorthand: enumDotShorthand,
+        );
+
+      case String():
+        return stringToString(obj, theme: theme, units: units);
+
+      case List<Object?>():
+        return listToString(
+          obj,
+          level: level,
           theme: theme,
           enumDotShorthand: enumDotShorthand,
           collectionMaxLength: collectionMaxLength,
@@ -94,29 +228,8 @@ abstract mixin class Loggable {
           units: units,
         );
 
-    String units2str() => Loggable.units2str(units, theme);
-
-    String map2str(MapEntry<Object?, Object?> e) {
-      final key = switch (e.key) {
-        final String key => theme.formatValue(key),
-        final key => obj2str(key),
-      };
-
-      return '${theme.dataKeyStyle(key)}${blockStyle.punctuation(':')}'
-          ' ${theme.dataValueStyle(obj2str(e.value))}${units2str()}';
-    }
-
-    return switch (obj) {
-      null => theme.formatValue('null'),
-      Enum() => enumDotShorthand
-          ? '.${theme.formatValue(obj.name)}'
-          : '${theme.formatValue(obj.runtimeType.toString())}'
-              '${theme.emphasis('.${theme.formatValue(obj.name)}')}',
-      String() => '${theme.styledOpeningQuote}'
-          '${theme.formatValue(obj)}'
-          '${theme.styledClosingQuote}'
-          '${units2str()}',
-      List<Object?>() => listToString(
+      case Set<Object?>():
+        return setToString(
           obj,
           level: level,
           theme: theme,
@@ -126,8 +239,10 @@ abstract mixin class Loggable {
           collectionShowLength: collectionShowLength,
           collectionShowIndexes: collectionShowIndexes,
           units: units,
-        ),
-      Set<Object?>() => setToString(
+        );
+
+      case Iterable<Object?>():
+        return iterableToString(
           obj,
           level: level,
           theme: theme,
@@ -137,8 +252,10 @@ abstract mixin class Loggable {
           collectionShowLength: collectionShowLength,
           collectionShowIndexes: collectionShowIndexes,
           units: units,
-        ),
-      Iterable<Object?>() => iterableToString(
+        );
+
+      case Map<Object?, Object?>():
+        return mapToString(
           obj,
           level: level,
           theme: theme,
@@ -148,21 +265,22 @@ abstract mixin class Loggable {
           collectionShowLength: collectionShowLength,
           collectionShowIndexes: collectionShowIndexes,
           units: units,
-        ),
-      Map<Object?, Object?>() => '${blockStyle.brackets('{')}'
-          '${obj.entries.map(map2str).join(blockStyle.punctuation(', '))}'
-          '${blockStyle.brackets('}')}',
-      Loggable() => obj.logClassInfo().toLogString(
-            theme: theme,
-            level: level,
-            enumDotShorthand: enumDotShorthand,
-            collectionMaxLength: collectionMaxLength,
-            collectionMaxStringLength: collectionMaxStringLength,
-            collectionShowLength: collectionShowLength,
-            collectionShowIndexes: collectionShowIndexes,
-            units: units,
-          ),
-      LoggableData() => obj.toLogString(
+        );
+
+      case Loggable():
+        return obj.logClassInfo().toLogString(
+              theme: theme,
+              level: level,
+              enumDotShorthand: enumDotShorthand,
+              collectionMaxLength: collectionMaxLength,
+              collectionMaxStringLength: collectionMaxStringLength,
+              collectionShowLength: collectionShowLength,
+              collectionShowIndexes: collectionShowIndexes,
+              units: units,
+            );
+
+      case LoggableData():
+        return obj.toLogString(
           theme: theme,
           level: level,
           enumDotShorthand: enumDotShorthand,
@@ -171,8 +289,10 @@ abstract mixin class Loggable {
           collectionShowLength: collectionShowLength,
           collectionShowIndexes: collectionShowIndexes,
           units: units,
-        ),
-      LoggableMultiData() => obj.data.entries.map((e) {
+        );
+
+      case LoggableMultiData():
+        return obj.data.entries.map((e) {
           final value = Loggable.objectToString(
             e.value,
             theme: theme,
@@ -192,9 +312,12 @@ abstract mixin class Loggable {
             final key =>
               '${theme.sectionStyle(key)}${theme.styledColon} $value',
           };
-        }).join(blockStyle.punctuation(', ')),
-      _ => '${theme.formatValue(obj.toString())}${units2str()}',
-    };
+        }).join(levelTheme.punctuation(', '));
+
+      default:
+        return '${theme.formatValue(obj.toString())}'
+            '${unitsToString(units, theme)}';
+    }
   }
 
   /// Преобразует список в строку в виде `[first, …, last] (n=N)`.
@@ -284,12 +407,13 @@ abstract mixin class Loggable {
     assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
 
-    enumDotShorthand ??= theme.common.enumDotShorthand;
-    collectionShowIndexes ??= theme.common.collectionShowIndexes;
-    collectionShowLength ??= theme.common.collectionShowLength;
+    final fixedCollectionShowLength =
+        collectionShowLength ?? theme.common.collectionShowLength;
+    final fixedCollectionShowIndexes =
+        collectionShowIndexes ?? theme.common.collectionShowIndexes;
 
-    final blockStyle = theme.dataBlockStyle(level);
-    final delimiter = blockStyle.punctuation(', ');
+    final levelTheme = theme.dataLevelTheme(level);
+    final delimiter = levelTheme.punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -304,23 +428,23 @@ abstract mixin class Loggable {
         );
 
     String index2str(int index) =>
-        blockStyle.description(theme.formatIndex(index));
+        levelTheme.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
 
     final count = iterable.length;
-    var buf = StringBuffer(blockStyle.brackets(start));
+    var buf = StringBuffer(levelTheme.brackets(start));
     var startLength = start.length;
-    if (count > 1 && collectionShowLength) {
+    if (count > 1 && fixedCollectionShowLength) {
       final prefix = theme.formatCount(count);
       startLength += prefix.length;
-      buf.write(blockStyle.description(prefix));
+      buf.write(levelTheme.description(prefix));
     }
 
     if (collectionMaxStringLength == null && collectionMaxLength == null) {
       buf.write(
-        collectionShowIndexes && count > 1
+        fixedCollectionShowIndexes && count > 1
             ? iterable.indexed
                 .map((e) => indexedObj2str(e.$1, e.$2))
                 .join(delimiter)
@@ -335,13 +459,13 @@ abstract mixin class Loggable {
           buf.write(obj2str(iterator.current));
         } else if (count > 1) {
           // Первый выводим всегда.
-          final first = collectionShowIndexes
+          final first = fixedCollectionShowIndexes
               ? indexedObj2str(0, iterator.current)
               : obj2str(iterator.current);
           buf.write(first);
 
           // Последний, если есть, тоже выводим всегда.
-          final last = collectionShowIndexes
+          final last = fixedCollectionShowIndexes
               ? indexedObj2str(count - 1, iterable.last)
               : obj2str(iterable.last);
           var length = startLength +
@@ -352,12 +476,12 @@ abstract mixin class Loggable {
               last.lengthWithoutEscapeCodes +
               end.length;
           var index = 1;
-          collectionMaxLength ??= count;
+          final fixedCollectionMaxLength = collectionMaxLength ?? count;
           (StringBuffer, int)? copy;
 
-          while (index < collectionMaxLength - 1 && index < count - 1) {
+          while (index < fixedCollectionMaxLength - 1 && index < count - 1) {
             iterator.moveNext();
-            final item = collectionShowIndexes
+            final item = fixedCollectionShowIndexes
                 ? indexedObj2str(index, iterator.current)
                 : obj2str(iterator.current);
             length += 2 + item.lengthWithoutEscapeCodes;
@@ -384,7 +508,7 @@ abstract mixin class Loggable {
 
             buf
               ..write(delimiter)
-              ..write(blockStyle.punctuation(theme.common.ellipsis));
+              ..write(levelTheme.punctuation(theme.common.ellipsis));
           }
 
           buf
@@ -394,7 +518,7 @@ abstract mixin class Loggable {
       }
     }
 
-    buf.write(blockStyle.brackets(end));
+    buf.write(levelTheme.brackets(end));
 
     return buf.toString();
   }
@@ -424,12 +548,11 @@ abstract mixin class Loggable {
     assert(collectionMaxLength == null || collectionMaxLength >= 2);
     assert(collectionMaxStringLength == null || collectionMaxStringLength > 0);
 
-    enumDotShorthand ??= theme.common.enumDotShorthand;
-    collectionShowIndexes ??= theme.common.collectionShowIndexes;
-    collectionShowLength ??= theme.common.collectionShowLength;
+    final fixedCollectionShowIndexes =
+        collectionShowIndexes ?? theme.common.collectionShowIndexes;
 
-    final blockStyle = theme.dataBlockStyle(level);
-    final delimiter = blockStyle.punctuation(', ');
+    final levelTheme = theme.dataLevelTheme(level);
+    final delimiter = levelTheme.punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
@@ -444,16 +567,16 @@ abstract mixin class Loggable {
         );
 
     String index2str(int index) =>
-        blockStyle.description(theme.formatIndex(index));
+        levelTheme.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
 
-    var buf = StringBuffer(blockStyle.brackets(start));
+    var buf = StringBuffer(levelTheme.brackets(start));
 
     if (collectionMaxStringLength == null && collectionMaxLength == null) {
       buf.write(
-        collectionShowIndexes
+        fixedCollectionShowIndexes
             ? iterable.indexed
                 .map((e) => indexedObj2str(e.$1, e.$2))
                 .join(delimiter)
@@ -471,7 +594,7 @@ abstract mixin class Loggable {
           buf.write(obj2str(firstItem));
         } else {
           // Первый выводим всегда.
-          final first = collectionShowIndexes
+          final first = fixedCollectionShowIndexes
               ? indexedObj2str(0, firstItem)
               : obj2str(firstItem);
           buf.write(first);
@@ -487,7 +610,7 @@ abstract mixin class Loggable {
 
           while ((collectionMaxLength == null || index < collectionMaxLength) &&
               hasNext) {
-            final item = collectionShowIndexes
+            final item = fixedCollectionShowIndexes
                 ? indexedObj2str(index, iterator.current)
                 : obj2str(iterator.current);
             length += 2 + item.lengthWithoutEscapeCodes;
@@ -517,25 +640,112 @@ abstract mixin class Loggable {
 
             buf
               ..write(delimiter)
-              ..write(blockStyle.punctuation(theme.common.ellipsis));
+              ..write(levelTheme.punctuation(theme.common.ellipsis));
           }
         }
       }
     }
 
-    buf.write(blockStyle.brackets(end));
+    buf.write(levelTheme.brackets(end));
 
     return buf.toString();
   }
 
-  static String units2str(
+  static String mapEntryToString(
+    MapEntry<Object?, Object?> entry, {
+    int level = 0,
+    LogLevelTheme theme = LogLevelTheme.noColors,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowIndexes,
+    bool? collectionShowLength,
+    String? units,
+  }) {
+    String obj2str(Object? obj) => objectToString(
+          obj,
+          level: level + 1,
+          theme: theme,
+          enumDotShorthand: enumDotShorthand,
+          collectionMaxLength: collectionMaxLength,
+          collectionMaxStringLength: collectionMaxStringLength,
+          collectionShowLength: collectionShowLength,
+          collectionShowIndexes: collectionShowIndexes,
+          units: units,
+        );
+
+    final levelTheme = theme.dataLevelTheme(level);
+
+    final key = switch (entry.key) {
+      final String key => theme.formatValue(key),
+      final key => obj2str(key),
+    };
+
+    return '${theme.dataKeyStyle(key)}${levelTheme.punctuation(':')}'
+        ' ${theme.dataValueStyle(obj2str(entry.value))}'
+        '${unitsToString(units, theme)}';
+  }
+
+  static String mapToString(
+    Map<Object?, Object?> map, {
+    int level = 0,
+    LogLevelTheme theme = LogLevelTheme.noColors,
+    String start = '{',
+    String end = '}',
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowIndexes,
+    bool? collectionShowLength,
+    String? units,
+  }) {
+    final levelTheme = theme.dataLevelTheme(level);
+    final body = map.entries
+        .map(
+          (e) => mapEntryToString(
+            e,
+            level: level,
+            theme: theme,
+            enumDotShorthand: enumDotShorthand,
+            collectionMaxLength: collectionMaxLength,
+            collectionMaxStringLength: collectionMaxStringLength,
+            collectionShowLength: collectionShowLength,
+            collectionShowIndexes: collectionShowIndexes,
+            units: units,
+          ),
+        )
+        .join(levelTheme.punctuation(', '));
+
+    return '${levelTheme.brackets(start)}$body${levelTheme.brackets(end)}';
+  }
+
+  static String enumToString(
+    Enum obj, {
+    LogLevelTheme theme = LogLevelTheme.noColors,
+    bool? enumDotShorthand,
+  }) {
+    final dotShorthand = '.${theme.formatValue(obj.name)}';
+
+    return (enumDotShorthand ?? theme.common.enumDotShorthand)
+        ? dotShorthand
+        : '${obj.runtimeType}${theme.emphasis(dotShorthand)}';
+  }
+
+  static String stringToString(
+    String obj, {
+    LogLevelTheme theme = LogLevelTheme.noColors,
+    String? units,
+  }) =>
+      '${theme.styledOpeningQuote}'
+      '${theme.formatValue(obj)}'
+      '${theme.styledClosingQuote}'
+      '${unitsToString(units, theme)}';
+
+  static String unitsToString(
     String? units,
     LogLevelTheme theme,
-  ) {
-    final unitsStr = units ?? '';
-
-    return theme.dataUnitsStyle(theme.formatValue(unitsStr));
-  }
+  ) =>
+      units == null ? '' : theme.dataUnitsStyle(theme.formatValue(units));
 }
 
 final class _LoggableWrapper with Loggable {
@@ -576,4 +786,18 @@ final class _LoggableWrapper with Loggable {
 
   @override
   void collectLoggableData(LoggableData data) {}
+}
+
+abstract interface class LoggableTypeConverter<T extends Object?> {
+  String call(
+    T obj,
+    int level,
+    LogLevelTheme theme,
+    bool enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool collectionShowLength,
+    bool collectionShowIndexes,
+    String? units,
+  );
 }

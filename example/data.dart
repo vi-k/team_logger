@@ -77,7 +77,7 @@ abstract final class Data {
 
   static const errorResponse = {'code': 50000, 'error': 'Something went wrong'};
 
-  static const loggableObject = LoggableTest(
+  static const loggableObject = LoggableObject(
     id: 1,
     bearing: 90,
     speed: 10,
@@ -167,7 +167,7 @@ abstract final class Data {
   static const listOfLists = [_list3, ..._list1];
 }
 
-final class LoggableTest with Loggable {
+final class LoggableObject with Loggable {
   final int id;
   final int bearing;
   final int speed;
@@ -176,7 +176,7 @@ final class LoggableTest with Loggable {
   final List<Point> points;
   final Map<String, List<Point>> destinations;
 
-  const LoggableTest({
+  const LoggableObject({
     required this.id,
     required this.bearing,
     required this.speed,
@@ -188,7 +188,7 @@ final class LoggableTest with Loggable {
 
   @override
   void collectLoggableData(LoggableData data) => data
-    ..name = '$LoggableTest'
+    ..name = '$LoggableObject'
     ..prop('id', id)
     ..prop('point', point)
     ..prop('bearing', bearing, units: '°')
@@ -212,12 +212,76 @@ final class Point with Loggable {
     ..fixed('lon', lon, 5, showName: false);
 }
 
-final class NotLoggableData {
+final class NotLoggableObject {
   final String name;
   final List<int> list;
 
-  const NotLoggableData(this.name, this.list);
+  const NotLoggableObject(this.name, this.list);
 
   @override
-  String toString() => '$NotLoggableData(name: $name, list: $list)';
+  String toString() => '$NotLoggableObject(name: $name, list: $list)';
+}
+
+final class NotLoggableObjectConverter
+    implements LoggableTypeConverter<NotLoggableObject> {
+  @override
+  String call(
+    NotLoggableObject obj,
+    int level,
+    LogLevelTheme theme,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
+    String? units,
+  ) =>
+      (Loggable.builder(obj)
+            ..prop('name', obj.name)
+            ..prop('list', obj.list))
+          .toLogString(
+        theme: theme,
+        level: level,
+        enumDotShorthand: enumDotShorthand,
+        collectionMaxLength: collectionMaxLength,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowLength: collectionShowLength,
+        collectionShowIndexes: collectionShowIndexes,
+        units: units,
+      );
+}
+
+final class ManualNotLoggableObjectConverter
+    implements LoggableTypeConverter<NotLoggableObject> {
+  @override
+  String call(
+    NotLoggableObject obj,
+    int level,
+    LogLevelTheme theme,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
+    String? units,
+  ) {
+    final levelTheme = theme.dataLevelTheme(level);
+
+    return '${theme.dataNameStyle('$NotLoggableObject')}'
+        '${levelTheme.brackets('(')}'
+        '${Loggable.mapToString(
+      {'name': obj.name, 'list': obj.list},
+      level: level,
+      theme: theme,
+      start: '',
+      end: '',
+      enumDotShorthand: enumDotShorthand,
+      collectionMaxLength: collectionMaxLength,
+      collectionMaxStringLength: collectionMaxStringLength,
+      collectionShowLength: collectionShowLength,
+      collectionShowIndexes: collectionShowIndexes,
+      units: units,
+    )}'
+        '${levelTheme.brackets(')')}';
+  }
 }

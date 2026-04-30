@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:team_logger/team_logger.dart';
-import 'package:team_logger/team_logger.dart' as team;
 
 import 'data.dart';
 
@@ -184,20 +183,30 @@ void f() {
   log.d('list', data: [1, 2, 3]);
   log.d(
     'wrapped list',
-    data: team.Loggable.from(
+    data: Loggable.from(
       [1, 2, 3],
       collectionMaxLength: 2,
     ),
   );
 
-  const data = NotLoggableData('abc', [1, 2, 3]);
-  log.d('object', data: data);
+  const notLoggableObject = NotLoggableObject('abc', [1, 2, 3]);
+  log.d('NotLoggableObject', data: notLoggableObject);
   log.d(
-    'built object',
-    data: team.Loggable.builder(data)
-      ..prop('name', data.name)
-      ..prop('list', data.list),
+    'NotLoggableObject',
+    data: Loggable.builder(notLoggableObject)
+      ..prop('name', notLoggableObject.name)
+      ..prop('list', notLoggableObject.list),
   );
+  Loggable.registerTypeConverter<NotLoggableObject>(
+    NotLoggableObjectConverter(),
+  );
+  log.d('NotLoggableObject', data: notLoggableObject);
+  Loggable.registerTypeConverter<NotLoggableObject>(
+    ManualNotLoggableObjectConverter(),
+  );
+  log.d('NotLoggableObject', data: notLoggableObject);
+  Loggable.unregisterTypeConverter<NotLoggableObject>();
+  log.d('NotLoggableObject', data: notLoggableObject);
 
   log.d(
     'map',
@@ -205,7 +214,7 @@ void f() {
   );
   log.d(
     'built map',
-    data: team.Loggable.mapBuilder()
+    data: Loggable.mapBuilder()
       ..prop('a', 1, units: 'kg')
       ..prop('b', 2, units: 'm')
       ..prop('c', 3, units: 'sec'),
