@@ -33,12 +33,12 @@ void f() {
     ..publisher = ConsoleLogPrinter(
       theme: theme,
       inactiveTheme: inactiveTheme,
-      isActive: (log) => true,
+      isLogActive: (log) => true,
       // activeLevel: LogLevels.error,
       // activeLoggers: {'events'},
       // activeTraceGroups: {'feature'},
       // activeTags: {'response'},
-      // isActive: (log) => log.hasData,
+      // isLogActive: (log) => log.hasData,
       rows: const [
         // LogRow.singleLine(
         LogRow(

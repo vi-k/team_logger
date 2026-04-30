@@ -13,7 +13,7 @@ import 'log_row.dart';
 final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogTheme theme;
   final LogTheme? inactiveTheme;
-  final bool Function(Log log)? isActive;
+  final bool Function(Log log)? isLogActive;
   final int activeLevel;
   final Set<String> activeLoggers;
   final Set<String> activeTraceGroups;
@@ -30,7 +30,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     this.activeLoggers = const {},
     this.activeTraceGroups = const {},
     this.activeTags = const {},
-    this.isActive,
+    this.isLogActive,
     required this.rows,
     this.output = print,
   })  : assert(
@@ -38,7 +38,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
               activeLoggers.isEmpty &&
                   activeTraceGroups.isEmpty &&
                   activeTags.isEmpty &&
-                  isActive == null,
+                  isLogActive == null,
           'inactiveTheme must be set first',
         ),
         theme = theme ?? LogTheme.defaultActiveTheme {
@@ -46,17 +46,17 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     inactiveTheme?.registerLevelThemes();
   }
 
-  bool _isActive(Log log) =>
+  bool _isLogActive(Log log) =>
       inactiveTheme == null ||
       log.level >= activeLevel ||
-      (isActive?.call(log) ?? false) ||
+      (isLogActive?.call(log) ?? false) ||
       activeLoggers.contains(log.path) ||
       log.traceIds.any((e) => activeTraceGroups.contains(e.group)) ||
       log.tags.any(activeTags.contains);
 
   @override
   void publish(Log log) {
-    final isActive = _isActive(log);
+    final isActive = _isLogActive(log);
     final theme = (isActive ? this.theme : inactiveTheme ?? this.theme);
     if (log.level < theme.minLevel) {
       return;
