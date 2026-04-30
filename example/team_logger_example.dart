@@ -1,8 +1,72 @@
 import 'dart:async';
 
+import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
 
 import 'data.dart';
+
+final theme = LogTheme.defaultActiveTheme.copyWith(
+  hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
+);
+final inactiveTheme = LogTheme.defaultInactiveTheme.copyWith(
+  hiddenStyle: LogTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
+  // minLevel: LogLevels.debug,
+);
+
+final logStorage = LogStorage(maxCount: 100);
+
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = MultiPublisher(
+    [
+      ConsoleLogPrinter(
+        theme: theme,
+        inactiveTheme: inactiveTheme,
+        isLogActive: (log) => true,
+        // activeLevel: LogLevels.error,
+        // activeLoggers: {'events'},
+        // activeTraceGroups: {'feature'},
+        // activeTags: {'response'},
+        // isLogActive: (log) => log.hasData,
+        rows: const [
+          // LogRow.singleLine(
+          LogRow(
+            maxLength: 140,
+            maxLines: 20,
+            children: [
+              LogSequenceNum(),
+              LogLevelName.short(),
+              LogTime.onlyTime(),
+              LogPath(),
+              LogTraceId(),
+              LogMessage(),
+            ],
+            tail: [
+              LogTags(),
+            ],
+          ),
+          // LogRow.singleLine(
+          LogRow(
+            maxLength: 100,
+            when: _hasStackTrace,
+            // alignTail: false,
+            children: [
+              LogSequenceNum(hidden: true),
+              LogLevelName.short(hidden: true),
+              LogTime.onlyTime(hidden: true),
+              LogPath(hidden: true),
+              LogTraceId(hidden: true),
+              LogStackTrace(),
+            ],
+            tail: [
+              LogTags(hidden: true),
+            ],
+          ),
+        ],
+      ),
+      logStorage,
+    ],
+  );
 
 void main() {
   runZoned(
@@ -15,67 +79,14 @@ void main() {
       },
     ),
   );
+
+  // ignore: discarded_futures
+  logStorage.dispose();
 }
 
 bool _hasStackTrace(Log log) => log.stackTrace != null;
 
 void f() {
-  final theme = LogTheme.defaultActiveTheme.copyWith(
-    hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
-  );
-  final inactiveTheme = LogTheme.defaultInactiveTheme.copyWith(
-    hiddenStyle: LogTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
-    // minLevel: LogLevels.debug,
-  );
-
-  final log = Logger('app')
-    ..level = LogLevels.all
-    ..publisher = ConsoleLogPrinter(
-      theme: theme,
-      inactiveTheme: inactiveTheme,
-      isLogActive: (log) => true,
-      // activeLevel: LogLevels.error,
-      // activeLoggers: {'events'},
-      // activeTraceGroups: {'feature'},
-      // activeTags: {'response'},
-      // isLogActive: (log) => log.hasData,
-      rows: const [
-        // LogRow.singleLine(
-        LogRow(
-          maxLength: 140,
-          maxLines: 20,
-          children: [
-            LogSequenceNum(),
-            LogLevelName.short(),
-            LogTime.onlyTime(),
-            LogPath(),
-            LogTraceId(),
-            LogMessage(),
-          ],
-          tail: [
-            LogTags(),
-          ],
-        ),
-        // LogRow.singleLine(
-        LogRow(
-          maxLength: 100,
-          when: _hasStackTrace,
-          // alignTail: false,
-          children: [
-            LogSequenceNum(hidden: true),
-            LogLevelName.short(hidden: true),
-            LogTime.onlyTime(hidden: true),
-            LogPath(hidden: true),
-            LogTraceId(hidden: true),
-            LogStackTrace(),
-          ],
-          tail: [
-            LogTags(hidden: true),
-          ],
-        ),
-      ],
-    );
-
   final httpLog = log.copyWith(name: 'network', tags: {'http'});
   final eventLog = log.copyWith(name: 'events').createChild(name: 'polling');
 
@@ -218,5 +229,10 @@ void f() {
       ..prop('a', 1, units: 'kg')
       ..prop('b', 2, units: 'm')
       ..prop('c', 3, units: 'sec'),
+  );
+
+  log.d(
+    'storage snapshot',
+    data: Loggable.from(logStorage.snapshot(), collectionMaxLength: 3),
   );
 }
