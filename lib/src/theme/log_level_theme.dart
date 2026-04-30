@@ -428,7 +428,6 @@ final class LogLevelTheme with Loggable {
 
   static const Map<String, ansi.Style> defaultInactiveMessageStyles = {
     'b': ansi.Style(bold: true),
-    // 'success': ansi.NoStyle(),
     'success': ansi.rgb020,
   };
 
