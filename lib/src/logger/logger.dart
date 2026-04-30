@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:logger_builder/logger_builder.dart';
 
+import '../loggable/loggable.dart';
 import 'log_levels.dart';
 import 'trace_id.dart';
 
@@ -47,10 +48,9 @@ final class LevelLogger
         stackTrace,
         zone,
       }) {
-        final currentTraceIds = logger.currentTraceIds;
-        final newTraceIds =
-            traceId == null ? currentTraceIds : [...currentTraceIds, traceId];
-        for (final traceId in newTraceIds) {
+        final zonedTraceIds = Logger.zonedTraceIds;
+        final logTraceIds = [...zonedTraceIds, if (traceId != null) traceId];
+        for (final traceId in logTraceIds) {
           traceId.resolve();
         }
 
@@ -58,12 +58,14 @@ final class LevelLogger
           Log(
             this,
             path: overridePath ?? logger._lazyPath.value,
-            traceIds: traceId == null
-                ? currentTraceIds
-                : [...currentTraceIds, traceId],
+            traceIds: logTraceIds,
             message: LazyString(message, '').value,
             data: Lazy(data).resolved,
-            tags: {...logger.tags, ...LazyTags(tags).value},
+            tags: {
+              ...Logger.zonedTags,
+              ...logger.tags,
+              ...LazyTags(tags).value,
+            },
             error: error,
             stackTrace: stackTrace,
             zone: zone,
@@ -75,6 +77,8 @@ final class LevelLogger
 }
 
 final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
+  static const _tagsKey = #team_logger_tags;
+
   final LazyString _lazyPath;
   final String pathSeparator;
   final Set<String> tags;
@@ -152,15 +156,26 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   LogFn get e => _e.log;
   LogFn get critical => _critical.log;
 
-  T trace<T extends Object?>(TraceId traceId, T Function() fn) => runZoned(
+  T trace<T extends Object?>(
+    TraceId traceId,
+    T Function() fn, {
+    Set<String> tags = const {},
+  }) =>
+      runZoned(
         fn,
         zoneValues: {
-          TraceId: [...currentTraceIds, traceId],
+          TraceId: [...zonedTraceIds, traceId],
+          _tagsKey: {...zonedTags, ...tags},
         },
       );
 
-  List<TraceId> get currentTraceIds => switch (Zone.current[TraceId]) {
+  static List<TraceId> get zonedTraceIds => switch (Zone.current[TraceId]) {
         final List<TraceId> list => list,
         _ => const <TraceId>[],
+      };
+
+  static Set<String> get zonedTags => switch (Zone.current[_tagsKey]) {
+        final Set<String> list => list,
+        _ => const <String>{},
       };
 }

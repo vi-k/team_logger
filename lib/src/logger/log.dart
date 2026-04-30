@@ -4,10 +4,10 @@ final class LogNoData {
   const LogNoData._();
 
   @override
-  String toString() => 'no data';
+  String toString() => '<no data>';
 }
 
-final class Log extends CustomLog {
+final class Log extends CustomLog with Loggable {
   static int _lastSequenceNum = 0;
   static const noData = LogNoData._();
 
@@ -33,6 +33,35 @@ final class Log extends CustomLog {
         time = clock.now();
 
   bool get hasData => data is! LogNoData;
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..prop('sequenceNum', sequenceNum, showName: false, view: '#$sequenceNum')
+      ..prop('level', level, view: levelName)
+      ..hidden('levelName', levelName)
+      ..hidden('shortLevelName', shortLevelName)
+      ..prop('time', time)
+      ..prop('path', path);
+
+    if (traceIds.isNotEmpty) {
+      data.prop('traceIds', traceIds);
+    }
+    data.prop('message', message);
+
+    if (tags.isNotEmpty) {
+      data.prop('tags', tags);
+    }
+    if (hasData) {
+      data.prop('hasData', true);
+    }
+    if (error != null) {
+      data.prop('hasError', true);
+    }
+    if (stackTrace != null) {
+      data.prop('hasStackTrace', true);
+    }
+  }
 }
 
 final class LazyTags extends TypedLazy<Set<String>> {

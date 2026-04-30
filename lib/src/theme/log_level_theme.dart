@@ -14,8 +14,6 @@ final class LogLevelTheme with Loggable {
   final ansi.Style timeStyle;
   final ansi.Style pathStyle;
   final Map<String, ansi.Style> messageStyles;
-  final LogPreFormatter valueFormatter;
-  final LogPreFormatter messageFormatter;
   final ansi.Style controlCodesStyle;
   final ansi.Style quotesStyle;
   final ansi.Style colonStyle;
@@ -44,8 +42,6 @@ final class LogLevelTheme with Loggable {
     required this.timeStyle,
     required this.pathStyle,
     required this.messageStyles,
-    required this.valueFormatter,
-    required this.messageFormatter,
     required this.controlCodesStyle,
     required this.quotesStyle,
     required this.colonStyle,
@@ -75,8 +71,6 @@ final class LogLevelTheme with Loggable {
     this.timeStyle = const ansi.NoStyle(),
     ansi.Style? pathStyle,
     required Map<String, ansi.Style> messageStyles,
-    this.valueFormatter = const ControlCodeFormatter(),
-    this.messageFormatter = const BbCodeFormatter(),
     ansi.Style? controlCodesStyle,
     ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
@@ -130,8 +124,6 @@ final class LogLevelTheme with Loggable {
     this.timeStyle = const ansi.NoStyle(),
     ansi.Style? pathStyle,
     Map<String, ansi.Style> messageStyles = defaultInactiveMessageStyles,
-    this.valueFormatter = const ControlCodeFormatter(),
-    this.messageFormatter = const BbCodeFormatter(),
     ansi.Style? controlCodesStyle,
     ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
@@ -181,8 +173,6 @@ final class LogLevelTheme with Loggable {
     timeStyle: ansi.NoStyle(),
     pathStyle: ansi.NoStyle(),
     messageStyles: {},
-    valueFormatter: ControlCodeFormatter(),
-    messageFormatter: BbCodeFormatter(),
     controlCodesStyle: ansi.NoStyle(),
     quotesStyle: ansi.NoStyle(),
     colonStyle: ansi.NoStyle(),
@@ -1660,9 +1650,9 @@ final class LogLevelTheme with Loggable {
 
   AnsiPair get paddingAnsiPair => AnsiPair(common.padding, paddingStyle);
 
-  String formatValue(String value) => valueFormatter(this, value);
+  String formatValue(String value) => common.valueFormatter(this, value);
 
-  String formatMessage(String value) => messageFormatter(this, value);
+  String formatMessage(String value) => common.messageFormatter(this, value);
 
   String formatIndex(int index) => common.indexFormatter(this, index);
 
@@ -1671,7 +1661,7 @@ final class LogLevelTheme with Loggable {
   LogDataLevelTheme dataLevelTheme(int level) =>
       dataLevelThemes[level % dataLevelThemes.length];
 
-  Set<String> allTags(Log log) => {...common.tags, ...tags, ...log.tags};
+  Set<String> allTags(Log log) => {...log.tags, ...common.tags, ...tags};
 
   LogLevelTheme copyWith({
     ansi.Style? normal,
@@ -1684,8 +1674,6 @@ final class LogLevelTheme with Loggable {
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
     Map<String, ansi.Style>? messageStyles,
-    LogPreFormatter? valueFormatter,
-    LogPreFormatter? messageFormatter,
     ansi.Style? controlCodesStyle,
     ansi.Style? punctuation,
     String? colon,
@@ -1720,8 +1708,6 @@ final class LogLevelTheme with Loggable {
       timeStyle: timeStyle ?? this.timeStyle,
       pathStyle: pathStyle ?? this.pathStyle,
       messageStyles: messageStyles ?? this.messageStyles,
-      valueFormatter: valueFormatter ?? this.valueFormatter,
-      messageFormatter: messageFormatter ?? this.messageFormatter,
       controlCodesStyle: controlCodesStyle ?? this.controlCodesStyle,
       punctuation: punctuation ?? this.punctuation,
       quotesStyle: quotesStyle ?? this.quotesStyle,
@@ -1808,8 +1794,6 @@ final class LogLevelTheme with Loggable {
       ..style('timeStyle', this, timeStyle)
       ..style('pathStyle', this, pathStyle)
       ..mapStyles('messageStyles', messageStyles)
-      ..prop('valueFormatter', valueFormatter)
-      ..prop('messageFormatter', messageFormatter)
       ..style('controlCodesStyle', this, controlCodesStyle)
       ..style('quotesStyle', this, quotesStyle)
       ..style('colonStyle', this, colonStyle)

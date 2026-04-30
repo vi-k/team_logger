@@ -1,12 +1,12 @@
 import 'package:ansi_escape_codes/extensions.dart';
 import 'package:ansi_escape_codes/style.dart' as ansi;
 
-import '../log_preformatters/bb_code_formatter.dart';
-import '../log_preformatters/control_code_formatter.dart';
-import '../log_preformatters/log_pre_formatter.dart';
 import '../loggable/loggable.dart';
 import '../logger/log_levels.dart';
 import '../logger/logger.dart';
+import '../preformatters/bb_code_formatter.dart';
+import '../preformatters/control_code_formatter.dart';
+import '../preformatters/log_pre_formatter.dart';
 import '../printer/extensions.dart';
 
 part 'log_level_theme.dart';
@@ -44,6 +44,8 @@ final class LogTheme with Loggable {
   final bool enumDotShorthand;
   final bool collectionShowLength;
   final bool collectionShowIndexes;
+  final LogPreFormatter valueFormatter;
+  final LogPreFormatter messageFormatter;
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
   final Set<String> tags;
@@ -69,6 +71,8 @@ final class LogTheme with Loggable {
     this.enumDotShorthand = true,
     this.collectionShowLength = true,
     this.collectionShowIndexes = true,
+    this.valueFormatter = const ControlCodeFormatter(),
+    this.messageFormatter = const BbCodeFormatter(),
     this.countFormatter = _defaultCountFormatter,
     this.indexFormatter = _defaultIndexFormatter,
     this.tags = const {},
@@ -101,6 +105,8 @@ final class LogTheme with Loggable {
         enumDotShorthand = true,
         collectionShowLength = true,
         collectionShowIndexes = true,
+        valueFormatter = const ControlCodeFormatter(),
+        messageFormatter = const BbCodeFormatter(),
         countFormatter = _defaultCountFormatter,
         indexFormatter = _defaultIndexFormatter,
         tags = const {'log'};
@@ -207,6 +213,8 @@ final class LogTheme with Loggable {
     bool? enumDotShorthand,
     bool? collectionShowLength,
     bool? collectionShowIndexes,
+    LogPreFormatter? valueFormatter,
+    LogPreFormatter? messageFormatter,
     LogThemeFormatter<int>? countFormatter,
     LogThemeFormatter<int>? indexFormatter,
     Set<String>? tags,
@@ -233,6 +241,8 @@ final class LogTheme with Loggable {
         collectionShowLength: collectionShowLength ?? this.collectionShowLength,
         collectionShowIndexes:
             collectionShowIndexes ?? this.collectionShowIndexes,
+        valueFormatter: valueFormatter ?? this.valueFormatter,
+        messageFormatter: messageFormatter ?? this.messageFormatter,
         countFormatter: countFormatter ?? this.countFormatter,
         indexFormatter: indexFormatter ?? this.indexFormatter,
         tags: tags ?? this.tags,
@@ -261,6 +271,8 @@ final class LogTheme with Loggable {
       ..prop('enumDotShorthand', enumDotShorthand)
       ..prop('collectionShowLength', collectionShowLength)
       ..prop('collectionShowIndexes', collectionShowIndexes)
+      ..prop('valueFormatter', valueFormatter)
+      ..prop('messageFormatter', messageFormatter)
       ..prop('tags', tags);
   }
 }
