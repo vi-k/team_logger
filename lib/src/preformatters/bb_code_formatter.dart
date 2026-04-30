@@ -13,10 +13,8 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
     var last = 0;
 
     final re = _reExpando[theme] ??= RegExp(
-      // r'(?<prefix>(?:\[\[|\]\]|.)*?)\[(?<tag>'
       r'(?<prefix>(?:.)*?)\[(?<tag>'
       '${theme.messageStyles.keys.join('|')}'
-      // r')\](?<content>(?:\[\[|\]\]|.)*?)\[\/\k<tag>\]',
       r')\](?<content>(?:.)*?)\[\/\k<tag>\]',
       dotAll: true,
     );
@@ -44,7 +42,6 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
       buf.write(text.substring(last));
     }
 
-    // return buf.toString().replaceAll('[[', '[').replaceAll(']]', ']');
     return buf.toString();
   }
 
