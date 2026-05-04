@@ -24,7 +24,7 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
   Log operator [](int index) {
     if (index < 0 || index >= _count) {
-      throw RangeError.index(index, this);
+      throw IndexError.withLength(index, _count, indexable: this);
     }
     final effectiveIndex = _currentIndex - _count + index;
     return _logs[

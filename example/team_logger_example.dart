@@ -274,7 +274,4 @@ void f() {
       config: const LoggableConfig(intFormat: ' d', units: 'items'),
     ),
   );
-
-  const duration = Duration(seconds: 5023);
-  log.d('duration', data: duration);
 }
