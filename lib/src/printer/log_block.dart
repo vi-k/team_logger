@@ -246,7 +246,7 @@ final class LogBox with Loggable {
     data
       ..prop('debugName', debugName, showName: false, hidden: debugName == null)
       ..prop('width', width)
-      ..prop('lines', lines, view: lines.length.toString())
+      ..prop('lines', lines, view: lines.length)
       ..prop('verticalAlign', verticalAlign);
   }
 }

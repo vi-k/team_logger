@@ -631,11 +631,7 @@ final class _LoggableWrapper with Loggable {
     Object? obj, {
     LoggableConfig config = const LoggableConfig(),
   }) : _data = LoggableData._(
-          const TypeProp(
-            Object,
-            showName: false,
-            showBrackets: false,
-          ),
+          TypeProp(Object, showName: false, showBrackets: false),
         ) {
     _data.prop(
       'obj',
@@ -661,4 +657,59 @@ abstract interface class LoggableTypeConverter<T extends Object?> {
     LogLevelTheme theme,
     LoggableResolvedConfig config,
   );
+}
+
+abstract interface class LoggableView {
+  const factory LoggableView(Object? value, [String? units]) = _LoggableView;
+
+  String toLogString(
+    Object? value, {
+    int dataLevel = 0,
+    LogLevelTheme theme = LogLevelTheme.noColors,
+  });
+}
+
+final class _LoggableView implements LoggableView {
+  final Object? value;
+  final String? units;
+
+  const _LoggableView(this.value, [this.units]);
+
+  /// Игнорируем переданное значение. Используем ранее заданное.
+  @override
+  String toLogString(
+    Object? value, {
+    int dataLevel = 0,
+    LogLevelTheme theme = LogLevelTheme.noColors,
+  }) =>
+      switch (this.value) {
+        null => 'null',
+        final value => '$value${Loggable.unitsToString(units, theme)}',
+      };
+}
+
+final class LoggableMultiView implements LoggableView {
+  final List<LoggableView> views;
+  final String separator;
+
+  const LoggableMultiView(this.views, {this.separator = ' or '});
+
+  @override
+  String toLogString(
+    Object? value, {
+    int dataLevel = 0,
+    LogLevelTheme theme = LogLevelTheme.noColors,
+  }) {
+    final dataTheme = theme.dataLevelTheme(dataLevel);
+
+    return views
+        .map(
+          (e) => e.toLogString(
+            value,
+            dataLevel: dataLevel,
+            theme: theme,
+          ),
+        )
+        .join(dataTheme.punctuation(separator));
+  }
 }

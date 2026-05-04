@@ -45,8 +45,7 @@ final class LoggableData {
     T value, {
     bool showName = true,
     bool hidden = false,
-    String? view,
-    String Function(T value, int dataLevel, LogLevelTheme theme)? convert,
+    Object view = Prop.noView,
     LoggableConfig? config,
     bool? enumDotShorthand,
     int? collectionMaxLength,
@@ -78,7 +77,6 @@ final class LoggableData {
         showName: showName,
         hidden: hidden,
         view: view,
-        convert: convert,
         config: config ??
             LoggableConfig(
               enumDotShorthand: enumDotShorthand,
@@ -103,8 +101,7 @@ final class LoggableData {
     String name,
     T value, {
     bool showName = true,
-    String? view,
-    String Function(T value, int dataLevel, LogLevelTheme theme)? convert,
+    Object view = Prop.noView,
     LoggableConfig? config,
     bool? enumDotShorthand,
     int? collectionMaxLength,
@@ -122,7 +119,6 @@ final class LoggableData {
       showName: showName,
       hidden: true,
       view: view,
-      convert: convert,
       config: config,
       enumDotShorthand: enumDotShorthand,
       collectionMaxLength: collectionMaxLength,
@@ -143,9 +139,8 @@ final class LoggableData {
   /// интерфейсе при показе реальных данных будет опущено.
   void computed(
     String name,
-    String? view, {
+    Object view, {
     bool showName = true,
-    String Function(int dataLevel, LogLevelTheme theme)? convert,
     LoggableConfig? config,
     bool? enumDotShorthand,
     int? collectionMaxLength,
@@ -163,8 +158,6 @@ final class LoggableData {
       showName: showName,
       hidden: true,
       view: view,
-      convert:
-          convert == null ? null : (_, level, theme) => convert(level, theme),
       config: config,
       enumDotShorthand: enumDotShorthand,
       collectionMaxLength: collectionMaxLength,
@@ -205,7 +198,7 @@ final class LoggableData {
     final dataTheme = theme.dataLevelTheme(dataLevel);
 
     String name2str() {
-      final name = _type.view ?? _type.value.toString();
+      final name = _type.typeName ?? _type.value.toString();
       return theme.dataNameStyle(valueFormat?.call(name) ?? name);
     }
 
@@ -225,23 +218,30 @@ final class LoggableData {
   String toString() => toLogString();
 }
 
+final class LoggableNoView {
+  const LoggableNoView._();
+
+  @override
+  String toString() => '<no view>';
+}
+
 final class Prop<T extends Object?> {
+  static const noView = LoggableNoView._();
+
   final String name;
   final T value;
-  final String? view;
+  final Object? view;
   final bool showName;
   final bool hidden;
   final LoggableConfig config;
-  final String Function(T value, int dataLevel, LogLevelTheme theme)? convert;
   final int dataLevelCorrection;
 
-  const Prop._(
+  Prop._(
     this.name,
     this.value, {
     this.showName = true,
     this.hidden = false,
-    this.view,
-    this.convert,
+    this.view = noView,
     this.config = const LoggableConfig(),
     this.dataLevelCorrection = 0,
   });
@@ -253,8 +253,16 @@ final class Prop<T extends Object?> {
   }) {
     String name2str() => theme.dataKeyStyle(theme.formatValue(name));
 
-    final valueStr = view ??
-        convert?.call(value, dataLevel + 1, theme) ??
+    final view = this.view;
+    final viewStr = switch (view) {
+      LoggableNoView() => null,
+      String() => view,
+      LoggableView() =>
+        view.toLogString(value, dataLevel: dataLevel, theme: theme),
+      _ => view.toString(),
+    };
+
+    final valueStr = viewStr ??
         Loggable.objectToString(
           value,
           dataLevel: dataLevel + 1 + dataLevelCorrection,
@@ -278,8 +286,9 @@ final class TypeProp extends Prop<Type> {
   final bool showBrackets;
   final String _openingBracket;
   final String _closingBracket;
+  final String? typeName;
 
-  const TypeProp(
+  TypeProp(
     Type type, {
     String? name,
     super.showName = true,
@@ -288,7 +297,8 @@ final class TypeProp extends Prop<Type> {
     String? closingBracket,
   })  : _openingBracket = openingBracket ?? '(',
         _closingBracket = closingBracket ?? ')',
-        super._('type', type, view: name);
+        typeName = name,
+        super._('type', type);
 
   String get openingBracket => showBrackets ? _openingBracket : '';
 
@@ -301,7 +311,7 @@ final class TypeProp extends Prop<Type> {
   }) =>
       TypeProp(
         value,
-        name: name ?? view,
+        name: name ?? typeName,
         showName: showName ?? this.showName,
         showBrackets: showBrackets ?? this.showBrackets,
         openingBracket: openingBracket,
