@@ -48,7 +48,7 @@ final class LevelLogger
         stackTrace,
         zone,
       }) {
-        final zonedTraceIds = Logger.zonedTraceIds;
+        final zonedTraceIds = Logger.zonedTraceIds(zone);
         final logTraceIds = [...zonedTraceIds, if (traceId != null) traceId];
         for (final traceId in logTraceIds) {
           traceId.resolve();
@@ -62,7 +62,7 @@ final class LevelLogger
             message: LazyString(message, '').value,
             data: Lazy(data).resolved,
             tags: {
-              ...Logger.zonedTags,
+              ...Logger.zonedTags(zone),
               ...logger.tags,
               ...LazyTags(tags).value,
             },
@@ -164,17 +164,19 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
       runZoned(
         fn,
         zoneValues: {
-          TraceId: [...zonedTraceIds, traceId],
-          _tagsKey: {...zonedTags, ...tags},
+          TraceId: [...zonedTraceIds(), traceId],
+          _tagsKey: {...zonedTags(), ...tags},
         },
       );
 
-  static List<TraceId> get zonedTraceIds => switch (Zone.current[TraceId]) {
+  static List<TraceId> zonedTraceIds([Zone? zone]) =>
+      switch ((zone ?? Zone.current)[TraceId]) {
         final List<TraceId> list => list,
         _ => const <TraceId>[],
       };
 
-  static Set<String> get zonedTags => switch (Zone.current[_tagsKey]) {
+  static Set<String> zonedTags([Zone? zone]) =>
+      switch ((zone ?? Zone.current)[_tagsKey]) {
         final Set<String> list => list,
         _ => const <String>{},
       };
