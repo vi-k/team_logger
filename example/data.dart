@@ -246,18 +246,15 @@ final class ManualNotLoggableObjectConverter
     LogLevelTheme theme,
     LoggableResolvedConfig config,
   ) {
-    final dataTheme = theme.dataLevelTheme(dataLevel);
-
-    return '${theme.dataNameStyle('$NotLoggableObject')}'
-        '${dataTheme.brackets('(')}'
-        '${Loggable.mapToString(
+    final body = Loggable.mapToString(
       {'name': obj.name, 'list': obj.list},
       dataLevel: dataLevel,
       theme: theme,
-      start: '',
-      end: '',
+      start: '(',
+      end: ')',
       config: config,
-    )}'
-        '${dataTheme.brackets(')')}';
+    );
+
+    return '${theme.dataNameStyle('$NotLoggableObject')}$body';
   }
 }
