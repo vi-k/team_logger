@@ -104,7 +104,7 @@ void f() {
               'HEADERS': Data.postHeaders,
               'BODY': Data.postBody,
             },
-            collectionMaxLength: 2,
+            config: const LoggableConfig(collectionMaxLength: 2),
           ),
           tags: ['post'],
         );
@@ -141,7 +141,7 @@ void f() {
     '',
     data: LoggableMultiData(
       {'JSON': Data.json},
-      collectionMaxLength: 2,
+      config: const LoggableConfig(collectionMaxLength: 2),
     ),
   );
   log.d(

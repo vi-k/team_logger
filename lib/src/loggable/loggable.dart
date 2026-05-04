@@ -146,11 +146,7 @@ abstract mixin class Loggable {
         return theme.formatValue('null');
 
       case Enum():
-        return enumToString(
-          obj,
-          theme: theme,
-          enumDotShorthand: config.enumDotShorthand,
-        );
+        return enumToString(obj, theme: theme, config: config);
 
       case double():
         return doubleToString(obj, theme: theme, config: config);
@@ -159,7 +155,7 @@ abstract mixin class Loggable {
         return intToString(obj, theme: theme, config: config);
 
       case String():
-        return stringToString(obj, theme: theme, units: config.units);
+        return stringToString(obj, theme: theme, config: config);
 
       case List<Object?>():
         return listToString(
@@ -580,11 +576,11 @@ abstract mixin class Loggable {
   static String enumToString(
     Enum obj, {
     LogLevelTheme theme = LogLevelTheme.noColors,
-    bool? enumDotShorthand,
+    LoggableConfig config = const LoggableConfig(),
   }) {
     final dotShorthand = '.${theme.formatValue(obj.name)}';
 
-    return (enumDotShorthand ?? theme.common.enumDotShorthand)
+    return (config.enumDotShorthand ?? theme.common.enumDotShorthand)
         ? dotShorthand
         : '${obj.runtimeType}${theme.emphasis(dotShorthand)}';
   }
@@ -614,12 +610,12 @@ abstract mixin class Loggable {
   static String stringToString(
     String obj, {
     LogLevelTheme theme = LogLevelTheme.noColors,
-    String? units,
+    LoggableConfig config = const LoggableConfig(),
   }) =>
       '${theme.styledOpeningQuote}'
       '${theme.formatValue(obj)}'
       '${theme.styledClosingQuote}'
-      '${unitsToString(units, theme)}';
+      '${unitsToString(config.units, theme)}';
 
   static String unitsToString(
     String? units,

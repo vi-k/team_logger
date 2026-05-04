@@ -35,8 +35,10 @@ import 'loggable.dart';
 ///   'data',
 ///   data: Loggable.from(
 ///     [1, 2, [3, 4, 5]],
-///     units: 'kg',
-///     collectionMaxLength: 2,
+///     config: LoggableConfig(
+///       units: 'kg',
+///       collectionMaxLength: 2,
+///     ),
 ///   ),
 /// );
 /// // data: [₌₃ ₀:1kg, …, ₂:[₌₃ ₀:3kg, …, ₂:5kg]]

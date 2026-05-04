@@ -7,38 +7,8 @@ final class LoggableMultiData {
 
   LoggableMultiData(
     this.data, {
-    LoggableConfig? config,
-    bool? enumDotShorthand,
-    int? collectionMaxLength,
-    int? collectionMaxStringLength,
-    bool? collectionShowLength,
-    bool? collectionShowIndexes,
-    String? units,
-    String? doubleFormat,
-    String? intFormat,
-  })  : assert(
-          config == null ||
-              (enumDotShorthand == null &&
-                  collectionMaxLength == null &&
-                  collectionMaxStringLength == null &&
-                  collectionShowLength == null &&
-                  collectionShowIndexes == null &&
-                  units == null &&
-                  doubleFormat == null &&
-                  intFormat == null),
-          'Use either `LoggableConfig` or individual parameters',
-        ),
-        config = config ??
-            LoggableConfig(
-              enumDotShorthand: enumDotShorthand,
-              collectionMaxLength: collectionMaxLength,
-              collectionMaxStringLength: collectionMaxStringLength,
-              collectionShowLength: collectionShowLength,
-              collectionShowIndexes: collectionShowIndexes,
-              units: units,
-              doubleFormat: doubleFormat,
-              intFormat: intFormat,
-            );
+    this.config = const LoggableConfig(),
+  });
 
   @override
   String toString({
