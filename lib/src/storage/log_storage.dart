@@ -24,11 +24,31 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
   Log operator [](int index) {
     if (index < 0 || index >= _count) {
-      throw IndexError.withLength(index, _count, indexable: this);
+      throw IndexError.withLength(
+        index,
+        _count,
+        indexable: this,
+        name: 'LogStorage',
+      );
     }
     final effectiveIndex = _currentIndex - _count + index;
     return _logs[
         effectiveIndex < 0 ? effectiveIndex + maxCount : effectiveIndex]!;
+  }
+
+  int indexOf(Log log) {
+    var index = _logs.indexOf(log);
+    if (index == -1) {
+      return -1;
+    }
+
+    var startIndex = _currentIndex - _count;
+    startIndex = startIndex < 0 ? startIndex + maxCount : startIndex;
+
+    index -= startIndex;
+    index = index < 0 ? index + maxCount : index;
+
+    return index < _count ? index : -1;
   }
 
   Future<void> dispose() => _controller.close();
