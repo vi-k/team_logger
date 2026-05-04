@@ -23,6 +23,8 @@ final class LogTheme with Loggable {
   static const String defaultEllipsis = '…';
   static const String defaultLineBreak = '-';
   static const String defaultPadding = ' ';
+  static const String defaultErrorTitle = 'ERROR';
+  static const String defaultStackTraceTitle = 'STACKTRACE';
 
   final int minLevel;
   final LogLevelTheme verbose;
@@ -49,6 +51,8 @@ final class LogTheme with Loggable {
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
   final Set<String> tags;
+  final String errorTitle;
+  final String stackTraceTitle;
 
   LogTheme({
     this.minLevel = LogLevels.all,
@@ -76,6 +80,8 @@ final class LogTheme with Loggable {
     this.countFormatter = _defaultCountFormatter,
     this.indexFormatter = _defaultIndexFormatter,
     this.tags = const {},
+    this.errorTitle = defaultErrorTitle,
+    this.stackTraceTitle = defaultStackTraceTitle,
   })  : assert(!openingQuote.ansiHasEscapeCodes),
         assert(!closingQuote.ansiHasEscapeCodes),
         assert(!colon.ansiHasEscapeCodes),
@@ -109,7 +115,9 @@ final class LogTheme with Loggable {
         messageFormatter = const BbCodeFormatter(),
         countFormatter = _defaultCountFormatter,
         indexFormatter = _defaultIndexFormatter,
-        tags = const {'log'};
+        tags = const {'log'},
+        errorTitle = defaultErrorTitle,
+        stackTraceTitle = defaultStackTraceTitle;
 
   void registerLevelThemes() {
     verbose.attach(this);
@@ -176,7 +184,7 @@ final class LogTheme with Loggable {
   );
 
   static String _defaultCountFormatter(LogLevelTheme theme, int count) =>
-      '₌${subscript(count)} ';
+      '₌${subscript(count)}';
 
   static String _defaultIndexFormatter(LogLevelTheme theme, int index) =>
       '${subscript(index)}${theme.common.colon}';
@@ -209,7 +217,6 @@ final class LogTheme with Loggable {
     String? lineBreak,
     String? padding,
     bool? errorAlwaysOnNewLine,
-    String? dataSectionName,
     bool? enumDotShorthand,
     bool? collectionShowLength,
     bool? collectionShowIndexes,
@@ -218,6 +225,8 @@ final class LogTheme with Loggable {
     LogThemeFormatter<int>? countFormatter,
     LogThemeFormatter<int>? indexFormatter,
     Set<String>? tags,
+    String? errorTitle,
+    String? stackTraceTitle,
   }) =>
       LogTheme(
         minLevel: minLevel ?? this.minLevel,
@@ -246,6 +255,8 @@ final class LogTheme with Loggable {
         countFormatter: countFormatter ?? this.countFormatter,
         indexFormatter: indexFormatter ?? this.indexFormatter,
         tags: tags ?? this.tags,
+        errorTitle: errorTitle ?? this.errorTitle,
+        stackTraceTitle: stackTraceTitle ?? this.stackTraceTitle,
       );
 
   @override
@@ -273,6 +284,26 @@ final class LogTheme with Loggable {
       ..prop('collectionShowIndexes', collectionShowIndexes)
       ..prop('valueFormatter', valueFormatter)
       ..prop('messageFormatter', messageFormatter)
-      ..prop('tags', tags);
+      ..prop(
+        'countFormatter',
+        countFormatter,
+        view: LoggableView.convert(
+          (value, _, theme) => '${theme.styledOpeningQuote}'
+              '${countFormatter(theme, 4)}'
+              '${theme.styledClosingQuote}',
+        ),
+      )
+      ..prop(
+        'indexFormatter',
+        indexFormatter,
+        view: LoggableView.convert(
+          (value, _, theme) => '${theme.styledOpeningQuote}'
+              '${indexFormatter(theme, 3)}'
+              '${theme.styledClosingQuote}',
+        ),
+      )
+      ..prop('tags', tags)
+      ..prop('errorTitle', errorTitle)
+      ..prop('stackTraceTitle', stackTraceTitle);
   }
 }

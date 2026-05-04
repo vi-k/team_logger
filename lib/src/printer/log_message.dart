@@ -15,9 +15,7 @@ final class LogMessage implements LogBlock {
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
-  final String errorTitle;
   final bool showStackTrace;
-  final String stackTraceTitle;
   final bool stackTraceTerse;
   final bool stackTraceShowIndexes;
   final Set<String> controlledPackages;
@@ -26,9 +24,7 @@ final class LogMessage implements LogBlock {
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
-    this.errorTitle = 'ERROR',
     this.showStackTrace = false,
-    this.stackTraceTitle = 'STACKTRACE',
     this.stackTraceTerse = true,
     this.stackTraceShowIndexes = false,
     this.controlledPackages = const {},
@@ -80,8 +76,9 @@ final class LogMessage implements LogBlock {
         final newLine = !row.singleLine &&
             (theme.common.errorAlwaysOnNewLine || log.hasData);
         errorStr = switch (newLine) {
-          true when errorTitle.isNotEmpty =>
-            '\n${errorTheme.sectionStyle(errorTitle)}$colon $errorStr',
+          true when theme.common.errorTitle.isNotEmpty =>
+            '\n${errorTheme.sectionStyle(theme.common.errorTitle)}'
+                '$colon $errorStr',
           true => '\n$errorStr',
           false => '$colon $errorStr',
         };
@@ -107,7 +104,6 @@ final class LogMessage implements LogBlock {
         constraints: constraints,
         textAlign: textAlign,
         terse: stackTraceTerse,
-        title: stackTraceTitle,
         showIndexes: stackTraceShowIndexes,
         controlledPackages: controlledPackages,
       );

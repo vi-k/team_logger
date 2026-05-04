@@ -311,7 +311,7 @@ abstract mixin class Loggable {
     var buf = StringBuffer(dataTheme.brackets(start));
     var startLength = start.length;
     if (count > 1 && resolvedCollectionShowLength) {
-      final prefix = theme.formatCount(count);
+      final prefix = '${theme.formatCount(count)} ';
       startLength += prefix.length;
       buf.write(dataTheme.description(prefix));
     }
@@ -662,6 +662,12 @@ abstract interface class LoggableTypeConverter<T extends Object?> {
 abstract interface class LoggableView {
   const factory LoggableView(Object? value, [String? units]) = _LoggableView;
 
+  static LoggableView convert<T extends Object>(
+    Object Function(T value, int dataLevel, LogLevelTheme theme) converter, [
+    String? units,
+  ]) =>
+      _LoggableViewConvert<T>(converter, units);
+
   String toLogString(
     Object? value, {
     int dataLevel = 0,
@@ -685,6 +691,28 @@ final class _LoggableView implements LoggableView {
       switch (this.value) {
         null => 'null',
         final value => '$value${Loggable.unitsToString(units, theme)}',
+      };
+}
+
+final class _LoggableViewConvert<T extends Object> implements LoggableView {
+  final Object Function(T value, int dataLevel, LogLevelTheme theme) converter;
+  final String? units;
+
+  String? _result;
+
+  _LoggableViewConvert(this.converter, [this.units]);
+
+  @override
+  String toLogString(
+    Object? value, {
+    int dataLevel = 0,
+    LogLevelTheme theme = LogLevelTheme.noColors,
+  }) =>
+      switch (value) {
+        null => 'null',
+        T() => _result ??= '${converter(value, dataLevel, theme)}'
+            '${Loggable.unitsToString(units, theme)}',
+        _ => throw ArgumentError.value(value, 'value'),
       };
 }
 
