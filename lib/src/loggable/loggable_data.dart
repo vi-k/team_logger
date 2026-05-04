@@ -39,21 +39,38 @@ final class LoggableData {
     _type = _type.copyWith(showBrackets: value);
   }
 
+  /// Добавляет свойство к описанию.
   void prop<T extends Object?>(
     String name,
     T value, {
     bool showName = true,
     bool hidden = false,
     String? view,
-    String Function(T value, int level, LogLevelTheme theme)? convert,
+    String Function(T value, int dataLevel, LogLevelTheme theme)? convert,
+    LoggableConfig? config,
     bool? enumDotShorthand,
     int? collectionMaxLength,
     int? collectionMaxStringLength,
     bool? collectionShowLength,
     bool? collectionShowIndexes,
     String? units,
-    int levelCorrection = 0,
+    String? doubleFormat,
+    String? intFormat,
+    int dataLevelCorrection = 0,
   }) {
+    assert(
+      config == null ||
+          (enumDotShorthand == null &&
+              collectionMaxLength == null &&
+              collectionMaxStringLength == null &&
+              collectionShowLength == null &&
+              collectionShowIndexes == null &&
+              units == null &&
+              doubleFormat == null &&
+              intFormat == null),
+      'Use either `LoggableConfig` or individual parameters',
+    );
+
     props.add(
       Prop<T>._(
         name,
@@ -62,82 +79,107 @@ final class LoggableData {
         hidden: hidden,
         view: view,
         convert: convert,
-        enumDotShorthand: enumDotShorthand,
-        collectionMaxLength: collectionMaxLength,
-        collectionMaxStringLength: collectionMaxStringLength,
-        collectionShowLength: collectionShowLength,
-        collectionShowIndexes: collectionShowIndexes,
-        units: units,
-        levelCorrection: levelCorrection,
+        config: config ??
+            LoggableConfig(
+              enumDotShorthand: enumDotShorthand,
+              collectionMaxLength: collectionMaxLength,
+              collectionMaxStringLength: collectionMaxStringLength,
+              collectionShowLength: collectionShowLength,
+              collectionShowIndexes: collectionShowIndexes,
+              units: units,
+              doubleFormat: doubleFormat,
+              intFormat: intFormat,
+            ),
+        dataLevelCorrection: dataLevelCorrection,
       ),
     );
   }
 
+  /// Добавляет невидимое свойство к описанию.
+  ///
+  /// Свойства не выводится через [Loggable.objectToString], но может быть
+  /// показано в графическом интерфейсе.
   void hidden<T extends Object?>(
     String name,
     T value, {
     bool showName = true,
     String? view,
-    String Function(T value, int level, LogLevelTheme theme)? convert,
+    String Function(T value, int dataLevel, LogLevelTheme theme)? convert,
+    LoggableConfig? config,
     bool? enumDotShorthand,
     int? collectionMaxLength,
     int? collectionMaxStringLength,
     bool? collectionShowLength,
     bool? collectionShowIndexes,
     String? units,
-    int levelCorrection = 0,
+    String? doubleFormat,
+    String? intFormat,
+    int dataLevelCorrection = 0,
   }) {
-    props.add(
-      Prop<T>._(
-        name,
-        value,
-        showName: showName,
-        hidden: true,
-        view: view,
-        convert: convert,
-        enumDotShorthand: enumDotShorthand,
-        collectionMaxLength: collectionMaxLength,
-        collectionMaxStringLength: collectionMaxStringLength,
-        collectionShowLength: collectionShowLength,
-        collectionShowIndexes: collectionShowIndexes,
-        units: units,
-        levelCorrection: levelCorrection,
-      ),
+    prop<T>(
+      name,
+      value,
+      showName: showName,
+      hidden: true,
+      view: view,
+      convert: convert,
+      config: config,
+      enumDotShorthand: enumDotShorthand,
+      collectionMaxLength: collectionMaxLength,
+      collectionMaxStringLength: collectionMaxStringLength,
+      collectionShowLength: collectionShowLength,
+      collectionShowIndexes: collectionShowIndexes,
+      units: units,
+      doubleFormat: doubleFormat,
+      intFormat: intFormat,
+      dataLevelCorrection: dataLevelCorrection,
     );
   }
 
+  /// Добавляет вычисляемое свойство к описанию.
+  ///
+  /// Свойство может быть как не привязано к реальным данным, так и привязано
+  /// к нескольким реальным свойствам. Соответственное, в графическом
+  /// интерфейсе при показе реальных данных будет опущено.
   void computed(
     String name,
     String? view, {
     bool showName = true,
-    String Function(int level, LogLevelTheme theme)? convert,
+    String Function(int dataLevel, LogLevelTheme theme)? convert,
+    LoggableConfig? config,
     bool? enumDotShorthand,
     int? collectionMaxLength,
     int? collectionMaxStringLength,
     bool? collectionShowLength,
     bool? collectionShowIndexes,
     String? units,
-    int levelCorrection = 0,
+    String? doubleFormat,
+    String? intFormat,
+    int dataLevelCorrection = 0,
   }) {
-    props.add(
-      Prop._(
-        name,
-        _computed,
-        showName: showName,
-        view: view,
-        convert:
-            convert == null ? null : (_, level, theme) => convert(level, theme),
-        enumDotShorthand: enumDotShorthand,
-        collectionMaxLength: collectionMaxLength,
-        collectionMaxStringLength: collectionMaxStringLength,
-        collectionShowLength: collectionShowLength,
-        collectionShowIndexes: collectionShowIndexes,
-        units: units,
-        levelCorrection: levelCorrection,
-      ),
+    prop(
+      name,
+      _computed,
+      showName: showName,
+      hidden: true,
+      view: view,
+      convert:
+          convert == null ? null : (_, level, theme) => convert(level, theme),
+      config: config,
+      enumDotShorthand: enumDotShorthand,
+      collectionMaxLength: collectionMaxLength,
+      collectionMaxStringLength: collectionMaxStringLength,
+      collectionShowLength: collectionShowLength,
+      collectionShowIndexes: collectionShowIndexes,
+      units: units,
+      doubleFormat: doubleFormat,
+      intFormat: intFormat,
+      dataLevelCorrection: dataLevelCorrection,
     );
   }
 
+  /// Добавляет свойство double к описанию, форматируя его с помощью
+  /// [fractionDigits].
   void fixed(
     String name,
     double value,
@@ -156,16 +198,11 @@ final class LoggableData {
 
   String toLogString({
     LogLevelTheme theme = LogLevelTheme.noColors,
-    int level = 0,
+    int dataLevel = 0,
     String Function(String value)? valueFormat,
-    bool? enumDotShorthand,
-    int? collectionMaxLength,
-    int? collectionMaxStringLength,
-    bool? collectionShowLength,
-    bool? collectionShowIndexes,
-    String? units,
+    LoggableConfig config = const LoggableConfig(),
   }) {
-    final levelTheme = theme.dataLevelTheme(level);
+    final dataTheme = theme.dataLevelTheme(dataLevel);
 
     String name2str() {
       final name = _type.view ?? _type.value.toString();
@@ -174,19 +211,14 @@ final class LoggableData {
 
     String prop2str(Prop<Object?> p) => p.toLogString(
           theme: theme,
-          level: level,
-          enumDotShorthand: enumDotShorthand,
-          collectionMaxLength: collectionMaxLength,
-          collectionMaxStringLength: collectionMaxStringLength,
-          collectionShowLength: collectionShowLength,
-          collectionShowIndexes: collectionShowIndexes,
-          units: units,
+          dataLevel: dataLevel,
+          config: config,
         );
 
     return '${_type.showName ? name2str() : ''}'
-        '${levelTheme.brackets(_type.openingBracket)}'
-        '${props.where((p) => !p.hidden).map(prop2str).join(levelTheme.punctuation(', '))}'
-        '${levelTheme.brackets(_type.closingBracket)}';
+        '${dataTheme.brackets(_type.openingBracket)}'
+        '${props.where((p) => !p.hidden).map(prop2str).join(dataTheme.punctuation(', '))}'
+        '${dataTheme.brackets(_type.closingBracket)}';
   }
 
   @override
@@ -199,14 +231,9 @@ final class Prop<T extends Object?> {
   final String? view;
   final bool showName;
   final bool hidden;
-  final bool? enumDotShorthand;
-  final int? collectionMaxLength;
-  final int? collectionMaxStringLength;
-  final bool? collectionShowLength;
-  final bool? collectionShowIndexes;
-  final String? units;
-  final String Function(T value, int level, LogLevelTheme theme)? convert;
-  final int levelCorrection;
+  final LoggableConfig config;
+  final String Function(T value, int dataLevel, LogLevelTheme theme)? convert;
+  final int dataLevelCorrection;
 
   const Prop._(
     this.name,
@@ -215,48 +242,30 @@ final class Prop<T extends Object?> {
     this.hidden = false,
     this.view,
     this.convert,
-    this.enumDotShorthand,
-    this.collectionMaxLength,
-    this.collectionMaxStringLength,
-    this.collectionShowLength,
-    this.collectionShowIndexes,
-    this.units,
-    this.levelCorrection = 0,
+    this.config = const LoggableConfig(),
+    this.dataLevelCorrection = 0,
   });
 
   String toLogString({
-    int level = 0,
+    int dataLevel = 0,
     LogLevelTheme theme = LogLevelTheme.noColors,
-    bool? enumDotShorthand,
-    int? collectionMaxLength,
-    int? collectionMaxStringLength,
-    bool? collectionShowLength,
-    bool? collectionShowIndexes,
-    String? units,
+    LoggableConfig config = const LoggableConfig(),
   }) {
     String name2str() => theme.dataKeyStyle(theme.formatValue(name));
 
     final valueStr = view ??
-        convert?.call(value, level + 1, theme) ??
+        convert?.call(value, dataLevel + 1, theme) ??
         Loggable.objectToString(
           value,
-          level: level + 1 + levelCorrection,
+          dataLevel: dataLevel + 1 + dataLevelCorrection,
           theme: theme,
-          enumDotShorthand: this.enumDotShorthand ?? enumDotShorthand,
-          collectionMaxLength: this.collectionMaxLength ?? collectionMaxLength,
-          collectionMaxStringLength:
-              this.collectionMaxStringLength ?? collectionMaxStringLength,
-          collectionShowLength:
-              this.collectionShowLength ?? collectionShowLength,
-          collectionShowIndexes:
-              this.collectionShowIndexes ?? collectionShowIndexes,
-          units: this.units ?? units,
+          config: this.config.merge(config),
         );
     final styledValueStr = theme.formatValue(valueStr);
 
-    final levelTheme = theme.dataLevelTheme(level);
+    final dataTheme = theme.dataLevelTheme(dataLevel);
     final prefix =
-        showName ? '${name2str()}${levelTheme.punctuation(':')} ' : '';
+        showName ? '${name2str()}${dataTheme.punctuation(':')} ' : '';
 
     return '$prefix$styledValueStr';
   }

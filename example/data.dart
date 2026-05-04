@@ -227,28 +227,14 @@ final class NotLoggableObjectConverter
   @override
   String call(
     NotLoggableObject obj,
-    int level,
+    int dataLevel,
     LogLevelTheme theme,
-    bool? enumDotShorthand,
-    int? collectionMaxLength,
-    int? collectionMaxStringLength,
-    bool? collectionShowLength,
-    bool? collectionShowIndexes,
-    String? units,
+    LoggableResolvedConfig config,
   ) =>
       (Loggable.builder(obj)
             ..prop('name', obj.name)
             ..prop('list', obj.list))
-          .toLogString(
-        theme: theme,
-        level: level,
-        enumDotShorthand: enumDotShorthand,
-        collectionMaxLength: collectionMaxLength,
-        collectionMaxStringLength: collectionMaxStringLength,
-        collectionShowLength: collectionShowLength,
-        collectionShowIndexes: collectionShowIndexes,
-        units: units,
-      );
+          .toLogString(theme: theme, dataLevel: dataLevel, config: config);
 }
 
 final class ManualNotLoggableObjectConverter
@@ -256,32 +242,22 @@ final class ManualNotLoggableObjectConverter
   @override
   String call(
     NotLoggableObject obj,
-    int level,
+    int dataLevel,
     LogLevelTheme theme,
-    bool? enumDotShorthand,
-    int? collectionMaxLength,
-    int? collectionMaxStringLength,
-    bool? collectionShowLength,
-    bool? collectionShowIndexes,
-    String? units,
+    LoggableResolvedConfig config,
   ) {
-    final levelTheme = theme.dataLevelTheme(level);
+    final dataTheme = theme.dataLevelTheme(dataLevel);
 
     return '${theme.dataNameStyle('$NotLoggableObject')}'
-        '${levelTheme.brackets('(')}'
+        '${dataTheme.brackets('(')}'
         '${Loggable.mapToString(
       {'name': obj.name, 'list': obj.list},
-      level: level,
+      dataLevel: dataLevel,
       theme: theme,
       start: '',
       end: '',
-      enumDotShorthand: enumDotShorthand,
-      collectionMaxLength: collectionMaxLength,
-      collectionMaxStringLength: collectionMaxStringLength,
-      collectionShowLength: collectionShowLength,
-      collectionShowIndexes: collectionShowIndexes,
-      units: units,
+      config: config,
     )}'
-        '${levelTheme.brackets(')')}';
+        '${dataTheme.brackets(')')}';
   }
 }

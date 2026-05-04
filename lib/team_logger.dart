@@ -1,6 +1,7 @@
 export 'package:logger_builder/logger_builder.dart';
 
 export 'src/loggable/loggable.dart';
+export 'src/loggable/loggable_config.dart';
 export 'src/loggable/loggable_multi_data.dart';
 export 'src/logger/log_levels.dart';
 export 'src/logger/logger.dart';

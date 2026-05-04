@@ -93,12 +93,7 @@ final class _DateTime implements LogTime {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.common.hiddenStyle
         : this.style?[log.level] ?? theme.timeStyle;
@@ -151,12 +146,7 @@ final class _Iso8601 implements LogTime {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.common.hiddenStyle
         : this.style?[log.level] ?? theme.timeStyle;
@@ -206,12 +196,7 @@ final class _OnlyTime implements LogTime {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.common.hiddenStyle
         : this.style?[log.level] ?? theme.timeStyle;

@@ -12,12 +12,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 abstract interface class LogBlock {
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  );
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength);
 }
 
 final class LogBox with Loggable {

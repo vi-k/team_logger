@@ -30,12 +30,7 @@ final class LogTraceId implements LogBlock {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     if (log.traceIds.isEmpty) {
       return LogBox.empty();
     }

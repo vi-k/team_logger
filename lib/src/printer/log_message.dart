@@ -35,12 +35,7 @@ final class LogMessage implements LogBlock {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final messageStr = switch (log.message) {
       '' => '',
       final message => theme.formatMessage(theme.formatValue(message)),
@@ -58,13 +53,7 @@ final class LogMessage implements LogBlock {
           final value = Loggable.objectToString(
             e.value,
             theme: theme,
-            collectionMaxLength: data.collectionMaxLength,
-            collectionMaxStringLength: data.collectionMaxStringLength,
-            collectionShowLength:
-                data.collectionShowLength ?? theme.common.collectionShowLength,
-            collectionShowIndexes: data.collectionShowIndexes ??
-                theme.common.collectionShowIndexes,
-            units: data.units,
+            config: data.config,
           );
 
           return switch (e.key) {

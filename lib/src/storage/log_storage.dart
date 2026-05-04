@@ -5,7 +5,7 @@ import 'package:logger_builder/logger_builder.dart';
 import '../logger/logger.dart';
 
 final class LogStorage implements CustomLogPublisher<Log> {
-  final _controller = StreamController<void>();
+  final _controller = StreamController<void>.broadcast();
 
   final int maxCount;
 

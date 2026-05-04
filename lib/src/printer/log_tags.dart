@@ -30,12 +30,7 @@ final class LogTags implements LogBlock {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final tags = theme.allTags(log);
     if (this.tags.isNotEmpty) {
       tags.addAll(this.tags);

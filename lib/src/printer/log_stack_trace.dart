@@ -28,12 +28,7 @@ final class LogStackTrace implements LogBlock {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final stackTrace = log.stackTrace;
     if (stackTrace == null || stackTrace == StackTrace.empty) {
       return LogBox.empty();

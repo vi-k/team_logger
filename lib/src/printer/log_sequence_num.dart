@@ -28,12 +28,7 @@ final class LogSequenceNum implements LogBlock {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final sequenceNumStr = '$open${log.sequenceNum}$close';
     final style = hidden
         ? theme.common.hiddenStyle

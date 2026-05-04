@@ -56,12 +56,7 @@ final class _FullLevelName implements LogLevelName {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.common.hiddenStyle
         : this.style?[log.level] ?? theme.levelNameStyle;
@@ -105,12 +100,7 @@ final class _ShortLevelName implements LogLevelName {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.common.hiddenStyle
         : this.style?[log.level] ?? theme.levelNameStyle;

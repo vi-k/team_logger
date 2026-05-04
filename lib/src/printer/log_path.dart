@@ -28,12 +28,7 @@ final class LogPath implements LogBlock {
   });
 
   @override
-  LogBox call(
-    Log log,
-    LogLevelTheme theme,
-    LogRow row,
-    int? remainingLength,
-  ) {
+  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.common.hiddenStyle
         : this.style?[log.level] ?? theme.pathStyle;

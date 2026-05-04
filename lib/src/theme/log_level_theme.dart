@@ -1658,8 +1658,8 @@ final class LogLevelTheme with Loggable {
 
   String formatCount(int count) => common.countFormatter(this, count);
 
-  LogDataLevelTheme dataLevelTheme(int level) =>
-      dataLevelThemes[level % dataLevelThemes.length];
+  LogDataLevelTheme dataLevelTheme(int dataLevel) =>
+      dataLevelThemes[dataLevel % dataLevelThemes.length];
 
   Set<String> allTags(Log log) => {...log.tags, ...common.tags, ...tags};
 
@@ -1805,7 +1805,7 @@ final class LogLevelTheme with Loggable {
       ..style('dataKeyStyle', this, dataKeyStyle)
       ..style('dataValueStyle', this, dataValueStyle)
       ..style('dataUnitsStyle', this, dataUnitsStyle)
-      ..levelThemes('dataLevelThemes', dataLevelThemes)
+      ..dataLevelThemes('dataLevelThemes', dataLevelThemes)
       ..style('stackTraceActiveStyle', this, stackTraceActiveStyle)
       ..style('stackTraceInactiveStyle', this, stackTraceInactiveStyle)
       ..prop('tags', tags);
@@ -1874,7 +1874,7 @@ extension on LoggableData {
     prop(name, style, showName: showName, view: style(name));
   }
 
-  void levelThemes(
+  void dataLevelThemes(
     String name,
     List<LogDataLevelTheme> styles,
   ) {
