@@ -2,19 +2,23 @@ import 'dart:async';
 
 import 'package:logger_builder/logger_builder.dart';
 
+import '../logger/log_levels.dart';
 import '../logger/logger.dart';
 
 final class LogStorage implements CustomLogPublisher<Log> {
   final _controller = StreamController<void>.broadcast();
 
   final int maxCount;
+  final int minLevel;
 
   final List<Log?> _logs;
   int _currentIndex;
   int _count;
 
-  LogStorage({required this.maxCount})
-      : _logs = List<Log?>.filled(maxCount, null),
+  LogStorage({
+    required this.maxCount,
+    this.minLevel = LogLevels.all,
+  })  : _logs = List<Log?>.filled(maxCount, null),
         _currentIndex = 0,
         _count = 0;
 
@@ -80,6 +84,10 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
   @override
   void publish(Log log) {
+    if (log.level < minLevel) {
+      return;
+    }
+
     _logs[_currentIndex] = log;
     _currentIndex = (_currentIndex + 1) % maxCount;
     _count = _count < maxCount ? _count + 1 : maxCount;
