@@ -159,14 +159,17 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   T trace<T extends Object?>(
     TraceId traceId,
     T Function() fn, {
+    Zone? zone,
     Set<String> tags = const {},
   }) =>
-      runZoned(
-        fn,
-        zoneValues: {
-          TraceId: [...zonedTraceIds(), traceId],
-          _tagsKey: {...zonedTags(), ...tags},
-        },
+      (zone ?? Zone.current).run(
+        () => runZoned(
+          fn,
+          zoneValues: {
+            TraceId: [...zonedTraceIds(), traceId],
+            _tagsKey: {...zonedTags(), ...tags},
+          },
+        ),
       );
 
   static List<TraceId> zonedTraceIds([Zone? zone]) =>
