@@ -83,7 +83,7 @@ final class LogTheme with Loggable {
     this.tags = const {},
     this.errorTitle = defaultErrorTitle,
     this.stackTraceTitle = defaultStackTraceTitle,
-    this.stringInQuotes = false,
+    this.stringInQuotes = true,
   })  : assert(!openingQuote.ansiHasEscapeCodes),
         assert(!closingQuote.ansiHasEscapeCodes),
         assert(!colon.ansiHasEscapeCodes),
