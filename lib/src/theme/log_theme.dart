@@ -120,7 +120,7 @@ final class LogTheme with Loggable {
         tags = const {'log'},
         errorTitle = defaultErrorTitle,
         stackTraceTitle = defaultStackTraceTitle,
-        stringInQuotes = false;
+        stringInQuotes = true;
 
   void registerLevelThemes() {
     verbose.attach(this);
