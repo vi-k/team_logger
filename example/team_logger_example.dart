@@ -101,8 +101,8 @@ void f() {
           traceId: httpTraceId,
           data: LoggableMultiData(
             {
+              '': Data.postBody,
               'HEADERS': Data.postHeaders,
-              'BODY': Data.postBody,
             },
             config: const LoggableConfig(collectionMaxLength: 2),
           ),

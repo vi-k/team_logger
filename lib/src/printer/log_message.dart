@@ -44,7 +44,8 @@ final class LogMessage implements LogBlock {
       if (data is! LoggableMultiData) {
         dataStr = Loggable.objectToString(log.data, theme: theme);
       } else {
-        dataOnNewLine = !row.singleLine;
+        dataOnNewLine = !row.singleLine &&
+            (data.data.isEmpty || data.data.keys.first.isNotEmpty);
         dataStr = data.data.entries.map((e) {
           final value = Loggable.objectToString(
             e.value,
