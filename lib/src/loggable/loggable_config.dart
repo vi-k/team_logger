@@ -52,6 +52,7 @@ final class LoggableConfig with Loggable {
   final String? units;
   final String? doubleFormat;
   final String? intFormat;
+  final bool? stringInQuotes;
 
   const LoggableConfig({
     this.enumDotShorthand,
@@ -62,6 +63,7 @@ final class LoggableConfig with Loggable {
     this.units,
     this.doubleFormat,
     this.intFormat,
+    this.stringInQuotes,
   });
 
   LoggableConfig merge(LoggableConfig other) => LoggableConfig(
@@ -76,6 +78,7 @@ final class LoggableConfig with Loggable {
         units: units ?? other.units,
         doubleFormat: doubleFormat ?? other.doubleFormat,
         intFormat: intFormat ?? other.intFormat,
+        stringInQuotes: stringInQuotes ?? other.stringInQuotes,
       );
 
   LoggableResolvedConfig resolved(LogTheme theme) => LoggableResolvedConfig(
@@ -89,6 +92,7 @@ final class LoggableConfig with Loggable {
         units: units,
         doubleFormat: doubleFormat,
         intFormat: intFormat,
+        stringInQuotes: stringInQuotes ?? theme.stringInQuotes,
       );
 
   @override
@@ -101,7 +105,8 @@ final class LoggableConfig with Loggable {
       ..prop('collectionShowIndexes', collectionShowIndexes)
       ..prop('units', units)
       ..prop('doubleFormat', doubleFormat)
-      ..prop('intFormat', intFormat);
+      ..prop('intFormat', intFormat)
+      ..prop('stringInQuotes', stringInQuotes);
   }
 }
 
@@ -115,6 +120,7 @@ final class LoggableResolvedConfig extends LoggableConfig with Loggable {
     required super.units,
     required super.doubleFormat,
     required super.intFormat,
+    required bool super.stringInQuotes,
   });
 
   @override
@@ -127,15 +133,5 @@ final class LoggableResolvedConfig extends LoggableConfig with Loggable {
   bool get collectionShowIndexes => super.collectionShowIndexes!;
 
   @override
-  void collectLoggableData(LoggableData data) {
-    data
-      ..prop('enumDotShorthand', enumDotShorthand)
-      ..prop('collectionMaxLength', collectionMaxLength)
-      ..prop('collectionMaxStringLength', collectionMaxStringLength)
-      ..prop('collectionShowLength', collectionShowLength)
-      ..prop('collectionShowIndexes', collectionShowIndexes)
-      ..prop('units', units)
-      ..prop('doubleFormat', doubleFormat)
-      ..prop('intFormat', intFormat);
-  }
+  bool get stringInQuotes => super.stringInQuotes!;
 }

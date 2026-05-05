@@ -53,6 +53,7 @@ final class LogTheme with Loggable {
   final Set<String> tags;
   final String errorTitle;
   final String stackTraceTitle;
+  final bool stringInQuotes;
 
   LogTheme({
     this.minLevel = LogLevels.all,
@@ -82,6 +83,7 @@ final class LogTheme with Loggable {
     this.tags = const {},
     this.errorTitle = defaultErrorTitle,
     this.stackTraceTitle = defaultStackTraceTitle,
+    this.stringInQuotes = false,
   })  : assert(!openingQuote.ansiHasEscapeCodes),
         assert(!closingQuote.ansiHasEscapeCodes),
         assert(!colon.ansiHasEscapeCodes),
@@ -117,7 +119,8 @@ final class LogTheme with Loggable {
         indexFormatter = _defaultIndexFormatter,
         tags = const {'log'},
         errorTitle = defaultErrorTitle,
-        stackTraceTitle = defaultStackTraceTitle;
+        stackTraceTitle = defaultStackTraceTitle,
+        stringInQuotes = false;
 
   void registerLevelThemes() {
     verbose.attach(this);
@@ -227,6 +230,7 @@ final class LogTheme with Loggable {
     Set<String>? tags,
     String? errorTitle,
     String? stackTraceTitle,
+    bool? stringInQuotes,
   }) =>
       LogTheme(
         minLevel: minLevel ?? this.minLevel,
@@ -257,6 +261,7 @@ final class LogTheme with Loggable {
         tags: tags ?? this.tags,
         errorTitle: errorTitle ?? this.errorTitle,
         stackTraceTitle: stackTraceTitle ?? this.stackTraceTitle,
+        stringInQuotes: stringInQuotes ?? this.stringInQuotes,
       );
 
   @override
@@ -304,6 +309,7 @@ final class LogTheme with Loggable {
       )
       ..prop('tags', tags)
       ..prop('errorTitle', errorTitle)
-      ..prop('stackTraceTitle', stackTraceTitle);
+      ..prop('stackTraceTitle', stackTraceTitle)
+      ..prop('stringInQuotes', stringInQuotes);
   }
 }

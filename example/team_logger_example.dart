@@ -274,4 +274,18 @@ void f() {
       config: const LoggableConfig(intFormat: ' d', units: 'items'),
     ),
   );
+
+  log.d(
+    'string without quotes',
+    data: Loggable.from(
+      {
+        'a': {'c': 'test'},
+        'b': 'test',
+      },
+      config: const LoggableConfig(
+        stringInQuotes: false,
+        units: 'kg',
+      ),
+    ),
+  );
 }

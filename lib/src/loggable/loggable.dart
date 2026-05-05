@@ -546,8 +546,7 @@ abstract mixin class Loggable {
     };
 
     return '${theme.dataKeyStyle(key)}${dataTheme.punctuation(':')}'
-        ' ${theme.dataValueStyle(obj2str(entry.value))}'
-        '${unitsToString(config.units, theme)}';
+        ' ${theme.dataValueStyle(obj2str(entry.value))}';
   }
 
   static String mapToString(
@@ -611,11 +610,14 @@ abstract mixin class Loggable {
     String obj, {
     LogLevelTheme theme = LogLevelTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
-  }) =>
-      '${theme.styledOpeningQuote}'
-      '${theme.formatValue(obj)}'
-      '${theme.styledClosingQuote}'
-      '${unitsToString(config.units, theme)}';
+  }) {
+    final stringInQuotes = config.stringInQuotes ?? theme.common.stringInQuotes;
+    final openingQuote = stringInQuotes ? theme.styledOpeningQuote : '';
+    final closingQuote = stringInQuotes ? theme.styledClosingQuote : '';
+
+    return '$openingQuote${theme.formatValue(obj)}$closingQuote'
+        '${unitsToString(config.units, theme)}';
+  }
 
   static String unitsToString(
     String? units,
