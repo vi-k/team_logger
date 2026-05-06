@@ -26,6 +26,18 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
   int get count => _count;
 
+  bool get isEmpty => _count == 0;
+
+  bool get isNotEmpty => _count != 0;
+
+  Log get first => this[0];
+
+  Log? get firstOrNull => isEmpty ? null : this[0];
+
+  Log get last => this[_count - 1];
+
+  Log? get lastOrNull => isEmpty ? null : this[_count - 1];
+
   Log operator [](int index) {
     if (index < 0 || index >= _count) {
       throw IndexError.withLength(
@@ -68,11 +80,15 @@ final class LogStorage implements CustomLogPublisher<Log> {
     startIndex = startIndex < 0 ? startIndex + maxCount : startIndex;
 
     return startIndex < _currentIndex
-        ? _logs.getRange(startIndex, _currentIndex).nonNulls.toList()
-        : [
-            ..._logs.getRange(startIndex, maxCount).nonNulls,
-            ..._logs.getRange(0, _currentIndex).nonNulls,
-          ];
+        ? _logs
+            .getRange(startIndex, _currentIndex)
+            .nonNulls
+            .toList(growable: false)
+        : _logs
+            .getRange(startIndex, maxCount)
+            .nonNulls
+            .followedBy(_logs.getRange(0, _currentIndex).nonNulls)
+            .toList(growable: false);
   }
 
   void clear() {
