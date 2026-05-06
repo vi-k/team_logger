@@ -255,7 +255,7 @@ void f() {
     'storage snapshot',
     data: Loggable.from(
       logStorage.snapshot(),
-      config: const LoggableConfig(collectionMaxLength: 3),
+      config: const LoggableConfig(collectionMaxLength: 2),
     ),
   );
 

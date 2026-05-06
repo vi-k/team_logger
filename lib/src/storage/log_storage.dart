@@ -47,9 +47,11 @@ final class LogStorage implements CustomLogPublisher<Log> {
         name: 'LogStorage',
       );
     }
-    final effectiveIndex = _currentIndex - _count + index;
-    return _logs[
-        effectiveIndex < 0 ? effectiveIndex + maxCount : effectiveIndex]!;
+
+    var effectiveIndex = _currentIndex - index - 1;
+    if (effectiveIndex < 0) effectiveIndex += maxCount;
+
+    return _logs[effectiveIndex]!;
   }
 
   int indexOf(Log log) {
@@ -58,11 +60,8 @@ final class LogStorage implements CustomLogPublisher<Log> {
       return -1;
     }
 
-    var startIndex = _currentIndex - _count;
-    startIndex = startIndex < 0 ? startIndex + maxCount : startIndex;
-
-    index -= startIndex;
-    index = index < 0 ? index + maxCount : index;
+    index = _currentIndex - index - 1;
+    if (index < 0) index += maxCount;
 
     return index < _count ? index : -1;
   }
@@ -77,18 +76,23 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
   List<Log> snapshot() {
     var startIndex = _currentIndex - _count;
-    startIndex = startIndex < 0 ? startIndex + maxCount : startIndex;
+    if (startIndex < 0) startIndex += maxCount;
 
-    return startIndex < _currentIndex
-        ? _logs
-            .getRange(startIndex, _currentIndex)
-            .nonNulls
-            .toList(growable: false)
+    if (startIndex == _currentIndex) return List.empty();
+
+    final iterable = startIndex < _currentIndex
+        ? _logs.getRange(startIndex, _currentIndex).nonNulls
         : _logs
             .getRange(startIndex, maxCount)
-            .nonNulls
-            .followedBy(_logs.getRange(0, _currentIndex).nonNulls)
-            .toList(growable: false);
+            .followedBy(_logs.getRange(0, _currentIndex))
+            .nonNulls;
+    final count = _count;
+    final list = List<Log>.filled(count, _logs[startIndex]!);
+    for (final (i, log) in iterable.indexed) {
+      list[count - i - 1] = log;
+    }
+
+    return list;
   }
 
   void clear() {
