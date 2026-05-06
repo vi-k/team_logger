@@ -30,14 +30,6 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
   bool get isNotEmpty => _count != 0;
 
-  Log get first => this[0];
-
-  Log? get firstOrNull => isEmpty ? null : this[0];
-
-  Log get last => this[_count - 1];
-
-  Log? get lastOrNull => isEmpty ? null : this[_count - 1];
-
   Log operator [](int index) {
     if (index < 0 || index >= _count) {
       throw IndexError.withLength(
@@ -78,7 +70,8 @@ final class LogStorage implements CustomLogPublisher<Log> {
     var startIndex = _currentIndex - _count;
     if (startIndex < 0) startIndex += maxCount;
 
-    if (startIndex == _currentIndex) return List.empty();
+    final count = _count;
+    if (count == 0) return List.empty();
 
     final iterable = startIndex < _currentIndex
         ? _logs.getRange(startIndex, _currentIndex).nonNulls
@@ -86,7 +79,6 @@ final class LogStorage implements CustomLogPublisher<Log> {
             .getRange(startIndex, maxCount)
             .followedBy(_logs.getRange(0, _currentIndex))
             .nonNulls;
-    final count = _count;
     final list = List<Log>.filled(count, _logs[startIndex]!);
     for (final (i, log) in iterable.indexed) {
       list[count - i - 1] = log;
