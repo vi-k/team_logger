@@ -121,6 +121,7 @@ final class LogStorage implements CustomLogPublisher<Log> {
       return;
     }
 
+    final oldLog = _logs[_currentIndex];
     _logs[_currentIndex] = log;
     _currentIndex = (_currentIndex + 1) % maxCount;
 
@@ -128,8 +129,8 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
     if (_count < maxCount) {
       _count++;
-    } else {
-      _onChangedController.add(LogStorageRemove._(_logs[_currentIndex]!));
+    } else if (oldLog != null) {
+      _onChangedController.add(LogStorageRemove._(oldLog));
     }
   }
 }
