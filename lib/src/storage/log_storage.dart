@@ -6,10 +6,11 @@ import '../logger/log_levels.dart';
 import '../logger/logger.dart';
 
 final class LogStorage implements CustomLogPublisher<Log> {
-  final _controller = StreamController<void>.broadcast();
+  final _onChangedController = StreamController<LogStorageEvent>.broadcast();
 
   final int maxCount;
   final int minLevel;
+  final bool reverse;
 
   final List<Log?> _logs;
   int _currentIndex;
@@ -18,17 +19,26 @@ final class LogStorage implements CustomLogPublisher<Log> {
   LogStorage({
     required this.maxCount,
     this.minLevel = LogLevels.all,
+    this.reverse = false,
   })  : _logs = List<Log?>.filled(maxCount, null),
         _currentIndex = 0,
         _count = 0;
 
-  Stream<void> get onUpdate => _controller.stream;
+  Stream<LogStorageEvent> get onChanged => _onChangedController.stream;
 
   int get count => _count;
 
   bool get isEmpty => _count == 0;
 
   bool get isNotEmpty => _count != 0;
+
+  Log get first => this[0];
+
+  Log? get firstOrNull => isEmpty ? null : first;
+
+  Log get last => this[_count - 1];
+
+  Log? get lastOrNull => isEmpty ? null : last;
 
   Log operator [](int index) {
     if (index < 0 || index >= _count) {
@@ -40,48 +50,58 @@ final class LogStorage implements CustomLogPublisher<Log> {
       );
     }
 
-    var effectiveIndex = _currentIndex - index - 1;
+    var effectiveIndex =
+        reverse ? _currentIndex - index - 1 : _currentIndex - _count + index;
     if (effectiveIndex < 0) effectiveIndex += maxCount;
 
     return _logs[effectiveIndex]!;
   }
 
   int indexOf(Log log) {
-    var index = _logs.indexOf(log);
-    if (index == -1) {
+    final effectiveIndex = _logs.indexOf(log);
+    if (effectiveIndex == -1) {
       return -1;
     }
 
-    index = _currentIndex - index - 1;
+    int index;
+    if (reverse) {
+      index = _currentIndex - effectiveIndex - 1;
+    } else {
+      var startIndex = _currentIndex - _count;
+      if (startIndex < 0) startIndex += maxCount;
+
+      index = effectiveIndex - startIndex;
+    }
     if (index < 0) index += maxCount;
 
     return index < _count ? index : -1;
   }
 
-  Future<void> dispose() => _controller.close();
-
-  void notifyListeners() {
-    if (_controller.hasListener) {
-      _controller.add(null);
-    }
-  }
+  Future<void> dispose() => _onChangedController.close();
 
   List<Log> snapshot() {
-    var startIndex = _currentIndex - _count;
-    if (startIndex < 0) startIndex += maxCount;
-
     final count = _count;
     if (count == 0) return List.empty();
 
-    final iterable = startIndex < _currentIndex
-        ? _logs.getRange(startIndex, _currentIndex).nonNulls
-        : _logs
-            .getRange(startIndex, maxCount)
-            .followedBy(_logs.getRange(0, _currentIndex))
-            .nonNulls;
-    final list = List<Log>.filled(count, _logs[startIndex]!);
-    for (final (i, log) in iterable.indexed) {
-      list[count - i - 1] = log;
+    var startIndex = _currentIndex - _count;
+    if (startIndex < 0) startIndex += maxCount;
+
+    final list = (startIndex < _currentIndex
+            ? _logs.getRange(startIndex, _currentIndex).nonNulls
+            : _logs
+                .getRange(startIndex, maxCount)
+                .followedBy(_logs.getRange(0, _currentIndex))
+                .nonNulls)
+        .toList(growable: false);
+
+    if (reverse) {
+      final half = count ~/ 2;
+      for (var i = 0; i < half; i++) {
+        final tmp = list[i];
+        final i2 = count - i - 1;
+        list[i] = list[i2];
+        list[i2] = tmp;
+      }
     }
 
     return list;
@@ -91,7 +111,8 @@ final class LogStorage implements CustomLogPublisher<Log> {
     _logs.fillRange(0, maxCount, null);
     _currentIndex = 0;
     _count = 0;
-    notifyListeners();
+
+    _onChangedController.add(const LogStorageClear._());
   }
 
   @override
@@ -102,7 +123,33 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
     _logs[_currentIndex] = log;
     _currentIndex = (_currentIndex + 1) % maxCount;
-    _count = _count < maxCount ? _count + 1 : maxCount;
-    notifyListeners();
+
+    _onChangedController.add(LogStorageAdd._(log));
+
+    if (_count < maxCount) {
+      _count++;
+    } else {
+      _onChangedController.add(LogStorageRemove._(_logs[_currentIndex]!));
+    }
   }
+}
+
+sealed class LogStorageEvent {
+  const LogStorageEvent();
+}
+
+final class LogStorageAdd extends LogStorageEvent {
+  final Log log;
+
+  const LogStorageAdd._(this.log);
+}
+
+final class LogStorageRemove extends LogStorageEvent {
+  final Log log;
+
+  const LogStorageRemove._(this.log);
+}
+
+final class LogStorageClear extends LogStorageEvent {
+  const LogStorageClear._();
 }
