@@ -57,11 +57,8 @@ final class LogStorage implements CustomLogPublisher<Log> {
     return _logs[effectiveIndex]!;
   }
 
-  int indexOf(Log log) {
-    final effectiveIndex = _logs.indexOf(log);
-    if (effectiveIndex == -1) {
-      return -1;
-    }
+  int _indexByEffectiveIndex(int effectiveIndex) {
+    if (effectiveIndex == -1) return -1;
 
     int index;
     if (reverse) {
@@ -76,6 +73,12 @@ final class LogStorage implements CustomLogPublisher<Log> {
 
     return index < _count ? index : -1;
   }
+
+  int indexOf(Log log) => _indexByEffectiveIndex(_logs.indexOf(log));
+
+  int indexBySequenceNum(int sequenceNum) => _indexByEffectiveIndex(
+        _logs.indexWhere((log) => log?.sequenceNum == sequenceNum),
+      );
 
   Future<void> dispose() => _onChangedController.close();
 
