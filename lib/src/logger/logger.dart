@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:logger_builder/logger_builder.dart';
 
 import '../loggable/loggable.dart';
+import '../loggable/loggable_config.dart';
 import 'log_levels.dart';
 import 'trace_id.dart';
 
@@ -13,6 +14,7 @@ typedef LogFn = bool Function(
   Object message, {
   TraceId? traceId,
   Object? data,
+  LoggableConfig? config,
   Object? tags,
   String? overridePath,
   Object? error,
@@ -28,6 +30,7 @@ final class LevelLogger
             _, {
             traceId,
             data = Log.noData,
+            config,
             tags,
             overridePath,
             error,
@@ -42,6 +45,7 @@ final class LevelLogger
         message, {
         traceId,
         data = Log.noData,
+        config,
         tags,
         overridePath,
         error,
@@ -54,13 +58,18 @@ final class LevelLogger
           traceId.resolve();
         }
 
+        var resolvedData = Lazy(data).resolved;
+        if (config != null) {
+          resolvedData = Loggable.from(resolvedData, config: config);
+        }
+
         publisher.publish(
           Log(
             this,
             path: overridePath ?? logger._lazyPath.value,
             traceIds: logTraceIds,
             message: LazyString(message, '').value,
-            data: Lazy(data).resolved,
+            data: resolvedData,
             tags: {
               ...Logger.zonedTags(zone),
               ...logger.tags,
