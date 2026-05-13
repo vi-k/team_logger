@@ -111,10 +111,8 @@ void f() {
         httpLog[level].log(
           '[success][200 OK][/success] ${Data.postUrl}',
           traceId: httpTraceId,
-          data: Loggable.from(
-            Data.succesResponse,
-            config: const LoggableConfig(collectionMaxLength: 2),
-          ),
+          data: Data.succesResponse,
+          config: const LoggableConfig(collectionMaxLength: 2),
           tags: ['response'],
         );
 
@@ -132,10 +130,8 @@ void f() {
 
   log.d(
     'json',
-    data: Loggable.from(
-      Data.json,
-      config: const LoggableConfig(collectionMaxLength: 2),
-    ),
+    data: Data.json,
+    config: const LoggableConfig(collectionMaxLength: 2),
   );
   log.d(
     '',
@@ -146,19 +142,15 @@ void f() {
   );
   log.d(
     '',
-    data: Loggable.from(
-      Data.json,
-      config: const LoggableConfig(collectionMaxLength: 2),
-    ),
+    data: Data.json,
+    config: const LoggableConfig(collectionMaxLength: 2),
   );
 
   for (final l in LogLevels.values) {
     log[l].log(
       '',
-      data: Loggable.from(
-        Data.listOfLists,
-        config: const LoggableConfig(collectionMaxLength: 2),
-      ),
+      data: Data.listOfLists,
+      config: const LoggableConfig(collectionMaxLength: 2),
     );
   }
 
@@ -202,22 +194,18 @@ void f() {
   );
   log.d(
     'wrapped enums',
-    data: Loggable.from(
-      {
-        'textAlign': LogTextAlign.left,
-        'verticalAlign': LogVerticalAlign.top,
-      },
-      config: const LoggableConfig(enumDotShorthand: false),
-    ),
+    data: {
+      'textAlign': LogTextAlign.left,
+      'verticalAlign': LogVerticalAlign.top,
+    },
+    config: const LoggableConfig(enumDotShorthand: false),
   );
 
   log.d('list', data: [1, 2, 3]);
   log.d(
     'wrapped list',
-    data: Loggable.from(
-      [1, 2, 3],
-      config: const LoggableConfig(collectionMaxLength: 2),
-    ),
+    data: [1, 2, 3],
+    config: const LoggableConfig(collectionMaxLength: 2),
   );
 
   const notLoggableObject = NotLoggableObject('abc', [1, 2, 3]);
@@ -253,39 +241,28 @@ void f() {
 
   log.d(
     'storage snapshot',
-    data: Loggable.from(
-      logStorage.snapshot(),
-      config: const LoggableConfig(collectionMaxLength: 2),
-    ),
+    data: logStorage.snapshot(),
+    config: const LoggableConfig(collectionMaxLength: 2),
   );
 
   log.d(
     'double',
-    data: Loggable.from(
-      123456.0,
-      config: const LoggableConfig(doubleFormat: '.2f', units: 'kg'),
-    ),
+    data: 123456.0,
+    config: const LoggableConfig(doubleFormat: '.2f', units: 'kg'),
   );
 
   log.d(
     'int',
-    data: Loggable.from(
-      123456,
-      config: const LoggableConfig(intFormat: ' d', units: 'items'),
-    ),
+    data: 123456,
+    config: const LoggableConfig(intFormat: ' d', units: 'items'),
   );
 
   log.d(
     'string without quotes',
-    data: Loggable.from(
-      {
-        'a': {'c': 'test'},
-        'b': 'test',
-      },
-      config: const LoggableConfig(
-        stringInQuotes: false,
-        units: 'kg',
-      ),
-    ),
+    data: {
+      'a': {'c': 'test'},
+      'b': 'test',
+    },
+    config: const LoggableConfig(stringInQuotes: false, units: 'kg'),
   );
 }
