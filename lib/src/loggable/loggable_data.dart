@@ -93,6 +93,44 @@ final class LoggableData {
     );
   }
 
+  /// Добавляет свойство в зависимости от значения.
+  ///
+  /// Если значение равно `null`, то свойство невидимо (см. [hidden]).
+  void whenNotNull<T extends Object?>(
+    String name,
+    T value, {
+    bool showName = true,
+    Object view = Prop.noView,
+    LoggableConfig? config,
+    bool? enumDotShorthand,
+    int? collectionMaxLength,
+    int? collectionMaxStringLength,
+    bool? collectionShowLength,
+    bool? collectionShowIndexes,
+    String? units,
+    String? doubleFormat,
+    String? intFormat,
+    int dataLevelCorrection = 0,
+  }) {
+    prop<T>(
+      name,
+      value,
+      showName: showName,
+      hidden: value == null,
+      view: view,
+      config: config,
+      enumDotShorthand: enumDotShorthand,
+      collectionMaxLength: collectionMaxLength,
+      collectionMaxStringLength: collectionMaxStringLength,
+      collectionShowLength: collectionShowLength,
+      collectionShowIndexes: collectionShowIndexes,
+      units: units,
+      doubleFormat: doubleFormat,
+      intFormat: intFormat,
+      dataLevelCorrection: dataLevelCorrection,
+    );
+  }
+
   /// Добавляет невидимое свойство к описанию.
   ///
   /// Свойства не выводится через [Loggable.objectToString], но может быть
