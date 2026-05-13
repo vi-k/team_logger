@@ -59,7 +59,7 @@ final class LevelLogger
         }
 
         var resolvedData = Lazy(data).resolved;
-        if (config != null) {
+        if (config != null && resolvedData is! LogNoData) {
           resolvedData = Loggable.from(resolvedData, config: config);
         }
 
