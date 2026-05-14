@@ -95,7 +95,7 @@ final class LogStorage implements CustomLogPublisher<Log> {
                 .getRange(startIndex, maxCount)
                 .followedBy(_logs.getRange(0, _currentIndex))
                 .nonNulls)
-        .toList(growable: false);
+        .toList();
 
     if (reverse) {
       final half = count ~/ 2;
