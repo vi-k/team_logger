@@ -1,5 +1,5 @@
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -56,10 +56,10 @@ final class _FullLevelName implements LogLevelName {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.levelNameStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.data.levelNameStyle;
     final levelName = upperCase ? log.levelName.toUpperCase() : log.levelName;
     final levelNameStr = '$open$levelName$close';
 
@@ -69,7 +69,7 @@ final class _FullLevelName implements LogLevelName {
       [style(levelNameStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(levelNameStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(levelNameStr) : null,
       verticalAlign: verticalAlign,
       debugName: 'level_name',
     );
@@ -100,10 +100,10 @@ final class _ShortLevelName implements LogLevelName {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.levelNameStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.data.levelNameStyle;
     final levelName =
         upperCase ? log.shortLevelName.toUpperCase() : log.shortLevelName;
     final levelNameStr = '$open$levelName$close';
@@ -114,7 +114,7 @@ final class _ShortLevelName implements LogLevelName {
       [style(levelNameStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(levelNameStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(levelNameStr) : null,
       verticalAlign: verticalAlign,
       debugName: 'level_name',
     );

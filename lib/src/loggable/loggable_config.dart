@@ -1,10 +1,10 @@
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'loggable.dart';
 
 /// Конфигурация для [objectToString].
 ///
 /// [enumDotShorthand] - сокращенное представление enums в виде `.value`.
-/// Если равно null, значение берётся из [LogTheme.enumDotShorthand].
+/// Если равно null, значение берётся из [LogMainTheme.enumDotShorthand].
 ///
 /// [collectionMaxLength] - максимальное количество элементов в коллекции
 /// (для [List], [Set] и [Iterable]). Если равно null, нет ограничений.
@@ -17,11 +17,11 @@ import 'loggable.dart';
 ///
 /// [collectionShowLength] - показывать ли длину коллекции в виде `₌₄`
 /// (только для List и Set). Если равно null, значение берётся из
-/// [LogTheme.collectionShowLength].
+/// [LogMainTheme.collectionShowLength].
 ///
 /// [collectionShowIndexes] - показывать ли индексы элементов в виде `₀:`,
 /// `₁:` и т.д. Если равно null, значение берётся из
-/// [LogTheme.collectionShowIndexes].
+/// [LogMainTheme.collectionShowIndexes].
 ///
 /// [units] - единицы измерения, будут добавлены к представлению объекта
 /// в виде суффикса. Если равно null, единицы не добавляются.
@@ -81,7 +81,7 @@ final class LoggableConfig with Loggable {
         stringInQuotes: stringInQuotes ?? other.stringInQuotes,
       );
 
-  LoggableResolvedConfig resolved(LogTheme theme) => LoggableResolvedConfig(
+  LoggableResolvedConfig resolved(LogMainTheme theme) => LoggableResolvedConfig(
         enumDotShorthand: enumDotShorthand ?? theme.enumDotShorthand,
         collectionMaxLength: collectionMaxLength,
         collectionMaxStringLength: collectionMaxStringLength,

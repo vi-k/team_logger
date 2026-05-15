@@ -1,7 +1,7 @@
 import 'package:stack_trace/stack_trace.dart';
 
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -26,13 +26,13 @@ final class LogStackTrace implements LogBlock {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final stackTrace = log.stackTrace;
     if (stackTrace == null || stackTrace == StackTrace.empty) {
       return LogBox.empty();
     }
 
-    final stackTraceTheme = log.error == null ? theme : theme.common.error;
+    final stackTraceTheme = log.error == null ? theme : theme.main.error;
 
     // For debugging
     // var trace = Trace.parse(
@@ -69,8 +69,8 @@ final class LogStackTrace implements LogBlock {
 
         String stackTraceLine(String file) {
           final style = isActive
-              ? stackTraceTheme.stackTraceActiveStyle
-              : stackTraceTheme.stackTraceInactiveStyle;
+              ? stackTraceTheme.data.stackTraceActiveStyle
+              : stackTraceTheme.data.stackTraceInactiveStyle;
           return style('$indexStr$memberStr($packageStr$file$posStr)');
         }
 
@@ -97,7 +97,7 @@ final class LogStackTrace implements LogBlock {
           return stackTraceLine(fileStr);
         }
 
-        final ellipsis = stackTraceTheme.common.ellipsis;
+        final ellipsis = stackTraceTheme.main.ellipsis;
 
         var truncated = false;
         while (fileStr.length + ellipsis.length + 1 > availableWidth) {
@@ -107,7 +107,7 @@ final class LogStackTrace implements LogBlock {
           fileStr = fileStr.substring(index + 1);
         }
         if (truncated) {
-          fileStr = '${stackTraceTheme.ellipsisStyle(ellipsis)}/$fileStr';
+          fileStr = '${stackTraceTheme.data.ellipsisStyle(ellipsis)}/$fileStr';
         }
 
         return stackTraceLine(fileStr);
@@ -115,18 +115,18 @@ final class LogStackTrace implements LogBlock {
     ).toList();
 
     if (row.singleLine) {
-      lines = [lines.join(stackTraceTheme.punctuation(', '))];
+      lines = [lines.join(stackTraceTheme.data.punctuation(', '))];
     }
 
-    if (theme.common.stackTraceTitle.isNotEmpty) {
+    if (theme.main.stackTraceTitle.isNotEmpty) {
       lines.insert(
         0,
-        stackTraceTheme.sectionStyle(
-          '${theme.common.stackTraceTitle}${theme.styledColon}',
+        stackTraceTheme.data.sectionStyle(
+          '${theme.main.stackTraceTitle}${theme.styledColon}',
         ),
       );
       if (row.singleLine) {
-        lines = [lines.join(stackTraceTheme.punctuation(' '))];
+        lines = [lines.join(stackTraceTheme.data.punctuation(' '))];
       }
     }
 

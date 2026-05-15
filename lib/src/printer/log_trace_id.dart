@@ -1,5 +1,5 @@
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -30,7 +30,7 @@ final class LogTraceId implements LogBlock {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     if (log.traceIds.isEmpty) {
       return LogBox.empty();
     }
@@ -38,8 +38,8 @@ final class LogTraceId implements LogBlock {
     final traceIdsStr =
         log.traceIds.map((e) => '$open$e$close').join(separator);
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.common.traceIdStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.main.traceIdStyle;
 
     return LogBox(
       log,
@@ -48,7 +48,7 @@ final class LogTraceId implements LogBlock {
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(traceIdsStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(traceIdsStr) : null,
       debugName: 'trace_id',
     );
   }

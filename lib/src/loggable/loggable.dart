@@ -2,7 +2,7 @@ import 'package:ansi_escape_codes/extensions.dart';
 import 'package:format/format.dart';
 import 'package:meta/meta.dart';
 
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'loggable_config.dart';
 import 'loggable_multi_data.dart';
 
@@ -125,8 +125,8 @@ abstract mixin class Loggable {
   /// [config].
   static String objectToString(
     Object? obj, {
+    LogTheme theme = LogTheme.noColors,
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
     final dataTheme = theme.dataLevelTheme(dataLevel);
@@ -135,9 +135,9 @@ abstract mixin class Loggable {
     if (converter != null) {
       return converter(
         obj,
-        dataLevel,
         theme,
-        config.resolved(theme.common),
+        dataLevel,
+        config.resolved(theme.main),
       );
     }
 
@@ -212,7 +212,7 @@ abstract mixin class Loggable {
           return switch (e.key) {
             '' => value,
             final key =>
-              '${theme.sectionStyle(key)}${theme.styledColon} $value',
+              '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
           };
         }).join(dataTheme.punctuation(', '));
 
@@ -228,7 +228,7 @@ abstract mixin class Loggable {
   static String listToString(
     List<Object?> list, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) =>
       efficientLengthIterableToString(
@@ -246,7 +246,7 @@ abstract mixin class Loggable {
   static String setToString(
     Set<Object?> set, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) =>
       efficientLengthIterableToString(
@@ -271,7 +271,7 @@ abstract mixin class Loggable {
   static String efficientLengthIterableToString(
     Iterable<Object?> iterable, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     String start = '(',
     String end = ')',
     LoggableConfig config = const LoggableConfig(),
@@ -287,9 +287,9 @@ abstract mixin class Loggable {
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
 
     final resolvedCollectionShowLength =
-        config.collectionShowLength ?? theme.common.collectionShowLength;
+        config.collectionShowLength ?? theme.main.collectionShowLength;
     final resolvedCollectionShowIndexes =
-        config.collectionShowIndexes ?? theme.common.collectionShowIndexes;
+        config.collectionShowIndexes ?? theme.main.collectionShowIndexes;
 
     final dataTheme = theme.dataLevelTheme(dataLevel);
     final delimiter = dataTheme.punctuation(', ');
@@ -347,7 +347,7 @@ abstract mixin class Loggable {
           var length = startLength +
               first.lengthWithoutEscapeCodes +
               2 +
-              theme.common.ellipsis.length +
+              theme.main.ellipsis.length +
               2 +
               last.lengthWithoutEscapeCodes +
               end.length;
@@ -363,7 +363,7 @@ abstract mixin class Loggable {
             length += 2 + item.lengthWithoutEscapeCodes;
             if (collectionMaxStringLength != null &&
                 length > collectionMaxStringLength) {
-              if (length - 2 - theme.common.ellipsis.length >
+              if (length - 2 - theme.main.ellipsis.length >
                   collectionMaxStringLength) {
                 break;
               } else {
@@ -384,7 +384,7 @@ abstract mixin class Loggable {
 
             buf
               ..write(delimiter)
-              ..write(dataTheme.punctuation(theme.common.ellipsis));
+              ..write(dataTheme.punctuation(theme.main.ellipsis));
           }
 
           buf
@@ -412,7 +412,7 @@ abstract mixin class Loggable {
   static String iterableToString(
     Iterable<Object?> iterable, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     String start = '(',
     String end = ')',
     LoggableConfig config = const LoggableConfig(),
@@ -426,7 +426,7 @@ abstract mixin class Loggable {
     );
 
     final fixedCollectionShowIndexes =
-        config.collectionShowIndexes ?? theme.common.collectionShowIndexes;
+        config.collectionShowIndexes ?? theme.main.collectionShowIndexes;
 
     final dataTheme = theme.dataLevelTheme(dataLevel);
     final delimiter = dataTheme.punctuation(', ');
@@ -477,7 +477,7 @@ abstract mixin class Loggable {
           var length = start.length +
               first.lengthWithoutEscapeCodes +
               2 +
-              theme.common.ellipsis.length +
+              theme.main.ellipsis.length +
               end.length;
           var truncated = false;
           (StringBuffer, int)? copy;
@@ -490,7 +490,7 @@ abstract mixin class Loggable {
             length += 2 + item.lengthWithoutEscapeCodes;
             if (collectionMaxStringLength != null &&
                 length > collectionMaxStringLength) {
-              if (length - 2 - theme.common.ellipsis.length >
+              if (length - 2 - theme.main.ellipsis.length >
                   collectionMaxStringLength) {
                 truncated = true;
                 break;
@@ -514,7 +514,7 @@ abstract mixin class Loggable {
 
             buf
               ..write(delimiter)
-              ..write(dataTheme.punctuation(theme.common.ellipsis));
+              ..write(dataTheme.punctuation(theme.main.ellipsis));
           }
         }
       }
@@ -528,7 +528,7 @@ abstract mixin class Loggable {
   static String mapEntryToString(
     MapEntry<Object?, Object?> entry, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
     String obj2str(Object? obj) => objectToString(
@@ -545,14 +545,14 @@ abstract mixin class Loggable {
       final key => obj2str(key),
     };
 
-    return '${theme.dataKeyStyle(key)}${dataTheme.punctuation(':')}'
-        ' ${theme.dataValueStyle(obj2str(entry.value))}';
+    return '${theme.data.dataKeyStyle(key)}${dataTheme.punctuation(':')}'
+        ' ${theme.data.dataValueStyle(obj2str(entry.value))}';
   }
 
   static String mapToString(
     Map<Object?, Object?> map, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     String start = '{',
     String end = '}',
     LoggableConfig config = const LoggableConfig(),
@@ -574,19 +574,19 @@ abstract mixin class Loggable {
 
   static String enumToString(
     Enum obj, {
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
     final dotShorthand = '.${theme.formatValue(obj.name)}';
 
-    return (config.enumDotShorthand ?? theme.common.enumDotShorthand)
+    return (config.enumDotShorthand ?? theme.main.enumDotShorthand)
         ? dotShorthand
-        : '${obj.runtimeType}${theme.emphasis(dotShorthand)}';
+        : '${obj.runtimeType}${theme.data.emphasis(dotShorthand)}';
   }
 
   static String doubleToString(
     double obj, {
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) =>
       '${switch (config.doubleFormat) {
@@ -597,7 +597,7 @@ abstract mixin class Loggable {
 
   static String intToString(
     int obj, {
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) =>
       '${switch (config.intFormat) {
@@ -608,10 +608,10 @@ abstract mixin class Loggable {
 
   static String stringToString(
     String obj, {
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final stringInQuotes = config.stringInQuotes ?? theme.common.stringInQuotes;
+    final stringInQuotes = config.stringInQuotes ?? theme.main.stringInQuotes;
     final openingQuote = stringInQuotes ? theme.styledOpeningQuote : '';
     final closingQuote = stringInQuotes ? theme.styledClosingQuote : '';
 
@@ -621,9 +621,9 @@ abstract mixin class Loggable {
 
   static String unitsToString(
     String? units,
-    LogLevelTheme theme,
+    LogTheme theme,
   ) =>
-      units == null ? '' : theme.dataUnitsStyle(theme.formatValue(units));
+      units == null ? '' : theme.data.dataUnitsStyle(theme.formatValue(units));
 }
 
 final class _LoggableWrapper with Loggable {
@@ -655,8 +655,8 @@ final class _LoggableWrapper with Loggable {
 abstract interface class LoggableTypeConverter<T extends Object?> {
   String call(
     T obj,
+    LogTheme theme,
     int dataLevel,
-    LogLevelTheme theme,
     LoggableResolvedConfig config,
   );
 }
@@ -665,7 +665,7 @@ abstract interface class LoggableView {
   const factory LoggableView(Object? value, [String? units]) = _LoggableView;
 
   static LoggableView convert<T extends Object>(
-    Object Function(T value, int dataLevel, LogLevelTheme theme) converter, [
+    Object Function(T value, int dataLevel, LogTheme theme) converter, [
     String? units,
   ]) =>
       _LoggableViewConvert<T>(converter, units);
@@ -673,7 +673,7 @@ abstract interface class LoggableView {
   String toLogString(
     Object? value, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
   });
 }
 
@@ -688,7 +688,7 @@ final class _LoggableView implements LoggableView {
   String toLogString(
     Object? value, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
   }) =>
       switch (this.value) {
         null => 'null',
@@ -697,7 +697,7 @@ final class _LoggableView implements LoggableView {
 }
 
 final class _LoggableViewConvert<T extends Object> implements LoggableView {
-  final Object Function(T value, int dataLevel, LogLevelTheme theme) converter;
+  final Object Function(T value, int dataLevel, LogTheme theme) converter;
   final String? units;
 
   String? _result;
@@ -708,7 +708,7 @@ final class _LoggableViewConvert<T extends Object> implements LoggableView {
   String toLogString(
     Object? value, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
   }) =>
       switch (value) {
         null => 'null',
@@ -728,7 +728,7 @@ final class LoggableMultiView implements LoggableView {
   String toLogString(
     Object? value, {
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
   }) {
     final dataTheme = theme.dataLevelTheme(dataLevel);
 

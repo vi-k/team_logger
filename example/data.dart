@@ -246,8 +246,8 @@ final class NotLoggableObjectConverter
   @override
   String call(
     NotLoggableObject obj,
+    LogTheme theme,
     int dataLevel,
-    LogLevelTheme theme,
     LoggableResolvedConfig config,
   ) =>
       (Loggable.builder(obj)
@@ -261,8 +261,8 @@ final class ManualNotLoggableObjectConverter
   @override
   String call(
     NotLoggableObject obj,
+    LogTheme theme,
     int dataLevel,
-    LogLevelTheme theme,
     LoggableResolvedConfig config,
   ) {
     final body = Loggable.mapToString(
@@ -274,6 +274,6 @@ final class ManualNotLoggableObjectConverter
       config: config,
     );
 
-    return '${theme.dataNameStyle('$NotLoggableObject')}$body';
+    return '${theme.data.dataNameStyle('$NotLoggableObject')}$body';
   }
 }

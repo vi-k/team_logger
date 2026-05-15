@@ -1,5 +1,5 @@
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -24,7 +24,7 @@ final class LogDivider implements LogBlock {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) =>
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) =>
       LogBox(
         log,
         theme,
@@ -33,7 +33,7 @@ final class LogDivider implements LogBlock {
         showEllipsis: false,
         textAlign: textAlign,
         verticalAlign: verticalAlign,
-        verticalFiller: stretch ? theme.common.hiddenStyle(divider) : null,
+        verticalFiller: stretch ? theme.main.hiddenStyle(divider) : null,
         debugName: 'divider',
       );
 }

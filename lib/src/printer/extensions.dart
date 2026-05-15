@@ -2,14 +2,14 @@ import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 
 import '../loggable/loggable.dart';
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_text_align.dart';
 
 extension AnsiStringExtensions on String {
   String applyConstraints(
     Log log,
-    LogLevelTheme theme,
+    LogTheme theme,
     Constraints constraints, {
     LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,
@@ -26,7 +26,7 @@ extension AnsiStringExtensions on String {
 extension AnsiParserExtensions on ansi.Parser {
   String applyConstraints(
     Log log,
-    LogLevelTheme theme,
+    LogTheme theme,
     Constraints constraints, {
     LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,

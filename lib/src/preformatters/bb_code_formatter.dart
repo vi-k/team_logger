@@ -1,5 +1,5 @@
 import '../loggable/loggable.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'log_pre_formatter.dart';
 
 final class BbCodeFormatter with Loggable implements LogPreFormatter {
@@ -8,7 +8,7 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
   const BbCodeFormatter();
 
   @override
-  String call(LogLevelTheme theme, String text) {
+  String call(LogThemeData theme, String text) {
     final buf = StringBuffer();
     var last = 0;
 

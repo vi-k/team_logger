@@ -1,5 +1,5 @@
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -28,11 +28,11 @@ final class LogSequenceNum implements LogBlock {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final sequenceNumStr = '$open${log.sequenceNum}$close';
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.sequenceNumStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.data.sequenceNumStyle;
 
     return LogBox(
       log,
@@ -41,7 +41,7 @@ final class LogSequenceNum implements LogBlock {
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(sequenceNumStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(sequenceNumStr) : null,
       debugName: 'sequence_num',
     );
   }

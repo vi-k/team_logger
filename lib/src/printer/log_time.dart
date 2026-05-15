@@ -1,5 +1,5 @@
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -93,10 +93,10 @@ final class _DateTime implements LogTime {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.timeStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.data.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -114,7 +114,7 @@ final class _DateTime implements LogTime {
       [style(timeStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(timeStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(timeStr) : null,
       verticalAlign: verticalAlign,
     );
   }
@@ -146,10 +146,10 @@ final class _Iso8601 implements LogTime {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.timeStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.data.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -162,7 +162,7 @@ final class _Iso8601 implements LogTime {
       [style(timeStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(timeStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(timeStr) : null,
       verticalAlign: verticalAlign,
     );
   }
@@ -196,10 +196,10 @@ final class _OnlyTime implements LogTime {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.timeStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.data.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -214,7 +214,7 @@ final class _OnlyTime implements LogTime {
       [style(timeStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(timeStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(timeStr) : null,
       verticalAlign: verticalAlign,
       debugName: 'time',
     );

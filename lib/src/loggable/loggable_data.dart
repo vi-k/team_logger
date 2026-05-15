@@ -228,7 +228,7 @@ final class LoggableData {
   }
 
   String toLogString({
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     int dataLevel = 0,
     String Function(String value)? valueFormat,
     LoggableConfig config = const LoggableConfig(),
@@ -237,7 +237,7 @@ final class LoggableData {
 
     String name2str() {
       final name = _type.typeName ?? _type.value.toString();
-      return theme.dataNameStyle(valueFormat?.call(name) ?? name);
+      return theme.data.dataNameStyle(valueFormat?.call(name) ?? name);
     }
 
     String prop2str(Prop<Object?> p) => p.toLogString(
@@ -286,10 +286,10 @@ final class Prop<T extends Object?> {
 
   String toLogString({
     int dataLevel = 0,
-    LogLevelTheme theme = LogLevelTheme.noColors,
+    LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    String name2str() => theme.dataKeyStyle(theme.formatValue(name));
+    String name2str() => theme.data.dataKeyStyle(theme.formatValue(name));
 
     final view = this.view;
     final viewStr = switch (view) {

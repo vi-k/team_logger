@@ -1,7 +1,7 @@
 import 'package:ansi_escape_codes/parsing.dart' as ansi;
 
 import '../loggable/loggable.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'log_pre_formatter.dart';
 
 final class ControlCodeFormatter with Loggable implements LogPreFormatter {
@@ -10,7 +10,7 @@ final class ControlCodeFormatter with Loggable implements LogPreFormatter {
   const ControlCodeFormatter({this.excludeEscCode = true});
 
   @override
-  String call(LogLevelTheme theme, String text) {
+  String call(LogThemeData theme, String text) {
     final buf = StringBuffer();
     final open = theme.paddingStyle.open;
     final close = theme.paddingStyle.close;

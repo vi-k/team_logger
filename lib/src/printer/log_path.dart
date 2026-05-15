@@ -1,5 +1,5 @@
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -28,10 +28,10 @@ final class LogPath implements LogBlock {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.pathStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.data.pathStyle;
     final pathStr = '$open${log.path}$close';
 
     return LogBox(
@@ -40,7 +40,7 @@ final class LogPath implements LogBlock {
       [style(pathStr)],
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(pathStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(pathStr) : null,
       verticalAlign: verticalAlign,
       debugName: 'path',
     );

@@ -5,14 +5,14 @@ import 'package:logger_builder/logger_builder.dart';
 
 import '../logger/log_levels.dart';
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'log_block.dart';
 import 'log_divider.dart';
 import 'log_row.dart';
 
 final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
-  final LogTheme theme;
-  final LogTheme? inactiveTheme;
+  final LogMainTheme theme;
+  final LogMainTheme? inactiveTheme;
   final bool Function(Log log)? isLogActive;
   final int activeLevel;
   final Set<String> activeLoggers;
@@ -24,7 +24,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final _printers = <(bool, int), ansi.StackedPrinter>{};
 
   ConsoleLogPrinter({
-    LogTheme? theme,
+    LogMainTheme? theme,
     this.inactiveTheme,
     this.activeLevel = LogLevels.off,
     this.activeLoggers = const {},
@@ -41,10 +41,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
                   isLogActive == null,
           'inactiveTheme must be set first',
         ),
-        theme = theme ?? LogTheme.defaultActiveTheme {
-    this.theme.registerLevelThemes();
-    inactiveTheme?.registerLevelThemes();
-  }
+        theme = theme ?? LogMainTheme.defaultActiveTheme;
 
   bool _isLogActive(Log log) =>
       inactiveTheme == null ||
@@ -69,15 +66,14 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     }
   }
 
-  void printRow(Log log, LogRow row, bool isActive, LogTheme theme) {
-    final levelTheme = theme[log.level];
+  void printRow(Log log, LogRow row, bool isActive, LogMainTheme main) {
+    final theme = main[log.level];
     final printer = _printers[(isActive, log.level)] ??= ansi.StackedPrinter(
-      defaultStyle: levelTheme.normal,
+      defaultStyle: theme.data.normal,
       output: output,
     );
 
-    late final defaultDividerBox =
-        row.defaultDivider(log, levelTheme, row, null);
+    late final defaultDividerBox = row.defaultDivider(log, theme, row, null);
 
     // tail first
 
@@ -86,7 +82,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     LogBlock? lastBlock;
 
     for (final block in row.tail) {
-      final box = block(log, levelTheme, row, null);
+      final box = block(log, theme, row, null);
       if (box.width > 0) {
         if ((lastBlock == null || lastBlock is! LogDivider) &&
             block is! LogDivider) {
@@ -122,7 +118,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
 
       final box = block(
         log,
-        levelTheme,
+        theme,
         row,
         remainingLength == null ? null : remainingLength - currentWidth,
       );
@@ -159,7 +155,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
         printer.write(box.lines[i]);
       }
       if (remainingLength != null && row.alignTail) {
-        printer.write(theme.padding * remainingLength);
+        printer.write(main.padding * remainingLength);
       }
       for (final box in tailBoxes) {
         printer.write(box.lines[i]);

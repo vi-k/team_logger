@@ -1,7 +1,7 @@
 import '../loggable/loggable.dart';
 import '../loggable/loggable_multi_data.dart';
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -31,7 +31,7 @@ final class LogMessage implements LogBlock {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final messageStr = switch (log.message) {
       '' => '',
       final message => theme.formatMessage(theme.formatValue(message)),
@@ -56,9 +56,9 @@ final class LogMessage implements LogBlock {
           return switch (e.key) {
             '' => value,
             final key =>
-              '${theme.sectionStyle(key)}${theme.styledColon} $value',
+              '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
           };
-        }).join(row.singleLine ? theme.punctuation(', ') : '\n');
+        }).join(row.singleLine ? theme.data.punctuation(', ') : '\n');
       }
 
       if (messageStr.isNotEmpty) {
@@ -69,16 +69,16 @@ final class LogMessage implements LogBlock {
 
     var errorStr = '';
     if (log.error case final error?) {
-      final errorTheme = theme.common.error;
-      errorStr = errorTheme
+      final errorTheme = theme.main.error;
+      errorStr = errorTheme.data
           .normal(theme.formatMessage(theme.formatValue(error.toString())));
       if (messageStr.isNotEmpty || log.hasData) {
         final colon = errorTheme.styledColon;
-        final newLine = !row.singleLine &&
-            (theme.common.errorAlwaysOnNewLine || log.hasData);
+        final newLine =
+            !row.singleLine && (theme.main.errorAlwaysOnNewLine || log.hasData);
         errorStr = switch (newLine) {
-          true when theme.common.errorTitle.isNotEmpty =>
-            '\n${errorTheme.sectionStyle(theme.common.errorTitle)}'
+          true when theme.main.errorTitle.isNotEmpty =>
+            '\n${errorTheme.data.sectionStyle(theme.main.errorTitle)}'
                 '$colon $errorStr',
           true => '\n$errorStr',
           false => '$colon $errorStr',

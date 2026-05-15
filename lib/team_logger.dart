@@ -29,4 +29,4 @@ export 'src/printer/log_time.dart';
 export 'src/printer/log_trace_id.dart';
 export 'src/printer/log_vertical_align.dart';
 export 'src/storage/log_storage.dart';
-export 'src/theme/log_theme.dart';
+export 'src/theme/log_main_theme.dart';

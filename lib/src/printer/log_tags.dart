@@ -1,5 +1,5 @@
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_block.dart';
 import 'log_row.dart';
@@ -30,15 +30,15 @@ final class LogTags implements LogBlock {
   });
 
   @override
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength) {
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final tags = theme.allTags(log);
     if (this.tags.isNotEmpty) {
       tags.addAll(this.tags);
     }
     final tagsStr = '$open${tags.map((tag) => '#$tag').join(' ')}$close';
     final style = hidden
-        ? theme.common.hiddenStyle
-        : this.style?[log.level] ?? theme.common.tagsStyle;
+        ? theme.main.hiddenStyle
+        : this.style?[log.level] ?? theme.main.tagsStyle;
 
     return LogBox(
       log,
@@ -47,7 +47,7 @@ final class LogTags implements LogBlock {
       constraints: constraints.restrict(remainingLength),
       textAlign: textAlign,
       verticalAlign: verticalAlign,
-      verticalFiller: stretch ? theme.common.hiddenStyle(tagsStr) : null,
+      verticalFiller: stretch ? theme.main.hiddenStyle(tagsStr) : null,
       debugName: 'tags',
     );
   }

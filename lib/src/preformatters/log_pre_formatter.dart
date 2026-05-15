@@ -1,5 +1,5 @@
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 
 abstract interface class LogPreFormatter {
-  String call(LogLevelTheme theme, String text);
+  String call(LogThemeData theme, String text);
 }

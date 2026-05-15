@@ -4,7 +4,7 @@ import 'package:ansi_escape_codes/parsing.dart' as ansi;
 
 import '../loggable/loggable.dart';
 import '../logger/logger.dart';
-import '../theme/log_theme.dart';
+import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'extensions.dart';
 import 'log_row.dart';
@@ -12,7 +12,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 abstract interface class LogBlock {
-  LogBox call(Log log, LogLevelTheme theme, LogRow row, int? remainingLength);
+  LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength);
 }
 
 final class LogBox with Loggable {
@@ -24,7 +24,7 @@ final class LogBox with Loggable {
 
   factory LogBox(
     Log log,
-    LogLevelTheme theme,
+    LogTheme theme,
     List<String> lines, {
     Constraints constraints = const Constraints.unlimited(),
     LogTextAlign textAlign = LogTextAlign.left,
@@ -92,7 +92,7 @@ final class LogBox with Loggable {
 
   factory LogBox.fromText(
     Log log,
-    LogLevelTheme theme,
+    LogTheme theme,
     String text, {
     required int? maxLines,
     String? verticalFiller,
@@ -110,7 +110,7 @@ final class LogBox with Loggable {
       return LogBox.empty(debugName: debugName);
     }
 
-    final textWidth = boxWidth - theme.common.lineBreak.length;
+    final textWidth = boxWidth - theme.main.lineBreak.length;
     if (textWidth <= 0) {
       return LogBox.raw(
         boxWidth,
@@ -144,7 +144,7 @@ final class LogBox with Loggable {
                   theme,
                   Constraints.exact(textWidth),
                   textAlign: textAlign,
-                )}${' ' * theme.common.lineBreak.length}',
+                )}${' ' * theme.main.lineBreak.length}',
           );
           start = end;
         } else if (maxLines == null || maxLines > boxLines.length + 1) {

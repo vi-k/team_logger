@@ -1,4 +1,4 @@
-part of 'log_theme.dart';
+part of 'log_main_theme.dart';
 
 final class LogStyle with Loggable {
   final ansi.Style verbose;

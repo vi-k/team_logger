@@ -4,11 +4,11 @@ import 'package:team_logger/team_logger.dart';
 
 import 'data.dart';
 
-final theme = LogTheme.defaultActiveTheme.copyWith(
-  hiddenStyle: LogTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  hiddenStyle: LogMainTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
 );
-final inactiveTheme = LogTheme.defaultInactiveTheme.copyWith(
-  hiddenStyle: LogTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
+final inactiveTheme = LogMainTheme.defaultInactiveTheme.copyWith(
+  hiddenStyle: LogMainTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
   // minLevel: LogLevels.debug,
 );
 
@@ -162,6 +162,8 @@ void f() {
       data: theme[l],
     );
   }
+  log.d('LogLevelTheme.noColors', data: LogThemeData.noColors);
+  log.d('LogTheme.noColors', data: LogMainTheme.noColors);
 
   log.d('Without error', stackTrace: StackTrace.current);
   log.d('With error', error: Exception('test'), stackTrace: StackTrace.current);
