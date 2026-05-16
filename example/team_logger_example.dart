@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:stack_trace/stack_trace.dart';
 import 'package:team_logger/team_logger.dart';
 
 import 'data.dart';
@@ -69,7 +70,14 @@ final log = Logger('app')
 
 void main() {
   runZoned(
-    f,
+    () => Chain.capture(
+      f,
+      onError: (error, stackTrace) {
+        print('Unhandled exception:');
+        print(error);
+        print(stackTrace);
+      },
+    ),
     zoneSpecification: ZoneSpecification(
       print: (self, parent, zone, line) {
         for (final line in line.split('\n')) {
@@ -154,16 +162,17 @@ void f() {
     );
   }
 
-  log.d('LogTheme', data: theme);
+  log.d('$LogMainTheme', data: theme);
   for (final l in LogLevels.values) {
     log[l].log(
-      'LogLevelTheme',
+      '$LogTheme',
       traceId: TraceId.auto('theme'),
       data: theme[l],
     );
   }
-  log.d('LogLevelTheme.noColors', data: LogThemeData.noColors);
-  log.d('LogTheme.noColors', data: LogMainTheme.noColors);
+  log.d('LogMainTheme.noColors: ${LogMainTheme.noColors}');
+  log.d('LogThemeData.noColors: ${LogThemeData.noColors}');
+  log.d('LogTheme.noColors: ${LogTheme.noColors}');
 
   log.d('Without error', stackTrace: StackTrace.current);
   log.d('With error', error: Exception('test'), stackTrace: StackTrace.current);

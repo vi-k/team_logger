@@ -55,7 +55,8 @@ final class LoggableData {
     String? units,
     String? doubleFormat,
     String? intFormat,
-    int dataLevelCorrection = 0,
+    bool? stringInQuotes,
+    int depthCorrection = 0,
   }) {
     assert(
       config == null ||
@@ -66,7 +67,8 @@ final class LoggableData {
               collectionShowIndexes == null &&
               units == null &&
               doubleFormat == null &&
-              intFormat == null),
+              intFormat == null &&
+              stringInQuotes == null),
       'Use either `LoggableConfig` or individual parameters',
     );
 
@@ -87,8 +89,9 @@ final class LoggableData {
               units: units,
               doubleFormat: doubleFormat,
               intFormat: intFormat,
+              stringInQuotes: stringInQuotes,
             ),
-        dataLevelCorrection: dataLevelCorrection,
+        depthCorrection: depthCorrection,
       ),
     );
   }
@@ -110,7 +113,8 @@ final class LoggableData {
     String? units,
     String? doubleFormat,
     String? intFormat,
-    int dataLevelCorrection = 0,
+    bool? stringInQuotes,
+    int depthCorrection = 0,
   }) {
     prop<T>(
       name,
@@ -127,7 +131,8 @@ final class LoggableData {
       units: units,
       doubleFormat: doubleFormat,
       intFormat: intFormat,
-      dataLevelCorrection: dataLevelCorrection,
+      stringInQuotes: stringInQuotes,
+      depthCorrection: depthCorrection,
     );
   }
 
@@ -149,7 +154,8 @@ final class LoggableData {
     String? units,
     String? doubleFormat,
     String? intFormat,
-    int dataLevelCorrection = 0,
+    bool? stringInQuotes,
+    int depthCorrection = 0,
   }) {
     prop<T>(
       name,
@@ -166,7 +172,8 @@ final class LoggableData {
       units: units,
       doubleFormat: doubleFormat,
       intFormat: intFormat,
-      dataLevelCorrection: dataLevelCorrection,
+      stringInQuotes: stringInQuotes,
+      depthCorrection: depthCorrection,
     );
   }
 
@@ -188,13 +195,13 @@ final class LoggableData {
     String? units,
     String? doubleFormat,
     String? intFormat,
-    int dataLevelCorrection = 0,
+    bool? stringInQuotes,
+    int depthCorrection = 0,
   }) {
     prop(
       name,
       _computed,
       showName: showName,
-      hidden: true,
       view: view,
       config: config,
       enumDotShorthand: enumDotShorthand,
@@ -205,7 +212,8 @@ final class LoggableData {
       units: units,
       doubleFormat: doubleFormat,
       intFormat: intFormat,
-      dataLevelCorrection: dataLevelCorrection,
+      stringInQuotes: stringInQuotes,
+      depthCorrection: depthCorrection,
     );
   }
 
@@ -229,11 +237,11 @@ final class LoggableData {
 
   String toLogString({
     LogTheme theme = LogTheme.noColors,
-    int dataLevel = 0,
+    int depth = 0,
     String Function(String value)? valueFormat,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final dataTheme = theme.dataLevelTheme(dataLevel);
+    final depthTheme = theme.depthTheme(depth);
 
     String name2str() {
       final name = _type.typeName ?? _type.value.toString();
@@ -242,14 +250,14 @@ final class LoggableData {
 
     String prop2str(Prop<Object?> p) => p.toLogString(
           theme: theme,
-          dataLevel: dataLevel,
+          depth: depth,
           config: config,
         );
 
     return '${_type.showName ? name2str() : ''}'
-        '${dataTheme.brackets(_type.openingBracket)}'
-        '${props.where((p) => !p.hidden).map(prop2str).join(dataTheme.punctuation(', '))}'
-        '${dataTheme.brackets(_type.closingBracket)}';
+        '${depthTheme.brackets(_type.openingBracket)}'
+        '${props.where((p) => !p.hidden).map(prop2str).join(depthTheme.punctuation(', '))}'
+        '${depthTheme.brackets(_type.closingBracket)}';
   }
 
   @override
@@ -272,7 +280,7 @@ final class Prop<T extends Object?> {
   final bool showName;
   final bool hidden;
   final LoggableConfig config;
-  final int dataLevelCorrection;
+  final int depthCorrection;
 
   Prop._(
     this.name,
@@ -281,12 +289,12 @@ final class Prop<T extends Object?> {
     this.hidden = false,
     this.view = noView,
     this.config = const LoggableConfig(),
-    this.dataLevelCorrection = 0,
+    this.depthCorrection = 0,
   });
 
   String toLogString({
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
     String name2str() => theme.data.dataKeyStyle(theme.formatValue(name));
@@ -295,23 +303,22 @@ final class Prop<T extends Object?> {
     final viewStr = switch (view) {
       LoggableNoView() => null,
       String() => view,
-      LoggableView() =>
-        view.toLogString(value, dataLevel: dataLevel, theme: theme),
+      LoggableView() => view.toLogString(value, theme: theme, depth: depth),
       _ => view.toString(),
     };
 
     final valueStr = viewStr ??
         Loggable.objectToString(
           value,
-          dataLevel: dataLevel + 1 + dataLevelCorrection,
           theme: theme,
+          depth: depth + 1 + depthCorrection,
           config: this.config.merge(config),
         );
     final styledValueStr = theme.formatValue(valueStr);
 
-    final dataTheme = theme.dataLevelTheme(dataLevel);
+    final depthTheme = theme.depthTheme(depth);
     final prefix =
-        showName ? '${name2str()}${dataTheme.punctuation(':')} ' : '';
+        showName ? '${name2str()}${depthTheme.punctuation(':')} ' : '';
 
     return '$prefix$styledValueStr';
   }

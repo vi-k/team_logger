@@ -126,19 +126,14 @@ abstract mixin class Loggable {
   static String objectToString(
     Object? obj, {
     LogTheme theme = LogTheme.noColors,
-    int dataLevel = 0,
+    int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final dataTheme = theme.dataLevelTheme(dataLevel);
+    final depthTheme = theme.depthTheme(depth);
 
     final converter = _converters[obj.runtimeType];
     if (converter != null) {
-      return converter(
-        obj,
-        theme,
-        dataLevel,
-        config.resolved(theme.main),
-      );
+      return converter(obj, theme, depth, config.resolved(theme.main));
     }
 
     switch (obj) {
@@ -158,46 +153,36 @@ abstract mixin class Loggable {
         return stringToString(obj, theme: theme, config: config);
 
       case List<Object?>():
-        return listToString(
-          obj,
-          dataLevel: dataLevel,
-          theme: theme,
-          config: config,
-        );
+        return listToString(obj, theme: theme, depth: depth, config: config);
 
       case Set<Object?>():
-        return setToString(
-          obj,
-          dataLevel: dataLevel,
-          theme: theme,
-          config: config,
-        );
+        return setToString(obj, theme: theme, depth: depth, config: config);
 
       case Iterable<Object?>():
         return iterableToString(
           obj,
-          dataLevel: dataLevel,
           theme: theme,
+          depth: depth,
           config: config,
         );
 
       case Map<Object?, Object?>():
         return mapToString(
           obj,
-          dataLevel: dataLevel,
           theme: theme,
+          depth: depth,
           config: config,
         );
 
       case Loggable():
         return obj
             .logClassInfo()
-            .toLogString(theme: theme, dataLevel: dataLevel, config: config);
+            .toLogString(theme: theme, depth: depth, config: config);
 
       case LoggableData():
         return obj.toLogString(
           theme: theme,
-          dataLevel: dataLevel,
+          depth: depth,
           config: config,
         );
 
@@ -214,7 +199,7 @@ abstract mixin class Loggable {
             final key =>
               '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
           };
-        }).join(dataTheme.punctuation(', '));
+        }).join(depthTheme.punctuation(', '));
 
       default:
         return '${theme.formatValue(obj.toString())}'
@@ -227,14 +212,14 @@ abstract mixin class Loggable {
   /// See [efficientLengthIterableToString].
   static String listToString(
     List<Object?> list, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) =>
       efficientLengthIterableToString(
         list,
-        dataLevel: dataLevel,
         theme: theme,
+        depth: depth,
         start: '[',
         end: ']',
         config: config,
@@ -245,14 +230,14 @@ abstract mixin class Loggable {
   /// See [efficientLengthIterableToString].
   static String setToString(
     Set<Object?> set, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) =>
       efficientLengthIterableToString(
         set,
-        dataLevel: dataLevel,
         theme: theme,
+        depth: depth,
         start: '{',
         end: '}',
         config: config,
@@ -270,8 +255,8 @@ abstract mixin class Loggable {
   /// Первый и последний элементы, если они есть, выводятся всегда.
   static String efficientLengthIterableToString(
     Iterable<Object?> iterable, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
     String start = '(',
     String end = ')',
     LoggableConfig config = const LoggableConfig(),
@@ -291,29 +276,29 @@ abstract mixin class Loggable {
     final resolvedCollectionShowIndexes =
         config.collectionShowIndexes ?? theme.main.collectionShowIndexes;
 
-    final dataTheme = theme.dataLevelTheme(dataLevel);
-    final delimiter = dataTheme.punctuation(', ');
+    final depthTheme = theme.depthTheme(depth);
+    final delimiter = depthTheme.punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
-          dataLevel: dataLevel + 1,
           theme: theme,
+          depth: depth + 1,
           config: config,
         );
 
     String index2str(int index) =>
-        dataTheme.description(theme.formatIndex(index));
+        depthTheme.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
 
     final count = iterable.length;
-    var buf = StringBuffer(dataTheme.brackets(start));
+    var buf = StringBuffer(depthTheme.brackets(start));
     var startLength = start.length;
     if (count > 1 && resolvedCollectionShowLength) {
       final prefix = '${theme.formatCount(count)} ';
       startLength += prefix.length;
-      buf.write(dataTheme.description(prefix));
+      buf.write(depthTheme.description(prefix));
     }
 
     final collectionMaxLength = config.collectionMaxLength;
@@ -384,7 +369,7 @@ abstract mixin class Loggable {
 
             buf
               ..write(delimiter)
-              ..write(dataTheme.punctuation(theme.main.ellipsis));
+              ..write(depthTheme.punctuation(theme.main.ellipsis));
           }
 
           buf
@@ -394,7 +379,7 @@ abstract mixin class Loggable {
       }
     }
 
-    buf.write(dataTheme.brackets(end));
+    buf.write(depthTheme.brackets(end));
 
     return buf.toString();
   }
@@ -411,8 +396,8 @@ abstract mixin class Loggable {
   /// элементу.
   static String iterableToString(
     Iterable<Object?> iterable, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
     String start = '(',
     String end = ')',
     LoggableConfig config = const LoggableConfig(),
@@ -428,23 +413,23 @@ abstract mixin class Loggable {
     final fixedCollectionShowIndexes =
         config.collectionShowIndexes ?? theme.main.collectionShowIndexes;
 
-    final dataTheme = theme.dataLevelTheme(dataLevel);
-    final delimiter = dataTheme.punctuation(', ');
+    final depthTheme = theme.depthTheme(depth);
+    final delimiter = depthTheme.punctuation(', ');
 
     String obj2str(Object? obj) => objectToString(
           obj,
-          dataLevel: dataLevel + 1,
           theme: theme,
+          depth: depth + 1,
           config: config,
         );
 
     String index2str(int index) =>
-        dataTheme.description(theme.formatIndex(index));
+        depthTheme.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
         '${index2str(index)}${obj2str(obj)}';
 
-    var buf = StringBuffer(dataTheme.brackets(start));
+    var buf = StringBuffer(depthTheme.brackets(start));
 
     final collectionMaxLength = config.collectionMaxLength;
     final collectionMaxStringLength = config.collectionMaxStringLength;
@@ -514,62 +499,62 @@ abstract mixin class Loggable {
 
             buf
               ..write(delimiter)
-              ..write(dataTheme.punctuation(theme.main.ellipsis));
+              ..write(depthTheme.punctuation(theme.main.ellipsis));
           }
         }
       }
     }
 
-    buf.write(dataTheme.brackets(end));
+    buf.write(depthTheme.brackets(end));
 
     return buf.toString();
   }
 
   static String mapEntryToString(
     MapEntry<Object?, Object?> entry, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
     String obj2str(Object? obj) => objectToString(
           obj,
-          dataLevel: dataLevel + 1,
+          depth: depth + 1,
           theme: theme,
           config: config,
         );
 
-    final dataTheme = theme.dataLevelTheme(dataLevel);
+    final depthTheme = theme.depthTheme(depth);
 
     final key = switch (entry.key) {
       final String key => theme.formatValue(key),
       final key => obj2str(key),
     };
 
-    return '${theme.data.dataKeyStyle(key)}${dataTheme.punctuation(':')}'
+    return '${theme.data.dataKeyStyle(key)}${depthTheme.punctuation(':')}'
         ' ${theme.data.dataValueStyle(obj2str(entry.value))}';
   }
 
   static String mapToString(
     Map<Object?, Object?> map, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
     String start = '{',
     String end = '}',
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final dataTheme = theme.dataLevelTheme(dataLevel);
+    final depthTheme = theme.depthTheme(depth);
     final body = map.entries
         .map(
           (e) => mapEntryToString(
             e,
-            dataLevel: dataLevel,
             theme: theme,
+            depth: depth,
             config: config,
           ),
         )
-        .join(dataTheme.punctuation(', '));
+        .join(depthTheme.punctuation(', '));
 
-    return '${dataTheme.brackets(start)}$body${dataTheme.brackets(end)}';
+    return '${depthTheme.brackets(start)}$body${depthTheme.brackets(end)}';
   }
 
   static String enumToString(
@@ -640,7 +625,7 @@ final class _LoggableWrapper with Loggable {
       obj,
       showName: false,
       config: config,
-      dataLevelCorrection: -1,
+      depthCorrection: -1,
     );
   }
 
@@ -656,7 +641,7 @@ abstract interface class LoggableTypeConverter<T extends Object?> {
   String call(
     T obj,
     LogTheme theme,
-    int dataLevel,
+    int depth,
     LoggableResolvedConfig config,
   );
 }
@@ -665,15 +650,15 @@ abstract interface class LoggableView {
   const factory LoggableView(Object? value, [String? units]) = _LoggableView;
 
   static LoggableView convert<T extends Object>(
-    Object Function(T value, int dataLevel, LogTheme theme) converter, [
+    Object Function(T value, LogTheme theme, int depth) converter, [
     String? units,
   ]) =>
       _LoggableViewConvert<T>(converter, units);
 
   String toLogString(
     Object? value, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
   });
 }
 
@@ -687,8 +672,8 @@ final class _LoggableView implements LoggableView {
   @override
   String toLogString(
     Object? value, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
   }) =>
       switch (this.value) {
         null => 'null',
@@ -697,7 +682,7 @@ final class _LoggableView implements LoggableView {
 }
 
 final class _LoggableViewConvert<T extends Object> implements LoggableView {
-  final Object Function(T value, int dataLevel, LogTheme theme) converter;
+  final Object Function(T value, LogTheme theme, int depth) converter;
   final String? units;
 
   String? _result;
@@ -707,12 +692,12 @@ final class _LoggableViewConvert<T extends Object> implements LoggableView {
   @override
   String toLogString(
     Object? value, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
   }) =>
       switch (value) {
         null => 'null',
-        T() => _result ??= '${converter(value, dataLevel, theme)}'
+        T() => _result ??= '${converter(value, theme, depth)}'
             '${Loggable.unitsToString(units, theme)}',
         _ => throw ArgumentError.value(value, 'value'),
       };
@@ -727,19 +712,19 @@ final class LoggableMultiView implements LoggableView {
   @override
   String toLogString(
     Object? value, {
-    int dataLevel = 0,
     LogTheme theme = LogTheme.noColors,
+    int depth = 0,
   }) {
-    final dataTheme = theme.dataLevelTheme(dataLevel);
+    final depthTheme = theme.depthTheme(depth);
 
     return views
         .map(
           (e) => e.toLogString(
             value,
-            dataLevel: dataLevel,
             theme: theme,
+            depth: depth,
           ),
         )
-        .join(dataTheme.punctuation(separator));
+        .join(depthTheme.punctuation(separator));
   }
 }

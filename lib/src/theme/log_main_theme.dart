@@ -294,7 +294,7 @@ final class LogMainTheme with Loggable {
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..prop('minLevel', minLevel)
+      ..prop('minLevel', minLevel, view: LogLevels.name(minLevel))
       ..theme('verbose', _verbose)
       ..theme('debug', _debug)
       ..theme('info', _info)
@@ -320,7 +320,7 @@ final class LogMainTheme with Loggable {
         'countFormatter',
         countFormatter,
         view: LoggableView.convert(
-          (value, _, theme) => '${theme.styledOpeningQuote}'
+          (value, theme, _) => '${theme.styledOpeningQuote}'
               '${countFormatter(theme, 4)}'
               '${theme.styledClosingQuote}',
         ),
@@ -329,7 +329,7 @@ final class LogMainTheme with Loggable {
         'indexFormatter',
         indexFormatter,
         view: LoggableView.convert(
-          (value, _, theme) => '${theme.styledOpeningQuote}'
+          (value, theme, _) => '${theme.styledOpeningQuote}'
               '${indexFormatter(theme, 3)}'
               '${theme.styledClosingQuote}',
         ),

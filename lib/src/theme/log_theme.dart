@@ -1,6 +1,6 @@
 part of 'log_main_theme.dart';
 
-final class LogTheme {
+final class LogTheme with Loggable {
   final LogMainTheme main;
   final int level;
   final LogThemeData data;
@@ -50,8 +50,21 @@ final class LogTheme {
 
   String formatCount(int count) => main.countFormatter(this, count);
 
-  LogDataLevelTheme dataLevelTheme(int dataLevel) =>
-      data.dataLevelThemes[dataLevel % data.dataLevelThemes.length];
+  LogDepthTheme depthTheme(int depth) =>
+      data.depthThemes[depth % data.depthThemes.length];
 
   Set<String> allTags(Log log) => {...log.tags, ...main.tags, ...data.tags};
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..prop('level', level, view: LogLevels.name(level))
+      ..prop('data', this.data)
+      ..prop('styledOpeningQuote', styledOpeningQuote)
+      ..prop('styledClosingQuote', styledClosingQuote)
+      ..prop('styledColon', styledColon)
+      ..prop('styledEllipsis', styledEllipsis)
+      ..prop('styledLineBreak', styledLineBreak)
+      ..prop('styledPadding', styledPadding);
+  }
 }

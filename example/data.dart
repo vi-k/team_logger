@@ -247,13 +247,13 @@ final class NotLoggableObjectConverter
   String call(
     NotLoggableObject obj,
     LogTheme theme,
-    int dataLevel,
+    int depth,
     LoggableResolvedConfig config,
   ) =>
       (Loggable.builder(obj)
             ..prop('name', obj.name)
             ..prop('list', obj.list))
-          .toLogString(theme: theme, dataLevel: dataLevel, config: config);
+          .toLogString(theme: theme, depth: depth, config: config);
 }
 
 final class ManualNotLoggableObjectConverter
@@ -262,13 +262,13 @@ final class ManualNotLoggableObjectConverter
   String call(
     NotLoggableObject obj,
     LogTheme theme,
-    int dataLevel,
+    int depth,
     LoggableResolvedConfig config,
   ) {
     final body = Loggable.mapToString(
       {'name': obj.name, 'list': obj.list},
-      dataLevel: dataLevel,
       theme: theme,
+      depth: depth,
       start: '(',
       end: ')',
       config: config,

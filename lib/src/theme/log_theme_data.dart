@@ -23,7 +23,7 @@ final class LogThemeData with Loggable {
   final ansi.Style dataKeyStyle;
   final ansi.Style dataValueStyle;
   final ansi.Style dataUnitsStyle;
-  final List<LogDataLevelTheme> dataLevelThemes;
+  final List<LogDepthTheme> depthThemes;
   final ansi.Style stackTraceActiveStyle;
   final ansi.Style stackTraceInactiveStyle;
   final Set<String> tags;
@@ -51,7 +51,7 @@ final class LogThemeData with Loggable {
     required this.dataKeyStyle,
     required this.dataValueStyle,
     required this.dataUnitsStyle,
-    required this.dataLevelThemes,
+    required this.depthThemes,
     required this.stackTraceActiveStyle,
     required this.stackTraceInactiveStyle,
     this.tags = const {},
@@ -80,7 +80,7 @@ final class LogThemeData with Loggable {
     ansi.Style? dataKeyStyle,
     this.dataValueStyle = const ansi.NoStyle(),
     ansi.Style? dataUnitsStyle,
-    required this.dataLevelThemes,
+    required this.depthThemes,
     ansi.Style? stackTraceActiveStyle,
     ansi.Style? stackTraceInactiveStyle,
     this.tags = const {},
@@ -133,8 +133,8 @@ final class LogThemeData with Loggable {
     ansi.Style? dataKeyStyle,
     this.dataValueStyle = const ansi.NoStyle(),
     ansi.Style? dataUnitsStyle,
-    this.dataLevelThemes = const [
-      LogDataLevelTheme(
+    this.depthThemes = const [
+      LogDepthTheme(
         brackets: ansi.NoStyle(),
         description: ansi.NoStyle(),
         punctuation: ansi.NoStyle(),
@@ -182,7 +182,7 @@ final class LogThemeData with Loggable {
     dataKeyStyle: ansi.NoStyle(),
     dataValueStyle: ansi.NoStyle(),
     dataUnitsStyle: ansi.NoStyle(),
-    dataLevelThemes: [LogDataLevelTheme.noStyle()],
+    depthThemes: [LogDepthTheme.noStyle()],
     stackTraceActiveStyle: ansi.NoStyle(),
     stackTraceInactiveStyle: ansi.NoStyle(),
   );
@@ -193,7 +193,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray3,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final gray6 = LogThemeData.seed(
@@ -202,7 +202,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray4,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final gray7 = LogThemeData.seed(
@@ -211,7 +211,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray5,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final gray8 = LogThemeData.seed(
@@ -220,7 +220,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray6,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final gray9 = LogThemeData.seed(
@@ -229,7 +229,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray7,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final gray10 = LogThemeData.seed(
@@ -238,7 +238,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray7,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final gray11 = LogThemeData.seed(
@@ -247,7 +247,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray8,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final gray12 = LogThemeData.seed(
@@ -256,7 +256,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray9,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray13 = LogThemeData.seed(
@@ -265,7 +265,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray10,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray14 = LogThemeData.seed(
@@ -274,7 +274,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray11,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray15 = LogThemeData.seed(
@@ -283,7 +283,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray12,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray16 = LogThemeData.seed(
@@ -292,7 +292,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray13,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray17 = LogThemeData.seed(
@@ -301,7 +301,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray13,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray18 = LogThemeData.seed(
@@ -310,7 +310,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray14,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray19 = LogThemeData.seed(
@@ -319,7 +319,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray15,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final gray20 = LogThemeData.seed(
@@ -328,7 +328,7 @@ final class LogThemeData with Loggable {
     dim: ansi.gray16,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final rgb444 = LogThemeData.seed(
@@ -337,7 +337,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb333,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final rgb443 = LogThemeData.seed(
@@ -346,7 +346,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb332,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb442 = LogThemeData.seed(
@@ -355,7 +355,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb331,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb441 = LogThemeData.seed(
@@ -364,7 +364,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb330,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb440 = LogThemeData.seed(
@@ -373,7 +373,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb330,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb434 = LogThemeData.seed(
@@ -382,7 +382,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb323,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoOR,
+    depthThemes: defaultDepthThemesWoOR,
   );
 
   static final rgb433 = LogThemeData.seed(
@@ -391,7 +391,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb322,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoOR,
+    depthThemes: defaultDepthThemesWoOR,
   );
 
   static final rgb432 = LogThemeData.seed(
@@ -400,7 +400,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb321,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb431 = LogThemeData.seed(
@@ -409,7 +409,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb320,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb430 = LogThemeData.seed(
@@ -418,7 +418,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb320,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb424 = LogThemeData.seed(
@@ -427,7 +427,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb313,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb423 = LogThemeData.seed(
@@ -436,7 +436,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb312,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb422 = LogThemeData.seed(
@@ -445,7 +445,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb311,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoOR,
+    depthThemes: defaultDepthThemesWoOR,
   );
 
   static final rgb421 = LogThemeData.seed(
@@ -454,7 +454,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb310,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoOR,
+    depthThemes: defaultDepthThemesWoOR,
   );
 
   static final rgb420 = LogThemeData.seed(
@@ -463,7 +463,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb310,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb414 = LogThemeData.seed(
@@ -472,7 +472,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb303,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb413 = LogThemeData.seed(
@@ -481,7 +481,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb302,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb412 = LogThemeData.seed(
@@ -490,7 +490,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb301,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb411 = LogThemeData.seed(
@@ -499,7 +499,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb300,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb410 = LogThemeData.seed(
@@ -508,7 +508,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb300,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb404 = LogThemeData.seed(
@@ -517,7 +517,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb303,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb403 = LogThemeData.seed(
@@ -526,7 +526,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb302,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb402 = LogThemeData.seed(
@@ -535,7 +535,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb301,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb401 = LogThemeData.seed(
@@ -544,7 +544,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb300,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb400 = LogThemeData.seed(
@@ -553,7 +553,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb300,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb344 = LogThemeData.seed(
@@ -562,7 +562,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb233,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBR,
+    depthThemes: defaultDepthThemesWoBR,
   );
 
   static final rgb343 = LogThemeData.seed(
@@ -571,7 +571,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb232,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb342 = LogThemeData.seed(
@@ -580,7 +580,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb231,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb341 = LogThemeData.seed(
@@ -589,7 +589,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb230,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb340 = LogThemeData.seed(
@@ -598,7 +598,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb220,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb334 = LogThemeData.seed(
@@ -607,7 +607,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb223,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBR,
+    depthThemes: defaultDepthThemesWoBR,
   );
 
   static final rgb333 = LogThemeData.seed(
@@ -616,7 +616,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb222,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final rgb332 = LogThemeData.seed(
@@ -625,7 +625,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb221,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb331 = LogThemeData.seed(
@@ -634,7 +634,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb220,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb330 = LogThemeData.seed(
@@ -643,7 +643,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb220,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb324 = LogThemeData.seed(
@@ -652,7 +652,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb213,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb323 = LogThemeData.seed(
@@ -661,7 +661,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb212,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb322 = LogThemeData.seed(
@@ -670,7 +670,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb211,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoOR,
+    depthThemes: defaultDepthThemesWoOR,
   );
 
   static final rgb321 = LogThemeData.seed(
@@ -679,7 +679,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb210,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoOR,
+    depthThemes: defaultDepthThemesWoOR,
   );
 
   static final rgb320 = LogThemeData.seed(
@@ -688,7 +688,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb210,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYO,
+    depthThemes: defaultDepthThemesWoYO,
   );
 
   static final rgb314 = LogThemeData.seed(
@@ -697,7 +697,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb203,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb313 = LogThemeData.seed(
@@ -706,7 +706,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb202,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb312 = LogThemeData.seed(
@@ -715,7 +715,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb201,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb311 = LogThemeData.seed(
@@ -724,7 +724,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb200,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb310 = LogThemeData.seed(
@@ -733,7 +733,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb200,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb304 = LogThemeData.seed(
@@ -742,7 +742,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb203,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoMR,
+    depthThemes: defaultDepthThemesWoMR,
   );
 
   static final rgb303 = LogThemeData.seed(
@@ -751,7 +751,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb202,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb302 = LogThemeData.seed(
@@ -760,7 +760,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb201,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb301 = LogThemeData.seed(
@@ -769,7 +769,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb200,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb300 = LogThemeData.seed(
@@ -778,7 +778,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb200,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb244 = LogThemeData.seed(
@@ -787,7 +787,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb133,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBG,
+    depthThemes: defaultDepthThemesWoBG,
   );
 
   static final rgb243 = LogThemeData.seed(
@@ -796,7 +796,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb132,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb242 = LogThemeData.seed(
@@ -805,7 +805,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb131,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb241 = LogThemeData.seed(
@@ -814,7 +814,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb130,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb240 = LogThemeData.seed(
@@ -823,7 +823,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb130,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb234 = LogThemeData.seed(
@@ -832,7 +832,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb123,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBR,
+    depthThemes: defaultDepthThemesWoBR,
   );
 
   static final rgb233 = LogThemeData.seed(
@@ -841,7 +841,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb122,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBR,
+    depthThemes: defaultDepthThemesWoBR,
   );
 
   static final rgb232 = LogThemeData.seed(
@@ -850,7 +850,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb121,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb231 = LogThemeData.seed(
@@ -859,7 +859,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb120,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb230 = LogThemeData.seed(
@@ -868,7 +868,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb120,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb224 = LogThemeData.seed(
@@ -877,7 +877,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb113,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb223 = LogThemeData.seed(
@@ -886,7 +886,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb112,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb222 = LogThemeData.seed(
@@ -895,7 +895,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb111,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoGR,
+    depthThemes: defaultMutedDepthThemesWoGR,
   );
 
   static final rgb221 = LogThemeData.seed(
@@ -904,7 +904,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb110,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYG,
+    depthThemes: defaultMutedDepthThemesWoYG,
   );
 
   static final rgb220 = LogThemeData.seed(
@@ -913,7 +913,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb110,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYG,
+    depthThemes: defaultMutedDepthThemesWoYG,
   );
 
   static final rgb214 = LogThemeData.seed(
@@ -922,7 +922,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb103,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBM,
+    depthThemes: defaultMutedDepthThemesWoBM,
   );
 
   static final rgb213 = LogThemeData.seed(
@@ -931,7 +931,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb102,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBM,
+    depthThemes: defaultMutedDepthThemesWoBM,
   );
 
   static final rgb212 = LogThemeData.seed(
@@ -940,7 +940,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb101,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb211 = LogThemeData.seed(
@@ -949,7 +949,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb100,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb210 = LogThemeData.seed(
@@ -958,7 +958,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb100,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYO,
+    depthThemes: defaultMutedDepthThemesWoYO,
   );
 
   static final rgb204 = LogThemeData.seed(
@@ -967,7 +967,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb103,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBM,
+    depthThemes: defaultMutedDepthThemesWoBM,
   );
 
   static final rgb203 = LogThemeData.seed(
@@ -976,7 +976,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb102,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBM,
+    depthThemes: defaultMutedDepthThemesWoBM,
   );
 
   static final rgb202 = LogThemeData.seed(
@@ -985,7 +985,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb101,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb201 = LogThemeData.seed(
@@ -994,7 +994,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb100,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoMR,
+    depthThemes: defaultMutedDepthThemesWoMR,
   );
 
   static final rgb200 = LogThemeData.seed(
@@ -1003,7 +1003,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb100,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoOR,
+    depthThemes: defaultMutedDepthThemesWoOR,
   );
 
   static final rgb144 = LogThemeData.seed(
@@ -1012,7 +1012,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb033,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBG,
+    depthThemes: defaultDepthThemesWoBG,
   );
 
   static final rgb143 = LogThemeData.seed(
@@ -1021,7 +1021,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb032,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final rgb142 = LogThemeData.seed(
@@ -1030,7 +1030,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb031,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb141 = LogThemeData.seed(
@@ -1039,7 +1039,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb030,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb140 = LogThemeData.seed(
@@ -1048,7 +1048,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb030,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb134 = LogThemeData.seed(
@@ -1057,7 +1057,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb023,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBR,
+    depthThemes: defaultDepthThemesWoBR,
   );
 
   static final rgb133 = LogThemeData.seed(
@@ -1066,7 +1066,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb022,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBR,
+    depthThemes: defaultDepthThemesWoBR,
   );
 
   static final rgb132 = LogThemeData.seed(
@@ -1075,7 +1075,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb021,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoGR,
+    depthThemes: defaultDepthThemesWoGR,
   );
 
   static final rgb131 = LogThemeData.seed(
@@ -1084,7 +1084,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb020,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb130 = LogThemeData.seed(
@@ -1093,7 +1093,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb020,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYG,
+    depthThemes: defaultMutedDepthThemesWoYG,
   );
 
   static final rgb124 = LogThemeData.seed(
@@ -1102,7 +1102,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb013,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb123 = LogThemeData.seed(
@@ -1111,7 +1111,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb012,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb122 = LogThemeData.seed(
@@ -1120,7 +1120,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb011,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBG,
+    depthThemes: defaultMutedDepthThemesWoBG,
   );
 
   static final rgb121 = LogThemeData.seed(
@@ -1129,7 +1129,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb010,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYG,
+    depthThemes: defaultMutedDepthThemesWoYG,
   );
 
   static final rgb120 = LogThemeData.seed(
@@ -1138,7 +1138,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb010,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYG,
+    depthThemes: defaultMutedDepthThemesWoYG,
   );
 
   static final rgb114 = LogThemeData.seed(
@@ -1147,7 +1147,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb003,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb113 = LogThemeData.seed(
@@ -1156,7 +1156,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb012,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb112 = LogThemeData.seed(
@@ -1165,7 +1165,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb011,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb104 = LogThemeData.seed(
@@ -1174,7 +1174,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb003,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb103 = LogThemeData.seed(
@@ -1183,7 +1183,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb002,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBM,
+    depthThemes: defaultMutedDepthThemesWoBM,
   );
 
   static final rgb102 = LogThemeData.seed(
@@ -1192,7 +1192,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb001,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBM,
+    depthThemes: defaultMutedDepthThemesWoBM,
   );
 
   static final rgb044 = LogThemeData.seed(
@@ -1201,7 +1201,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb033,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBG,
+    depthThemes: defaultDepthThemesWoBG,
   );
 
   static final rgb043 = LogThemeData.seed(
@@ -1210,7 +1210,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb032,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBG,
+    depthThemes: defaultDepthThemesWoBG,
   );
 
   static final rgb042 = LogThemeData.seed(
@@ -1219,7 +1219,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb031,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb041 = LogThemeData.seed(
@@ -1228,7 +1228,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb030,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb040 = LogThemeData.seed(
@@ -1237,7 +1237,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb030,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb034 = LogThemeData.seed(
@@ -1246,7 +1246,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb023,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBR,
+    depthThemes: defaultDepthThemesWoBR,
   );
 
   static final rgb033 = LogThemeData.seed(
@@ -1255,7 +1255,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb022,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBG,
+    depthThemes: defaultDepthThemesWoBG,
   );
 
   static final rgb032 = LogThemeData.seed(
@@ -1264,7 +1264,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb021,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoBG,
+    depthThemes: defaultDepthThemesWoBG,
   );
 
   static final rgb031 = LogThemeData.seed(
@@ -1273,7 +1273,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb020,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb030 = LogThemeData.seed(
@@ -1282,7 +1282,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb020,
     messageStyles: defaultMessageStyles,
     punctuation: defaultPunctuation,
-    dataLevelThemes: defaultDataLevelThemesWoYG,
+    depthThemes: defaultDepthThemesWoYG,
   );
 
   static final rgb024 = LogThemeData.seed(
@@ -1291,7 +1291,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb013,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb023 = LogThemeData.seed(
@@ -1300,7 +1300,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb012,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb022 = LogThemeData.seed(
@@ -1309,7 +1309,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb011,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBG,
+    depthThemes: defaultMutedDepthThemesWoBG,
   );
 
   static final rgb021 = LogThemeData.seed(
@@ -1318,7 +1318,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb010,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYG,
+    depthThemes: defaultMutedDepthThemesWoYG,
   );
 
   static final rgb020 = LogThemeData.seed(
@@ -1327,7 +1327,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb010,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoYG,
+    depthThemes: defaultMutedDepthThemesWoYG,
   );
 
   static final rgb014 = LogThemeData.seed(
@@ -1336,7 +1336,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb003,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb013 = LogThemeData.seed(
@@ -1345,7 +1345,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb002,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb012 = LogThemeData.seed(
@@ -1354,7 +1354,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb001,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb004 = LogThemeData.seed(
@@ -1363,7 +1363,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb003,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb003 = LogThemeData.seed(
@@ -1372,7 +1372,7 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb002,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static final rgb002 = LogThemeData.seed(
@@ -1381,78 +1381,78 @@ final class LogThemeData with Loggable {
     dim: ansi.rgb001,
     messageStyles: defaultMutedMessageStyles,
     punctuation: defaultMutedPunctuation,
-    dataLevelThemes: defaultMutedDataLevelThemesWoBR,
+    depthThemes: defaultMutedDepthThemesWoBR,
   );
 
   static const _black = ansi.Color256.gray0;
 
-  static const _redDataLevelTheme = LogDataLevelTheme(
+  static const _redDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb511, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb511),
     description: ansi.Style(foreground: ansi.Color256.rgb400),
   );
 
-  static const _redMutedLevelBlockTheme = LogDataLevelTheme(
+  static const _redMutedDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb410, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb410),
     description: ansi.Style(foreground: ansi.Color256.rgb300),
   );
 
-  static const _orangeDataLevelTheme = LogDataLevelTheme(
+  static const _orangeDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb530, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb530),
     description: ansi.Style(foreground: ansi.Color256.rgb420),
   );
 
-  static const _orangeMutedLevelBlockTheme = LogDataLevelTheme(
+  static const _orangeMutedDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb420, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb420),
     description: ansi.Style(foreground: ansi.Color256.rgb310),
   );
 
-  static const _yellowDataLevelTheme = LogDataLevelTheme(
+  static const _yellowDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb550, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb550),
     description: ansi.Style(foreground: ansi.Color256.rgb440),
   );
 
-  static const _yellowMutedDataLevelTheme = LogDataLevelTheme(
+  static const _yellowMutedDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb440, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb440),
     description: ansi.Style(foreground: ansi.Color256.rgb330),
   );
 
-  static const _greenDataLevelTheme = LogDataLevelTheme(
+  static const _greenDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb051, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb051),
     description: ansi.Style(foreground: ansi.Color256.rgb040),
   );
 
-  static const _greenMutedDataLevelTheme = LogDataLevelTheme(
+  static const _greenMutedDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb040, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb040),
     description: ansi.Style(foreground: ansi.Color256.rgb030),
   );
 
-  static const _blueDataLevelTheme = LogDataLevelTheme(
+  static const _blueDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb035, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb035),
     description: ansi.Style(foreground: ansi.Color256.rgb024),
   );
 
-  static const _blueMutedDataLevelTheme = LogDataLevelTheme(
+  static const _blueMutedDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb024, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb024),
     description: ansi.Style(foreground: ansi.Color256.rgb013),
   );
 
-  static const _magentaDataLevelTheme = LogDataLevelTheme(
+  static const _magentaDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb515, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb515),
     description: ansi.Style(foreground: ansi.Color256.rgb404),
   );
 
-  static const _magentaMutedDataLevelTheme = LogDataLevelTheme(
+  static const _magentaMutedDepthTheme = LogDepthTheme(
     brackets: ansi.Style(foreground: ansi.Color256.rgb404, bold: true),
     punctuation: ansi.Style(foreground: ansi.Color256.rgb404),
     description: ansi.Style(foreground: ansi.Color256.rgb303),
@@ -1461,144 +1461,144 @@ final class LogThemeData with Loggable {
   static const defaultPunctuation = ansi.rgb044;
   static const defaultMutedPunctuation = ansi.rgb033;
 
-  static const defaultDataLevelThemesWoBM = [
-    _yellowDataLevelTheme,
-    _greenDataLevelTheme,
-    _orangeDataLevelTheme,
-    _redDataLevelTheme,
+  static const defaultDepthThemesWoBM = [
+    _yellowDepthTheme,
+    _greenDepthTheme,
+    _orangeDepthTheme,
+    _redDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoBM = [
-    _yellowMutedDataLevelTheme,
-    _greenMutedDataLevelTheme,
-    _orangeMutedLevelBlockTheme,
-    _redMutedLevelBlockTheme,
+  static const defaultMutedDepthThemesWoBM = [
+    _yellowMutedDepthTheme,
+    _greenMutedDepthTheme,
+    _orangeMutedDepthTheme,
+    _redMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoBR = [
-    _yellowDataLevelTheme,
-    _greenDataLevelTheme,
-    _orangeDataLevelTheme,
-    _magentaDataLevelTheme,
+  static const defaultDepthThemesWoBR = [
+    _yellowDepthTheme,
+    _greenDepthTheme,
+    _orangeDepthTheme,
+    _magentaDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoBR = [
-    _yellowMutedDataLevelTheme,
-    _greenMutedDataLevelTheme,
-    _orangeMutedLevelBlockTheme,
-    _magentaMutedDataLevelTheme,
+  static const defaultMutedDepthThemesWoBR = [
+    _yellowMutedDepthTheme,
+    _greenMutedDepthTheme,
+    _orangeMutedDepthTheme,
+    _magentaMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoBG = [
-    _yellowDataLevelTheme,
-    _orangeDataLevelTheme,
-    _magentaDataLevelTheme,
-    _redDataLevelTheme,
+  static const defaultDepthThemesWoBG = [
+    _yellowDepthTheme,
+    _orangeDepthTheme,
+    _magentaDepthTheme,
+    _redDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoBG = [
-    _yellowMutedDataLevelTheme,
-    _orangeMutedLevelBlockTheme,
-    _magentaMutedDataLevelTheme,
-    _redMutedLevelBlockTheme,
+  static const defaultMutedDepthThemesWoBG = [
+    _yellowMutedDepthTheme,
+    _orangeMutedDepthTheme,
+    _magentaMutedDepthTheme,
+    _redMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoGR = [
-    _yellowDataLevelTheme,
-    _blueDataLevelTheme,
-    _orangeDataLevelTheme,
-    _magentaDataLevelTheme,
+  static const defaultDepthThemesWoGR = [
+    _yellowDepthTheme,
+    _blueDepthTheme,
+    _orangeDepthTheme,
+    _magentaDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoGR = [
-    _yellowMutedDataLevelTheme,
-    _blueMutedDataLevelTheme,
-    _orangeMutedLevelBlockTheme,
-    _magentaMutedDataLevelTheme,
+  static const defaultMutedDepthThemesWoGR = [
+    _yellowMutedDepthTheme,
+    _blueMutedDepthTheme,
+    _orangeMutedDepthTheme,
+    _magentaMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoYG = [
-    _blueDataLevelTheme,
-    _orangeDataLevelTheme,
-    _magentaDataLevelTheme,
-    _redDataLevelTheme,
+  static const defaultDepthThemesWoYG = [
+    _blueDepthTheme,
+    _orangeDepthTheme,
+    _magentaDepthTheme,
+    _redDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoYG = [
-    _blueMutedDataLevelTheme,
-    _orangeMutedLevelBlockTheme,
-    _magentaMutedDataLevelTheme,
-    _redMutedLevelBlockTheme,
+  static const defaultMutedDepthThemesWoYG = [
+    _blueMutedDepthTheme,
+    _orangeMutedDepthTheme,
+    _magentaMutedDepthTheme,
+    _redMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoYO = [
-    _blueDataLevelTheme,
-    _greenDataLevelTheme,
-    _magentaDataLevelTheme,
-    _redDataLevelTheme,
+  static const defaultDepthThemesWoYO = [
+    _blueDepthTheme,
+    _greenDepthTheme,
+    _magentaDepthTheme,
+    _redDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoYO = [
-    _blueMutedDataLevelTheme,
-    _greenMutedDataLevelTheme,
-    _magentaMutedDataLevelTheme,
-    _redMutedLevelBlockTheme,
+  static const defaultMutedDepthThemesWoYO = [
+    _blueMutedDepthTheme,
+    _greenMutedDepthTheme,
+    _magentaMutedDepthTheme,
+    _redMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoYR = [
-    _blueDataLevelTheme,
-    _greenDataLevelTheme,
-    _orangeDataLevelTheme,
-    _magentaDataLevelTheme,
+  static const defaultDepthThemesWoYR = [
+    _blueDepthTheme,
+    _greenDepthTheme,
+    _orangeDepthTheme,
+    _magentaDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoYR = [
-    _blueMutedDataLevelTheme,
-    _greenMutedDataLevelTheme,
-    _orangeMutedLevelBlockTheme,
-    _magentaMutedDataLevelTheme,
+  static const defaultMutedDepthThemesWoYR = [
+    _blueMutedDepthTheme,
+    _greenMutedDepthTheme,
+    _orangeMutedDepthTheme,
+    _magentaMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoOR = [
-    _yellowDataLevelTheme,
-    _blueDataLevelTheme,
-    _greenDataLevelTheme,
-    _magentaDataLevelTheme,
+  static const defaultDepthThemesWoOR = [
+    _yellowDepthTheme,
+    _blueDepthTheme,
+    _greenDepthTheme,
+    _magentaDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoOR = [
-    _yellowMutedDataLevelTheme,
-    _blueMutedDataLevelTheme,
-    _greenMutedDataLevelTheme,
-    _magentaMutedDataLevelTheme,
+  static const defaultMutedDepthThemesWoOR = [
+    _yellowMutedDepthTheme,
+    _blueMutedDepthTheme,
+    _greenMutedDepthTheme,
+    _magentaMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoOM = [
-    _yellowDataLevelTheme,
-    _blueDataLevelTheme,
-    _greenDataLevelTheme,
-    _redDataLevelTheme,
+  static const defaultDepthThemesWoOM = [
+    _yellowDepthTheme,
+    _blueDepthTheme,
+    _greenDepthTheme,
+    _redDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoOM = [
-    _yellowMutedDataLevelTheme,
-    _blueMutedDataLevelTheme,
-    _greenMutedDataLevelTheme,
-    _redMutedLevelBlockTheme,
+  static const defaultMutedDepthThemesWoOM = [
+    _yellowMutedDepthTheme,
+    _blueMutedDepthTheme,
+    _greenMutedDepthTheme,
+    _redMutedDepthTheme,
   ];
 
-  static const defaultDataLevelThemesWoMR = [
-    _yellowDataLevelTheme,
-    _blueDataLevelTheme,
-    _greenDataLevelTheme,
-    _orangeDataLevelTheme,
+  static const defaultDepthThemesWoMR = [
+    _yellowDepthTheme,
+    _blueDepthTheme,
+    _greenDepthTheme,
+    _orangeDepthTheme,
   ];
 
-  static const defaultMutedDataLevelThemesWoMR = [
-    _yellowMutedDataLevelTheme,
-    _blueMutedDataLevelTheme,
-    _greenMutedDataLevelTheme,
-    _orangeMutedLevelBlockTheme,
+  static const defaultMutedDepthThemesWoMR = [
+    _yellowMutedDepthTheme,
+    _blueMutedDepthTheme,
+    _greenMutedDepthTheme,
+    _orangeMutedDepthTheme,
   ];
 
   static const Map<String, ansi.Style> defaultMessageStyles = {
@@ -1643,7 +1643,7 @@ final class LogThemeData with Loggable {
     ansi.Style? dataKeyStyle,
     ansi.Style? dataValueStyle,
     ansi.Style? dataUnitsStyle,
-    List<LogDataLevelTheme>? dataLevelThemes,
+    List<LogDepthTheme>? depthThemes,
     ansi.Style? stackTraceActiveStyle,
     ansi.Style? stackTraceInactiveStyle,
     Set<String>? tags,
@@ -1673,7 +1673,7 @@ final class LogThemeData with Loggable {
       dataKeyStyle: dataKeyStyle ?? this.dataKeyStyle,
       dataValueStyle: dataValueStyle ?? this.dataValueStyle,
       dataUnitsStyle: dataUnitsStyle ?? this.dataUnitsStyle,
-      dataLevelThemes: dataLevelThemes ?? this.dataLevelThemes,
+      depthThemes: depthThemes ?? this.depthThemes,
       stackTraceActiveStyle:
           stackTraceActiveStyle ?? this.stackTraceActiveStyle,
       stackTraceInactiveStyle:
@@ -1688,7 +1688,7 @@ final class LogThemeData with Loggable {
     required ansi.Style emphasis,
     ansi.Style? bold,
     required ansi.Style dim,
-    List<LogDataLevelTheme>? dataBlockThemes,
+    List<LogDepthTheme>? dataBlockThemes,
   }) {
     bold ??= emphasis.bold;
     inverse ??= ansi.Style(
@@ -1708,7 +1708,7 @@ final class LogThemeData with Loggable {
       sectionStyle: bold,
       dataKeyStyle: emphasis,
       dataUnitsStyle: dim,
-      dataLevelThemes: dataBlockThemes,
+      depthThemes: dataBlockThemes,
       stackTraceActiveStyle: emphasis,
       stackTraceInactiveStyle: dim,
     );
@@ -1758,25 +1758,25 @@ final class LogThemeData with Loggable {
       ..style('dataKeyStyle', this, dataKeyStyle)
       ..style('dataValueStyle', this, dataValueStyle)
       ..style('dataUnitsStyle', this, dataUnitsStyle)
-      ..dataLevelThemes('dataLevelThemes', dataLevelThemes)
+      ..depthThemes('depthThemes', depthThemes)
       ..style('stackTraceActiveStyle', this, stackTraceActiveStyle)
       ..style('stackTraceInactiveStyle', this, stackTraceInactiveStyle)
       ..prop('tags', tags);
   }
 }
 
-final class LogDataLevelTheme {
+final class LogDepthTheme {
   final ansi.Style brackets;
   final ansi.Style punctuation;
   final ansi.Style description;
 
-  const LogDataLevelTheme({
+  const LogDepthTheme({
     required this.brackets,
     required this.punctuation,
     required this.description,
   });
 
-  const LogDataLevelTheme.noStyle()
+  const LogDepthTheme.noStyle()
       : brackets = const ansi.NoStyle(),
         punctuation = const ansi.NoStyle(),
         description = const ansi.NoStyle();
@@ -1827,10 +1827,7 @@ extension on LoggableData {
     prop(name, style, showName: showName, view: style(name));
   }
 
-  void dataLevelThemes(
-    String name,
-    List<LogDataLevelTheme> styles,
-  ) {
+  void depthThemes(String name, List<LogDepthTheme> styles) {
     final none = styles.fold(
       false,
       (none, style) =>
