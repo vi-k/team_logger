@@ -34,6 +34,8 @@ final class Log extends CustomLog with Loggable {
 
   bool get hasData => data is! LogNoData;
 
+  Set<String?> get traceIdGroups => traceIds.map((e) => e.group).toSet();
+
   @override
   void collectLoggableData(LoggableData data) {
     data
