@@ -147,15 +147,35 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
     registerLevel(_critical);
   }
 
-  final LevelLogger _v = LevelLogger(level: LogLevels.verbose, name: 'verbose');
-  final LevelLogger _d = LevelLogger(level: LogLevels.debug, name: 'debug');
-  final LevelLogger _i = LevelLogger(level: LogLevels.info, name: 'info');
-  final LevelLogger _w = LevelLogger(level: LogLevels.warning, name: 'warning');
-  final LevelLogger _e = LevelLogger(level: LogLevels.error, name: 'error');
+  final LevelLogger _v = LevelLogger(
+    level: LogLevels.verbose,
+    name: LogLevels.name(LogLevels.verbose),
+    shortName: LogLevels.shortName(LogLevels.verbose),
+  );
+  final LevelLogger _d = LevelLogger(
+    level: LogLevels.debug,
+    name: LogLevels.name(LogLevels.debug),
+    shortName: LogLevels.shortName(LogLevels.debug),
+  );
+  final LevelLogger _i = LevelLogger(
+    level: LogLevels.info,
+    name: LogLevels.name(LogLevels.info),
+    shortName: LogLevels.shortName(LogLevels.info),
+  );
+  final LevelLogger _w = LevelLogger(
+    level: LogLevels.warning,
+    name: LogLevels.name(LogLevels.warning),
+    shortName: LogLevels.shortName(LogLevels.warning),
+  );
+  final LevelLogger _e = LevelLogger(
+    level: LogLevels.error,
+    name: LogLevels.name(LogLevels.error),
+    shortName: LogLevels.shortName(LogLevels.error),
+  );
   final LevelLogger _critical = LevelLogger(
     level: LogLevels.critical,
-    name: 'critical',
-    shortName: '!',
+    name: LogLevels.name(LogLevels.critical),
+    shortName: LogLevels.shortName(LogLevels.critical),
   );
 
   LogFn get v => _v.log;
