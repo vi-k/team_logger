@@ -9,6 +9,12 @@
             "request": "launch",
             "type": "dart",
             "program": "example/team_logger_example.dart",
-        }
+        },
+        {
+            "name": "README: quick_start",
+            "request": "launch",
+            "type": "dart",
+            "program": "example/readme_examples/quick_start.dart",
+        },
     ]
 }

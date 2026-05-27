@@ -175,7 +175,7 @@ final class LogMainTheme with Loggable {
 
   static const _tagsStyle = ansi.gray5;
   static const _hiddenStyle =
-      ansi.Style(foreground: ansi.Color256.gray3, invisible: true);
+      ansi.Style(foreground: ansi.Color256.rgb000, invisible: true);
 
   static final LogMainTheme defaultActiveTheme = LogMainTheme._(
     verbose: LogThemeData.gray8,

@@ -31,7 +31,7 @@ final log = Logger('app')
         rows: const [
           // LogRow.singleLine(
           LogRow(
-            maxLength: 140,
+            maxLength: 100,
             maxLines: 20,
             children: [
               LogSequenceNum(),
@@ -39,7 +39,7 @@ final log = Logger('app')
               LogTime.onlyTime(),
               LogPath(),
               LogTraceId(),
-              LogMessage(),
+              LogMessage(showStackTrace: false),
             ],
             tail: [
               LogTags(),

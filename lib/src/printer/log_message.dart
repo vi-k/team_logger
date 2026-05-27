@@ -24,7 +24,7 @@ final class LogMessage implements LogBlock {
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
-    this.showStackTrace = false,
+    this.showStackTrace = true,
     this.stackTraceTerse = true,
     this.stackTraceShowIndexes = false,
     this.controlledPackages = const {},
