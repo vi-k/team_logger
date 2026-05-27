@@ -1,30 +1,27 @@
-import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
 
 // Initialize the logger with a custom layout
 final log = Logger('app')
   ..level = LogLevels.all
-  ..publisher = MultiPublisher([
-    ConsoleLogPrinter(
-      theme: LogMainTheme.defaultActiveTheme,
-      rows: const [
-        LogRow(
-          maxLength: 120,
-          children: [
-            LogSequenceNum(),
-            LogLevelName.short(),
-            LogTime.onlyTime(),
-            LogPath(),
-            LogTraceId(),
-            LogMessage(),
-          ],
-          tail: [
-            LogTags(),
-          ],
-        ),
-      ],
-    ),
-  ]);
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    rows: const [
+      LogRow(
+        maxLength: 120,
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(),
+        ],
+        tail: [
+          LogTags(),
+        ],
+      ),
+    ],
+  );
 
 Future<void> main() async {
   // print(
@@ -46,14 +43,14 @@ Future<void> main() async {
     paymentLog.i('Payment processed successfully');
   });
 
-  print(
-    ansi.rgb311('''
- ┬   ┬                ┬──────────   ┬────────  ──────┬────────────────────────────────────────────╯ ╰──────────────────┬
- │   ╰─ level         │             ╰─ trace ID      ╰─ message with data                                        tags ─╯
- ╰─ sequence number   ╰─ namespace path
+//   print(
+//     ansi.rgb311('''
+//  ┬   ┬                ┬──────────   ┬────────  ──────┬────────────────────────────────────────────╯ ╰──────────────────┬
+//  │   ╰─ level         │             ╰─ trace ID      ╰─ message with data                                        tags ─╯
+//  ╰─ sequence number   ╰─ namespace path
 
-╰─────────────────────────────────────────────────── maxLength: 120 ───────────────────────────────────────────────────╯'''),
-  );
+// ╰─────────────────────────────────────────────────── maxLength: 120 ───────────────────────────────────────────────────╯'''),
+//   );
 }
 
 Future<void> payment(int amount, String currency) async {

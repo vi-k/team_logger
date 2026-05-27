@@ -65,33 +65,30 @@ The following example configures theme, builds a custom console row layout,
 creates child loggers, and executes code in a trace zone.
 
 ```dart
-import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:team_logger/team_logger.dart';
 
 // Initialize the logger with a custom layout
 final log = Logger('app')
   ..level = LogLevels.all
-  ..publisher = MultiPublisher([
-    ConsoleLogPrinter(
-      theme: LogMainTheme.defaultActiveTheme,
-      rows: const [
-        LogRow(
-          maxLength: 120,
-          children: [
-            LogSequenceNum(),
-            LogLevelName.short(),
-            LogTime.onlyTime(),
-            LogPath(),
-            LogTraceId(),
-            LogMessage(),
-          ],
-          tail: [
-            LogTags(),
-          ],
-        ),
-      ],
-    ),
-  ]);
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    rows: const [
+      LogRow(
+        maxLength: 120,
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(),
+        ],
+        tail: [
+          LogTags(),
+        ],
+      ),
+    ],
+  );
 
 Future<void> main() async {
   log.i('App started');
