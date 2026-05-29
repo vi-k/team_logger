@@ -5,10 +5,10 @@ import 'package:stack_trace/stack_trace.dart';
 import 'package:team_logger/team_logger.dart';
 
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
-  hiddenStyle: LogMainTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
+  // hiddenStyle: LogMainTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
 );
 final inactiveTheme = LogMainTheme.defaultInactiveTheme.copyWith(
-  hiddenStyle: LogMainTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
+  // hiddenStyle: LogMainTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
   // minLevel: LogLevels.debug,
 );
 
