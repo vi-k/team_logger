@@ -5,16 +5,39 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "team_logger",
+            "name": "example",
             "request": "launch",
             "type": "dart",
-            "program": "example/team_logger_example.dart",
+            "cwd": "example",
+            "program": "bin/example.dart",
         },
         {
-            "name": "README: quick_start",
+            "name": "README: quick start",
             "request": "launch",
             "type": "dart",
-            "program": "example/readme_examples/quick_start.dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/quick_start.dart",
+        },
+        {
+            "name": "README: trace",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/trace.dart",
+        },
+        {
+            "name": "README: data",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/data.dart",
+        },
+        {
+            "name": "README: loggable",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/loggable.dart",
         },
     ]
 }

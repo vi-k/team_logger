@@ -1,9 +1,8 @@
 import 'dart:async';
 
+import 'package:example/data.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:team_logger/team_logger.dart';
-
-import 'data.dart';
 
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
   hiddenStyle: LogMainTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
@@ -17,56 +16,50 @@ final logStorage = LogStorage(maxCount: 100);
 
 final log = Logger('app')
   ..level = LogLevels.all
-  ..publisher = MultiPublisher(
-    [
-      ConsoleLogPrinter(
-        theme: theme,
-        inactiveTheme: inactiveTheme,
-        isLogActive: (log) => true,
-        // activeLevel: LogLevels.error,
-        // activeLoggers: {'events'},
-        // activeTraceGroups: {'feature'},
-        // activeTags: {'response'},
-        // isLogActive: (log) => log.hasData,
-        rows: const [
-          // LogRow.singleLine(
-          LogRow(
-            maxLength: 100,
-            maxLines: 20,
-            children: [
-              LogSequenceNum(),
-              LogLevelName.short(),
-              LogTime.onlyTime(),
-              LogPath(),
-              LogTraceId(),
-              LogMessage(showStackTrace: false),
-            ],
-            tail: [
-              LogTags(),
-            ],
-          ),
-          // LogRow.singleLine(
-          LogRow(
-            maxLength: 100,
-            when: _hasStackTrace,
-            // alignTail: false,
-            children: [
-              LogSequenceNum(hidden: true),
-              LogLevelName.short(hidden: true),
-              LogTime.onlyTime(hidden: true),
-              LogPath(hidden: true),
-              LogTraceId(hidden: true),
-              LogStackTrace(),
-            ],
-            tail: [
-              LogTags(hidden: true),
-            ],
-          ),
-        ],
-      ),
-      logStorage,
-    ],
-  );
+  ..publisher = MultiPublisher([
+    ConsoleLogPrinter(
+      theme: theme,
+      inactiveTheme: inactiveTheme,
+      isLogActive: (log) => true,
+      // activeLevel: LogLevels.error,
+      // activeLoggers: {'events'},
+      // activeTraceGroups: {'feature'},
+      // activeTags: {'response'},
+      // isLogActive: (log) => log.hasData,
+      rows: const [
+        // LogRow.singleLine(
+        LogRow(
+          maxLength: 100,
+          maxLines: 20,
+          children: [
+            LogSequenceNum(),
+            LogLevelName.short(),
+            LogTime.onlyTime(),
+            LogPath(),
+            LogTraceId(),
+            LogMessage(showStackTrace: false),
+          ],
+          tail: [LogTags()],
+        ),
+        // LogRow.singleLine(
+        LogRow(
+          maxLength: 100,
+          when: _hasStackTrace,
+          // alignTail: false,
+          children: [
+            LogSequenceNum(hidden: true),
+            LogLevelName.short(hidden: true),
+            LogTime.onlyTime(hidden: true),
+            LogPath(hidden: true),
+            LogTraceId(hidden: true),
+            LogStackTrace(),
+          ],
+          tail: [LogTags(hidden: true)],
+        ),
+      ],
+    ),
+    logStorage,
+  ]);
 
 void main() {
   runZoned(
@@ -107,13 +100,10 @@ void f() {
         httpLog[level].log(
           Data.postUrl,
           traceId: httpTraceId,
-          data: LoggableMultiData(
-            {
-              '': Data.postBody,
-              'HEADERS': Data.postHeaders,
-            },
-            config: const LoggableConfig(collectionMaxLength: 2),
-          ),
+          data: LoggableMultiData({
+            '': Data.postBody,
+            'HEADERS': Data.postHeaders,
+          }, config: const LoggableConfig(collectionMaxLength: 2)),
           tags: ['post'],
         );
         httpLog[level].log(
@@ -143,10 +133,9 @@ void f() {
   );
   log.d(
     '',
-    data: LoggableMultiData(
-      {'JSON': Data.json},
-      config: const LoggableConfig(collectionMaxLength: 2),
-    ),
+    data: LoggableMultiData({
+      'JSON': Data.json,
+    }, config: const LoggableConfig(collectionMaxLength: 2)),
   );
   log.d(
     '',
@@ -164,11 +153,7 @@ void f() {
 
   log.d('$LogMainTheme', data: theme);
   for (final l in LogLevels.values) {
-    log[l].log(
-      '$LogTheme',
-      traceId: TraceId.auto('theme'),
-      data: theme[l],
-    );
+    log[l].log('$LogTheme', traceId: TraceId.auto('theme'), data: theme[l]);
   }
   log.d('LogMainTheme.noColors: ${LogMainTheme.noColors}');
   log.d('LogThemeData.noColors: ${LogThemeData.noColors}');
@@ -238,10 +223,7 @@ void f() {
   Loggable.unregisterTypeConverter<NotLoggableObject>();
   log.d('NotLoggableObject', data: notLoggableObject);
 
-  log.d(
-    'map',
-    data: {'a': 1, 'b': 2, 'c': 3},
-  );
+  log.d('map', data: {'a': 1, 'b': 2, 'c': 3});
   log.d(
     'built map',
     data: Loggable.mapBuilder()

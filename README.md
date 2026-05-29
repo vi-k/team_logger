@@ -128,52 +128,197 @@ Output:
 ![Quick Start](screenshots/quick_start_1.png)
 
 
-**Filter by sequence number**
+When filtering by sequence number **all lines** included in the message will be
+displayed:
 
-All lines included in the message will be displayed.
+![Quick Start. Filter by num](screenshots/quick_start_2.png)
 
-![Filter #1](screenshots/quick_start_2.png)
+When filtering by trace ID, all messages sent within `log.trace` scope and
+**all lines** within those messages will be displayed:
 
-**Filter by trace ID**
+![Quick Start. Filter by trace ID](screenshots/quick_start_3.png)
 
-All messages sent within `log.trace` scope will be displayed.
+When filtering by tag, all messages with tag `#http` and
+**all lines** within those messages will be displayed:
 
-![Filter #2](screenshots/quick_start_3.png)
-
-**Filter by tag**
-
-All messages with tag `#http` will be displayed.
-
-![Filter #3](screenshots/quick_start_4.png)
+![Quick Start. Filter by tag](screenshots/quick_start_4.png)
 
 ---
 
 ## Deep Dive
 
-### 1. Zone-Based Trace Propagation (`TraceId`)
+### 1. Trace Propagation (`TraceId`)
 
-Instead of passing correlation IDs manually through nested function calls, `team_logger` uses **Dart Zones** to associate a `TraceId` with all synchronous and asynchronous operations inside the execution context:
+#### Zone-Based trace propagation (`log.trace`)
+
+Instead of passing correlation IDs manually through nested function calls,
+`team_logger` uses **Dart Zones** to associate a `TraceId` with all synchronous
+and asynchronous operations inside the execution context:
 
 ```dart
-final searchTrace = TraceId.auto('search'); // Resolves to '#search-1'
+final searchTrace = TraceId.auto('search'); // resolves to '#search-1'
 
-log.trace(searchTrace, () async {
-  log.d('Searching database...');           // Captures and outputs '#search-1'
+await log.trace(searchTrace, () async {
+  log.d('Searching database...');    // captures and outputs '#search-1'
   await Future.delayed(Duration(milliseconds: 100));
-  log.i('Database fetch completed');        // Captures and outputs '#search-1'
+  log.i('Database fetch completed'); // captures and outputs '#search-1'
 });
 ```
 
+![log.trace](screenshots/trace_1.png)
+
+#### `TraceId` configurations
+
 Supported `TraceId` configurations:
-*   `TraceId.auto(group)`: Automatically incremented IDs scoped to a specific group name.
-*   `TraceId.global()`: Automatically incremented sequential IDs without a group prefix.
-*   `TraceId.manual(group, num)`: Pre-defined IDs, useful when matching external transaction identifiers.
+* `TraceId.auto(group)`: Automatically incremented IDs scoped to a specific
+  group name.
+* `TraceId.global()`: Automatically incremented sequential IDs without a group
+  prefix: `{1}`, `{2}`...
+* `TraceId.manual(group, num)`: Pre-defined IDs, useful when matching external transaction identifiers.
+
+![TraceId configurations](screenshots/trace_2.png)
+
+#### `TraceId` suffix
+
+A suffix can be added to any TraceID:
+
+```dart
+Future<Response> request(Uri uri) async {
+  final traceId = TraceId.auto('request');
+
+  log.i('$uri', traceId: traceId);
+  // ... request ...
+
+  // If request failed, retry:
+  for (var i = 0; i < 3; i++) {
+    log.w('$uri. Attempt #${i + 2}', traceId: traceId.withSuffix('${i + 2}'));
+    // ... retry ...
+  }
+}
+```
+
+![TraceId with suffix](screenshots/trace_3.png)
+
+#### `TraceId` laziness
+
+`TraceId.auto` and `TraceId.global` use lazy increment. In other words, the
+number is incremented only when `TraceId` is actually used:
+
+```dart
+log.level = LogLevels.all;
+
+log.d('Debug message', traceId: TraceId.auto('lazy'));   // lazy-1
+log.i('Info message', traceId: TraceId.auto('lazy'));    // lazy-2
+log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-3
+
+log.level = LogLevels.warning;
+
+log.d('Debug message', traceId: TraceId.auto('lazy'));   // not displayed
+log.i('Info message', traceId: TraceId.auto('lazy'));    // not displayed
+log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-4
+```
+
+![Laziness of TraceId](screenshots/trace_4.png)
 
 ---
 
-### 2. Formatting Complex Objects (`Loggable`)
+### 2. Data Output
 
-Implementing the `Loggable` mixin on your data models allows you to format objects with specific controls for property visibility, units, floating-point precision, and display format.
+#### A separate parameter for the data
+
+Typically, the output of data logging looks something like this:
+
+```dart
+const person = {'firstName': 'John', 'lastName': 'Smith', 'age': 42};
+log.d('Person: $person');
+```
+
+`team_logger` offers a different approach to data logging:
+
+```dart
+log.d('Person', data: person);
+```
+
+![Colorized data](screenshots/data_1.png)
+
+This will not only allow you to display a more readable message in the console,
+formatted using ANSI escape codes, but also make it easier to log the data to
+a database or analytics system.
+
+#### Deeply nested objects
+
+The color of the brackets changes dynamically depending on the nesting level
+to make nested structures easier to understand:
+
+```dart
+log.d(
+  'deeply nested',
+  data: {
+    'deeply': {
+      'nested': {'object': person},
+    },
+  },
+);
+```
+
+![Deeply nested objects](screenshots/data_2.png)
+
+#### Multi data
+
+The data can be divided into sections:
+
+```data
+log.d(
+  'Add new user',
+  data: LoggableMultiData({
+    'HEADERS': {'Content-Type': 'application/json'},
+    'BODY': person,
+  }),
+);
+```
+
+![Multi data](screenshots/data_3.png)
+
+#### Collection truncation & formatting
+
+Large lists or maps can be truncated dynamically to show only the boundaries
+(first and last elements) using `LoggableConfig`:
+
+```dart
+log.d(
+  'List',
+  data: [1.2, 2.3, 3.4, 4.5, 5.6],
+  config: const LoggableConfig(
+    collectionMaxLength: 3,
+    collectionShowLength: true,
+    collectionShowIndexes: true,
+  ),
+);
+
+log.d(
+  'Set',
+  data: {1.2, 2.3, 3.4, 4.5, 5.6},
+  config: const LoggableConfig(collectionMaxLength: 3),
+);
+
+log.d(
+  'Iterable',
+  data: [1.2, 2.3, 3.4, 4.5, 5.6].where((e) => true),
+  config: const LoggableConfig(collectionMaxLength: 3),
+);
+```
+
+![Collections truncation & formatting](screenshots/data_4.png)
+
+---
+
+### 3. Formatting Complex Objects
+
+#### `Loggable` mixin
+
+Implementing the `Loggable` mixin on your data models allows you to format
+objects with specific controls for property visibility, units, floating-point
+precision, and display format.
 
 ```dart
 final class UserPoint with Loggable {
@@ -229,25 +374,6 @@ log.d(
     ..prop('height', 1.80, units: 'm'),
 );
 // Output -> Quick Info: {weight: 85.5kg, height: 1.80m}
-```
-
----
-
-### 3. Collection Truncation & Formatting
-
-Large lists or maps can be truncated dynamically to show only the boundaries (first and last elements) using `LoggableConfig`:
-
-```dart
-log.d(
-  'Coordinates list',
-  data: [1.2, 2.3, 3.4, 4.5, 5.6],
-  config: const LoggableConfig(
-    collectionMaxLength: 3,         // Maximum items to print
-    collectionShowLength: true,     // Appends total item count (e.g. ₌₅)
-    collectionShowIndexes: true,    // Prefixes elements with subscript indexes (e.g. ₀:)
-  ),
-);
-// Output -> Coordinates list: [₌₅ ₀:1.2, ₁:2.3, …, ₄:5.6]
 ```
 
 ---
