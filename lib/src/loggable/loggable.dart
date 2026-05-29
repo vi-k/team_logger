@@ -207,7 +207,7 @@ abstract mixin class Loggable {
     }
   }
 
-  /// Преобразует список в строку в виде `[first, …, last] (n=N)`.
+  /// Преобразует список в строку в виде `[₌₅ ₀:first, …, ₄:last]`.
   ///
   /// See [efficientLengthIterableToString].
   static String listToString(
@@ -225,7 +225,7 @@ abstract mixin class Loggable {
         config: config,
       );
 
-  /// Преобразует набор в строку в виде `{first, …, last} (n=N)`.
+  /// Преобразует множество в строку в виде `{₌₅ ₀:first, …, ₄:last}`.
   ///
   /// See [efficientLengthIterableToString].
   static String setToString(
@@ -243,7 +243,7 @@ abstract mixin class Loggable {
         config: config,
       );
 
-  /// Преобразует коллекцию в строку в виде `(first, …, last) (n=N)`.
+  /// Преобразует коллекцию в строку в виде `(₌₅ ₀:first, …, ₄:last)`.
   ///
   /// Метод предназначен только для коллекций, которые имеют эффективную
   /// длину (например, [List], [Set]) и имеют эффективный доступ к последнему
@@ -261,12 +261,12 @@ abstract mixin class Loggable {
     String end = ')',
     LoggableConfig config = const LoggableConfig(),
   }) {
+    final collectionMaxLength = config.collectionMaxLength;
+    final collectionMaxStringLength = config.collectionMaxStringLength;
+
+    assert(collectionMaxLength == null || collectionMaxLength >= 1);
     assert(
-      config.collectionMaxLength == null || config.collectionMaxLength! >= 2,
-    );
-    assert(
-      config.collectionMaxStringLength == null ||
-          config.collectionMaxStringLength! > 0,
+      collectionMaxStringLength == null || collectionMaxStringLength > 0,
     );
     assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
@@ -301,8 +301,6 @@ abstract mixin class Loggable {
       buf.write(depthTheme.description(prefix));
     }
 
-    final collectionMaxLength = config.collectionMaxLength;
-    final collectionMaxStringLength = config.collectionMaxStringLength;
     if (collectionMaxStringLength == null && collectionMaxLength == null) {
       buf.write(
         resolvedCollectionShowIndexes && count > 1
@@ -325,56 +323,61 @@ abstract mixin class Loggable {
               : obj2str(iterator.current);
           buf.write(first);
 
-          // Последний, если есть, тоже выводим всегда.
-          final last = resolvedCollectionShowIndexes
-              ? indexedObj2str(count - 1, iterable.last)
-              : obj2str(iterable.last);
-          var length = startLength +
-              first.lengthWithoutEscapeCodes +
-              2 +
-              theme.main.ellipsis.length +
-              2 +
-              last.lengthWithoutEscapeCodes +
-              end.length;
-          var index = 1;
-          final fixedCollectionMaxLength = collectionMaxLength ?? count;
-          (StringBuffer, int)? copy;
-
-          while (index < fixedCollectionMaxLength - 1 && index < count - 1) {
-            iterator.moveNext();
-            final item = resolvedCollectionShowIndexes
-                ? indexedObj2str(index, iterator.current)
-                : obj2str(iterator.current);
-            length += 2 + item.lengthWithoutEscapeCodes;
-            if (collectionMaxStringLength != null &&
-                length > collectionMaxStringLength) {
-              if (length - 2 - theme.main.ellipsis.length >
-                  collectionMaxStringLength) {
-                break;
-              } else {
-                copy ??= (StringBuffer(buf.toString()), index);
-              }
-            }
-
-            buf
-              ..write(delimiter)
-              ..write(item);
-            index++;
-          }
-
-          if (index != count - 1) {
-            if (copy != null) {
-              (buf, index) = copy;
-            }
-
+          if (collectionMaxLength != null && collectionMaxLength <= 1) {
             buf
               ..write(delimiter)
               ..write(depthTheme.punctuation(theme.main.ellipsis));
-          }
+          } else {
+            final last = resolvedCollectionShowIndexes
+                ? indexedObj2str(count - 1, iterable.last)
+                : obj2str(iterable.last);
+            var length = startLength +
+                first.lengthWithoutEscapeCodes +
+                2 +
+                theme.main.ellipsis.length +
+                2 +
+                last.lengthWithoutEscapeCodes +
+                end.length;
+            var index = 1;
+            final fixedCollectionMaxLength = collectionMaxLength ?? count;
+            (StringBuffer, int)? copy;
 
-          buf
-            ..write(delimiter)
-            ..write(last);
+            while (index < fixedCollectionMaxLength - 1 && index < count - 1) {
+              iterator.moveNext();
+              final item = resolvedCollectionShowIndexes
+                  ? indexedObj2str(index, iterator.current)
+                  : obj2str(iterator.current);
+              length += 2 + item.lengthWithoutEscapeCodes;
+              if (collectionMaxStringLength != null &&
+                  length > collectionMaxStringLength) {
+                if (length - 2 - theme.main.ellipsis.length >
+                    collectionMaxStringLength) {
+                  break;
+                } else {
+                  copy ??= (StringBuffer(buf.toString()), index);
+                }
+              }
+
+              buf
+                ..write(delimiter)
+                ..write(item);
+              index++;
+            }
+
+            if (index != count - 1) {
+              if (copy != null) {
+                (buf, index) = copy;
+              }
+
+              buf
+                ..write(delimiter)
+                ..write(depthTheme.punctuation(theme.main.ellipsis));
+            }
+
+            buf
+              ..write(delimiter)
+              ..write(last);
+          }
         }
       }
     }
@@ -384,7 +387,7 @@ abstract mixin class Loggable {
     return buf.toString();
   }
 
-  /// Преобразует коллекцию в строку в виде `(first, …) (n=N)`.
+  /// Преобразует коллекцию в строку в виде `(₀:first, …)`.
   ///
   /// Если кол-во элементов в коллекции больше
   /// [LoggableConfig.collectionMaxLength] или длина строки больше
@@ -403,7 +406,7 @@ abstract mixin class Loggable {
     LoggableConfig config = const LoggableConfig(),
   }) {
     assert(
-      config.collectionMaxLength == null || config.collectionMaxLength! >= 2,
+      config.collectionMaxLength == null || config.collectionMaxLength! >= 1,
     );
     assert(
       config.collectionMaxStringLength == null ||
@@ -492,7 +495,7 @@ abstract mixin class Loggable {
             hasNext = iterator.moveNext();
           }
 
-          if (truncated || iterator.moveNext()) {
+          if (truncated || hasNext) {
             if (copy != null) {
               (buf, index) = copy;
             }
