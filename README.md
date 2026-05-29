@@ -125,23 +125,23 @@ Future<void> payment(int amount, String currency) async {
 
 Output:
 
-![Quick Start](screenshots/quick_start_1.png)
+![Quick start](screenshots/quick_start_1.png)
 
 
 When filtering by sequence number **all lines** included in the message will be
 displayed:
 
-![Quick Start. Filter by num](screenshots/quick_start_2.png)
+![Quick start. Filter by num](screenshots/quick_start_2.png)
 
 When filtering by trace ID, all messages sent within `log.trace` scope and
 **all lines** within those messages will be displayed:
 
-![Quick Start. Filter by trace ID](screenshots/quick_start_3.png)
+![Quick start. Filter by trace ID](screenshots/quick_start_3.png)
 
 When filtering by tag, all messages with tag `#http` and
 **all lines** within those messages will be displayed:
 
-![Quick Start. Filter by tag](screenshots/quick_start_4.png)
+![Quick start. Filter by tag](screenshots/quick_start_4.png)
 
 ---
 
@@ -149,7 +149,7 @@ When filtering by tag, all messages with tag `#http` and
 
 ### 1. Trace Propagation (`TraceId`)
 
-#### Zone-Based trace propagation (`log.trace`)
+#### Zone-Based Trace Propagation
 
 Instead of passing correlation IDs manually through nested function calls,
 `team_logger` uses **Dart Zones** to associate a `TraceId` with all synchronous
@@ -165,7 +165,7 @@ await log.trace(searchTrace, () async {
 });
 ```
 
-![log.trace](screenshots/trace_1.png)
+![Zone-based trace propagation](screenshots/trace_1.png)
 
 #### `TraceId` configurations
 
@@ -197,7 +197,7 @@ Future<Response> request(Uri uri) async {
 }
 ```
 
-![TraceId with suffix](screenshots/trace_3.png)
+![TraceId suffix](screenshots/trace_3.png)
 
 #### `TraceId` laziness
 
@@ -218,13 +218,13 @@ log.i('Info message', traceId: TraceId.auto('lazy'));    // not displayed
 log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-4
 ```
 
-![Laziness of TraceId](screenshots/trace_4.png)
+![TraceId laziness](screenshots/trace_4.png)
 
 ---
 
 ### 2. Data Output
 
-#### A separate parameter for the data
+#### Data Parameter
 
 Typically, the output of data logging looks something like this:
 
@@ -239,13 +239,13 @@ log.d('Person: $person');
 log.d('Person', data: person);
 ```
 
-![Colorized data](screenshots/data_1.png)
+![Data parameter](screenshots/data_1.png)
 
 This will not only allow you to display a more readable message in the console,
 formatted using ANSI escape codes, but also make it easier to log the data to
 a database or analytics system.
 
-#### Deeply nested objects
+#### Deeply Nested Objects
 
 The color of the brackets changes dynamically depending on the nesting level
 to make nested structures easier to understand:
@@ -263,7 +263,7 @@ log.d(
 
 ![Deeply nested objects](screenshots/data_2.png)
 
-#### Multi data
+#### Multi Data
 
 The data can be divided into sections:
 
@@ -279,7 +279,7 @@ log.d(
 
 ![Multi data](screenshots/data_3.png)
 
-#### Collection truncation & formatting
+#### Collection Truncation & Formatting
 
 Large lists or maps can be truncated dynamically to show only the boundaries
 (first and last elements) using `LoggableConfig`:
@@ -310,117 +310,335 @@ log.d(
 
 ![Collections truncation & formatting](screenshots/data_4.png)
 
+#### Formatting Settings
+
+You can use dot shorthand syntax for enums (default):
+
+```dart
+log.d(
+  'Enum',
+  data: MyEnum.value1,
+  config: LoggableConfig(enumDotShorthand: true),
+);
+log.d(
+  'Enum',
+  data: MyEnum.value2,
+  config: LoggableConfig(enumDotShorthand: false),
+);
+```
+
+![Formatting settings. Enum](screenshots/data_5.png)
+
+Numbers can be formatted in the
+[format](https://docs.python.org/3/library/string.html#format-string-syntax)/[sprintf](https://en.cppreference.com/w/c/io/fprintf)
+style (using the [format](https://pub.dev/packages/format) package):
+
+```dart
+log.d(
+  'Float number with fixed precision',
+  data: 1.23456789,
+  config: const LoggableConfig(doubleFormat: '.4f'),
+);
+
+log.d(
+  'Integer number with grouping',
+  data: 123456789,
+  config: const LoggableConfig(intFormat: ',d'),
+);
+
+Intl.defaultLocale = 'bn';
+log.d(
+  'Integer number (Bengali locale)',
+  data: 123456789,
+  config: const LoggableConfig(intFormat: ',n'),
+);
+```
+
+![Formatting settings. Numbers](screenshots/data_6.png)
+
+String can be displayed with or without quotation marks:
+
+```dart
+log.d(
+  'String',
+  data: 'abc',
+  config: const LoggableConfig(stringInQuotes: true),
+);
+log.d(
+  'String',
+  data: 'abc',
+  config: const LoggableConfig(stringInQuotes: false),
+);
+```
+
+![Formatting settings. Strings](screenshots/data_7.png)
+
 ---
 
 ### 3. Formatting Complex Objects
 
-#### `Loggable` mixin
+#### `Loggable` Mixin
 
 Implementing the `Loggable` mixin on your data models allows you to format
 objects with specific controls for property visibility, units, floating-point
 precision, and display format.
 
+The usual way:
+
 ```dart
-final class UserPoint with Loggable {
+final class Person {
+  final String name;
+  final int age;
+
+  const Person(this.name, this.age);
+
+  @override
+  String toString() => 'Person(name: $name, age: $age)';
+}
+
+log.d('Person (usual)', data: Person('John', 42));
+```
+
+The `team_logger` way:
+
+```dart
+final class Person with Loggable {
+  final String name;
+  final int age;
+
+  const Person(this.name, this.age);
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..prop('name', name)
+      ..prop('age', age);
+  }
+}
+
+log.d('Person (Loggable)', data: Person('John', 42));
+```
+
+Use together in [freezed](https://pub.dev/packages/freezed):
+
+```dart
+@freezed
+abstract class Person with _$Person, Loggable {
+  const Person._(); // define a private empty constructor
+
+  const factory Person(String name, int age) = _Person;
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..name = 'Person' // change the name, otherwise _Person will be used as the name
+      ..prop('name', name)
+      ..prop('age', age);
+  }
+}
+
+log.d('Person (freezed)', data: Person('John', 42));
+```
+
+![Loggable mixin](screenshots/loggable_1.png)
+
+#### Property Configuration
+
+Standard full view:
+
+```dart
+final class Point with Loggable {
   final double lat;
   final double lon;
 
-  const UserPoint(this.lat, this.lon);
+  const Point(this.lat, this.lon);
 
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..name = 'Point'
-      ..showName = false
-      ..fixed('lat', lat, 5, showName: false)
-      ..fixed('lon', lon, 5, showName: false);
+      ..fixed('lat', lat, 5)
+      ..fixed('lon', lon, 5);
   }
 }
 
-final class RouteInfo with Loggable {
-  final int distance;
-  final Duration duration;
-  final UserPoint location;
+final class Speed with Loggable {
+  final double value;
+  final double accuracy;
 
-  RouteInfo(this.distance, this.duration, this.location);
+  const Speed(this.value, this.accuracy);
 
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..name = 'RouteInfo'
-      ..prop('distance', distance, units: 'm')
+      ..prop('value', value)
+      ..prop('accuracy', accuracy);
+  }
+}
+
+
+log.d('Point (full)', data: Point(51.894167, 1.482222));
+log.d('Speed (full)', data: Speed(143, 2.5));
+```
+
+Short view:
+
+```dart
+final class Point with Loggable {
+  // ...
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..showName = false
+      ..fixed('lat', lat, 5, showName: false, units: '°')
+      ..fixed('lon', lon, 5, showName: false, units: '°');
+  }
+}
+
+final class Speed with Loggable {
+  final double value;
+  final double accuracy;
+
+  const Speed(this.value, this.accuracy);
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..showName = false
+      ..showBrackets = false
+      ..prop(
+        'value',
+        value,
+        showName: false,
+        view: '${value.toStringAsFixed(1)}±${accuracy.toStringAsFixed(1)}',
+        units: 'm/s',
+      )
+      ..prop('accuracy', accuracy, hidden: true); // For GUI
+  }
+}
+
+log.d('Point (short)', data: Point(51.894167, 1.482222));
+log.d('Speed (short)', data: Speed(143, 2.5));
+```
+
+![Property configuration](screenshots/loggable_2.png)
+
+#### Multi View
+
+```dart
+final class RouteInfo with Loggable {
+  final List<Point> points;
+  final Duration duration;
+  final double distance;
+
+  const RouteInfo({
+    required this.points,
+    required this.duration,
+    required this.distance,
+  });
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
       ..prop(
         'duration',
         duration,
-        view: LoggableView(duration.inSeconds, 'sec'),
+        view: LoggableMultiView([
+          LoggableView(duration),
+          LoggableView(duration.inMinutes, 'min'),
+        ]),
       )
-      ..prop('location', location);
+      ..prop(
+        'distance',
+        distance,
+        view: LoggableMultiView([
+          LoggableView(distance.toStringAsFixed(1), 'km'),
+          LoggableView((distance / 1.852).toStringAsFixed(1), 'NM'),
+        ]),
+      )
+      ..prop('points', points);
   }
 }
+
+final routeInfo = RouteInfo(
+  points: [Point(51.894167, 1.482222), Point(51.47, -0.179444)],
+  duration: Duration(minutes: 90),
+  distance: 124,
+);
+
+log.d('Route info', data: routeInfo);
 ```
 
-Formatting output:
-```text
-RouteInfo(distance: 120m, duration: 80sec, location: (43.24947, 76.93931))
-```
+![Multi view](screenshots/loggable_3.png)
 
 #### Map and Builder Helpers
-For quick property collection or third-party objects, use `Loggable.builder` or `Loggable.mapBuilder`:
+
+For quick property collection or third-party objects, use `Loggable.mapBuilder`
+or `Loggable.builder`:
+
 ```dart
+final class NotLoggableObject {
+  final double weight;
+  final double height;
+
+  NotLoggableObject(this.weight, this.height);
+}
+
+final notLoggableObject = NotLoggableObject(85.5, 1.80);
+
 log.d(
   'Quick Info',
   data: Loggable.mapBuilder()
-    ..prop('weight', 85.5, units: 'kg')
-    ..prop('height', 1.80, units: 'm'),
+    ..prop('weight', notLoggableObject.weight, units: 'kg')
+    ..prop('height', notLoggableObject.height, units: 'm'),
 );
-// Output -> Quick Info: {weight: 85.5kg, height: 1.80m}
+
+log.d(
+  'Quick Info',
+  data: Loggable.builder(notLoggableObject)
+    ..prop('weight', notLoggableObject.weight, units: 'kg')
+    ..prop('height', notLoggableObject.height, units: 'm'),
+);
 ```
+
+![Map and builder helpers](screenshots/loggable_4.png)
 
 ---
 
-### 4. Custom Type Converters
+#### Custom Type Converters
 
-To format third-party classes that cannot implement the `Loggable` mixin directly, register a `LoggableTypeConverter`:
+To format third-party classes that cannot implement the `Loggable` mixin
+directly, register a `LoggableTypeConverter`:
 
 ```dart
-class NotLoggableObject {
-  final String name;
-  const NotLoggableObject(this.name);
-}
-
 class MyConverter implements LoggableTypeConverter<NotLoggableObject> {
   @override
-  String call(NotLoggableObject obj, LogTheme theme, int depth, LoggableResolvedConfig config) {
-    return '${theme.data.dataNameStyle('NotLoggableObject')}(name: ${obj.name})';
+  String call(
+    NotLoggableObject obj,
+    LogTheme theme,
+    int depth,
+    LoggableResolvedConfig config,
+  ) {
+    final loggable = Loggable.builder(obj)
+      ..prop('weight', obj.weight, units: 'kg')
+      ..prop('height', obj.height, units: 'm');
+
+    return loggable.toLogString(theme: theme, depth: depth, config: config);
   }
 }
 
-// Register at application startup
-Loggable.registerTypeConverter<NotLoggableObject>(MyConverter());
+final notLoggableObject = NotLoggableObject(85.5, 1.80);
+log.d('NotLoggableObject (toString)', data: notLoggableObject);
+
+Loggable.registerTypeConverter(MyConverter());
+log.d('NotLoggableObject (MyConverter)', data: notLoggableObject);
 ```
+
+![Custom type converters](screenshots/loggable_5.png)
 
 ---
 
-### 5. Circular Buffer (`LogStorage`)
-
-`LogStorage` retains a fixed count of logs in memory. This is designed for capturing diagnostic snapshots, telemetry display in debug screens, or passing logs to local storage.
-
-```dart
-final logStorage = LogStorage(maxCount: 100);
-
-// Attach to the logger publisher
-log.publisher = MultiPublisher([
-  ConsoleLogPrinter(rows: [...]),
-  logStorage,
-]);
-
-// Retrieve the in-memory log history
-List<Log> history = logStorage.snapshot();
-```
-
----
-
-### 6. Colors & Dynamic Themes
+### 4. Colors & Dynamic Themes
 
 `team_logger` supports color-coded and structured console output using
 the [ansi_escape_codes](https://pub.dev/packages/ansi_escape_codes) package.
@@ -436,6 +654,7 @@ final inactiveTheme = LogMainTheme.defaultInactiveTheme; // Pre-configured dimme
 ```
 
 #### Color Themes & Palettes
+
 The package includes several pre-configured theme options:
 *   **Grayscale Palettes**: `LogThemeData.gray5` to `LogThemeData.gray20`, providing gray tones to match dark or light terminal backgrounds.
 *   **RGB Palettes**: Color configurations named after coordinate values, such as `rgb411` (red for errors), `rgb431` (gold for warnings), and `rgb234` (blue for info logs).
@@ -484,7 +703,7 @@ Nested elements shift themes sequentially (`depth % depthThemes.length`), allowi
 
 ---
 
-## Console BBCode Tags
+### 5. Console BBCode Tags
 
 The `BbCodeFormatter` parses BBCode tags in log messages to apply styles defined in the active theme:
 
@@ -494,6 +713,25 @@ The `BbCodeFormatter` parses BBCode tags in log messages to apply styles defined
 | `[success]Operation completed[/success]` | Success style (Green) |
 | `[error]Failure[/error]` | Error style (Red) |
 | `[warning]Caution[/warning]` | Warning style (Gold) |
+
+---
+
+### 6. Circular Buffer (`LogStorage`)
+
+`LogStorage` retains a fixed count of logs in memory. This is designed for capturing diagnostic snapshots, telemetry display in debug screens, or passing logs to local storage.
+
+```dart
+final logStorage = LogStorage(maxCount: 100);
+
+// Attach to the logger publisher
+log.publisher = MultiPublisher([
+  ConsoleLogPrinter(rows: [...]),
+  logStorage,
+]);
+
+// Retrieve the in-memory log history
+List<Log> history = logStorage.snapshot();
+```
 
 ---
 

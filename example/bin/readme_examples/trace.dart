@@ -1,26 +1,5 @@
+import 'package:example/readme_examples/log.dart';
 import 'package:team_logger/team_logger.dart';
-
-final log = Logger('app')
-  ..level = LogLevels.all
-  ..publisher = ConsoleLogPrinter(
-    theme: LogMainTheme.defaultActiveTheme,
-    rows: const [
-      LogRow(
-        maxLength: 80,
-        children: [
-          LogSequenceNum(),
-          LogLevelName.short(),
-          LogTime.onlyTime(),
-          LogPath(),
-          LogTraceId(),
-          LogMessage(),
-        ],
-        tail: [
-          LogTags(),
-        ],
-      ),
-    ],
-  );
 
 Future<void> main() async {
   print('----- Example with log.trace -----');

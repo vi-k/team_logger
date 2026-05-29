@@ -1,78 +1,34 @@
-import 'package:team_logger/team_logger.dart';
-
-final log = Logger('app')
-  ..level = LogLevels.all
-  ..publisher = ConsoleLogPrinter(
-    theme: LogMainTheme.defaultActiveTheme,
-    rows: const [
-      LogRow(
-        maxLength: 100,
-        children: [
-          LogSequenceNum(),
-          LogLevelName.short(),
-          LogTime.onlyTime(),
-          LogPath(),
-          LogTraceId(),
-          LogMessage(),
-        ],
-        tail: [
-          LogTags(),
-        ],
-      ),
-    ],
-  );
+import 'package:example/readme_examples/loggable/not_loggable1.dart'
+    as not_loggable1;
+import 'package:example/readme_examples/loggable/not_loggable2.dart'
+    as not_loggable2;
+import 'package:example/readme_examples/loggable/route_info.dart' as route;
+import 'package:example/readme_examples/loggable/person1.dart' as person1;
+import 'package:example/readme_examples/loggable/person2.dart' as person2;
+import 'package:example/readme_examples/loggable/person3.dart' as person3;
+import 'package:example/readme_examples/loggable/point1.dart' as point1;
+import 'package:example/readme_examples/loggable/point2.dart' as point2;
+import 'package:example/readme_examples/loggable/speed1.dart' as speed1;
+import 'package:example/readme_examples/loggable/speed2.dart' as speed2;
 
 Future<void> main() async {
-  const point1 = Point(51.894167, 1.482222);
-  const point2 = Point(51.47, -0.179444);
-  log.d('Sealand', data: point1);
-  log.d('London Heliport', data: point2);
+  print('----- Person -----');
+  person1.run();
+  person2.run();
+  person3.run();
 
-  const routeInfo = RouteInfo([point1, point2], Duration(minutes: 50), 124.5);
-  log.d('Route from Sealand to London Heliport', data: routeInfo);
-}
+  print('----- Full/short view -----');
+  point1.run();
+  speed1.run();
+  point2.run();
+  speed2.run();
 
-final class Point with Loggable {
-  final double lat;
-  final double lon;
+  print('----- Multi view -----');
+  route.run();
 
-  const Point(this.lat, this.lon);
+  print('----- mapBuilder/builder -----');
+  not_loggable1.run();
 
-  @override
-  void collectLoggableData(LoggableData data) {
-    data
-      ..showName = false
-      ..fixed('lat', lat, 5, showName: false)
-      ..fixed('lon', lon, 5, showName: false);
-  }
-}
-
-final class RouteInfo with Loggable {
-  final List<Point> points;
-  final Duration duration;
-  final double distance;
-
-  const RouteInfo(this.points, this.duration, this.distance);
-
-  @override
-  void collectLoggableData(LoggableData data) {
-    data
-      ..prop(
-        'duration',
-        duration,
-        view: LoggableView(duration.inMinutes, 'min'),
-      )
-      ..prop(
-        'distance',
-        distance,
-        view: LoggableMultiView(
-          [
-            LoggableView(distance.toStringAsFixed(1), 'km'),
-            LoggableView((distance / 1.852).toStringAsFixed(1), 'NM'),
-          ],
-          separator: ' / ',
-        ),
-      )
-      ..prop('points', points);
-  }
+  print('----- Type converter -----');
+  not_loggable2.run();
 }

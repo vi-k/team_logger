@@ -1,55 +1,33 @@
-import 'package:equatable/equatable.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:example/readme_examples/log.dart';
+import 'package:intl/intl.dart';
 import 'package:team_logger/team_logger.dart';
 
-part 'data.freezed.dart';
+Future<void> main() async {
+  const person = {'firstName': 'John', 'lastName': 'Smith', 'age': 42};
 
-final log = Logger('app')
-  ..level = LogLevels.all
-  ..publisher = ConsoleLogPrinter(
-    theme: LogMainTheme.defaultActiveTheme,
-    rows: const [
-      LogRow(
-        maxLength: 100,
-        children: [
-          LogSequenceNum(),
-          LogLevelName.short(),
-          LogTime.onlyTime(),
-          LogPath(),
-          LogTraceId(),
-          LogMessage(),
-        ],
-        tail: [LogTags()],
-      ),
-    ],
+  log.d('Person: $person');
+  log.d('Person', data: person);
+
+  print('----- Deeply nested objects -----');
+  log.d(
+    'deeply nested',
+    data: {
+      'deeply': {
+        'nested': {'object': person},
+      },
+    },
   );
 
-Future<void> main() async {
-  // const person = {'firstName': 'John', 'lastName': 'Smith', 'age': 42};
+  print('----- Multi data -----');
+  log.d(
+    'Add new user',
+    data: LoggableMultiData({
+      'HEADERS': {'Content-Type': 'application/json'},
+      'BODY': person,
+    }),
+  );
 
-  // log.d('Person: $person');
-  // log.d('Person', data: person);
-
-  // print('----- Deeply nested objects -----');
-  // log.d(
-  //   'deeply nested',
-  //   data: {
-  //     'deeply': {
-  //       'nested': {'object': person},
-  //     },
-  //   },
-  // );
-
-  // print('----- Multi data -----');
-  // log.d(
-  //   'Add new user',
-  //   data: LoggableMultiData({
-  //     'HEADERS': {'Content-Type': 'application/json'},
-  //     'BODY': person,
-  //   }),
-  // );
-
-  // print('----- Collections -----');
+  print('----- Collections -----');
 
   log.d(
     'List',
@@ -72,43 +50,49 @@ Future<void> main() async {
     data: [1.2, 2.3, 3.4, 4.5, 5.6].where((e) => true),
     config: const LoggableConfig(collectionMaxLength: 3),
   );
+
+  print('----- Formatting -----');
+
+  log.d(
+    'Enum',
+    data: MyEnum.value1,
+    config: LoggableConfig(enumDotShorthand: true),
+  );
+  log.d(
+    'Enum',
+    data: MyEnum.value2,
+    config: LoggableConfig(enumDotShorthand: false),
+  );
+
+  log.d(
+    'Float number with fixed precision',
+    data: 1.23456789,
+    config: const LoggableConfig(doubleFormat: '.4f'),
+  );
+  log.d(
+    'Integer number with grouping',
+    data: 123456789,
+    config: const LoggableConfig(intFormat: ',d'),
+  );
+
+  Intl.defaultLocale = 'bn';
+  log.d(
+    'Integer number (Bengali locale)',
+    data: 123456789,
+    config: const LoggableConfig(intFormat: ',n'),
+  );
+  Intl.defaultLocale = null;
+
+  log.d(
+    'String',
+    data: 'abc',
+    config: const LoggableConfig(stringInQuotes: true),
+  );
+  log.d(
+    'String',
+    data: 'abc',
+    config: const LoggableConfig(stringInQuotes: false),
+  );
 }
 
-final class Person1 {
-  final String name;
-  final int age;
-
-  const Person1(this.name, this.age);
-
-  @override
-  String toString() => 'Person1(name: $name, age: $age)';
-}
-
-final class Person2 extends Equatable {
-  final String name;
-  final int age;
-
-  const Person2(this.name, this.age);
-
-  @override
-  List<Object?> get props => [name, age];
-}
-
-@freezed
-abstract class Person3 with _$Person3 {
-  const factory Person3(String name, int age) = _Person3;
-}
-
-final class Person4 with Loggable {
-  final String name;
-  final int age;
-
-  const Person4(this.name, this.age);
-
-  @override
-  void collectLoggableData(LoggableData data) {
-    data
-      ..prop('name', name)
-      ..prop('age', age);
-  }
-}
+enum MyEnum { value1, value2 }
