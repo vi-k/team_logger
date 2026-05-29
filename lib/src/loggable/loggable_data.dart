@@ -299,12 +299,13 @@ final class Prop<T extends Object?> {
   }) {
     String name2str() => theme.data.dataKeyStyle(theme.formatValue(name));
 
+    final effectiveConfig = this.config.merge(config);
+
     final view = this.view;
     final viewStr = switch (view) {
       LoggableNoView() => null,
-      String() => view,
       LoggableView() => view.toLogString(value, theme: theme, depth: depth),
-      _ => view.toString(),
+      _ => '$view${Loggable.unitsToString(effectiveConfig.units, theme)}',
     };
 
     final valueStr = viewStr ??
@@ -312,8 +313,9 @@ final class Prop<T extends Object?> {
           value,
           theme: theme,
           depth: depth + 1 + depthCorrection,
-          config: this.config.merge(config),
+          config: effectiveConfig,
         );
+
     final styledValueStr = theme.formatValue(valueStr);
 
     final depthTheme = theme.depthTheme(depth);
