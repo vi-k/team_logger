@@ -7,13 +7,14 @@ environment:
   sdk: ^3.12.0
 
 dependencies:
-  freezed_annotation: ^3.1.0
+  ansi_escape_codes: ^3.1.2
   equatable: ^2.0.8
+  freezed_annotation: ^3.1.0
+  intl: ^0.20.2
   path: ^1.9.0
+  stack_trace: ^1.12.1
   team_logger:
     path: ../
-  stack_trace: ^1.12.1
-  intl: ^0.20.2
 
 dev_dependencies:
   build_runner: ^2.15.0

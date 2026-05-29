@@ -1,8 +1,6 @@
 import 'package:example/readme_examples/log.dart';
 import 'package:team_logger/team_logger.dart';
 
-import 'point2.dart';
-
 final class RouteInfo with Loggable {
   final Duration duration;
   final double distance;
