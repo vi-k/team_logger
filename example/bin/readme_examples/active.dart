@@ -4,21 +4,20 @@ import 'package:team_logger/team_logger.dart';
 
 void main() {
   print('----- Inactive theme -----');
-  initLog(inactiveTheme: LogMainTheme.defaultInactiveTheme, maxLength: 120);
+  initLog(inactiveTheme: LogMainTheme.defaultInactiveTheme);
   printLogs();
 
   print('----- By level -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
     activeLevel: LogLevels.info,
-    maxLength: 120,
   );
   printLogs();
 
   print('----- By logger -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-    maxLength: 120,
+
     activeLoggers: {'net'},
   );
   printLogs();
@@ -26,7 +25,7 @@ void main() {
   print('----- By trace -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-    maxLength: 120,
+
     activeTraceGroups: {'user', 'net'},
   );
   printLogs();
@@ -34,7 +33,7 @@ void main() {
   print('----- By tag -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-    maxLength: 120,
+
     activeTags: {'success'},
   );
   printLogs();
@@ -42,7 +41,7 @@ void main() {
   print('----- By callback -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-    maxLength: 120,
+
     isLogActive: (log) => log.hasData,
   );
   printLogs();
