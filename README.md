@@ -147,82 +147,313 @@ When filtering by tag, all messages with tag `#http` and
 
 ## Deep Dive
 
-### 1. Trace Propagation (`TraceId`)
+### 1. Message Layouting
 
-#### Zone-Based Trace Propagation
+Configuring log output layout is done through the `rows` parameter in the
+`ConsoleLogPrinter`. This parameter accepts a list of `LogRow` instances.
 
-Instead of passing correlation IDs manually through nested function calls,
-`team_logger` uses **Dart Zones** to associate a `TraceId` with all synchronous
-and asynchronous operations inside the execution context:
+`LogRow` consists of two optional lists: `children` and `tail`.
+- `children`: Elements that make up the main body of the log message.
+- `tail`: Elements that are appended to the main body, typically used for tags.
 
-```dart
-final searchTrace = TraceId.auto('search'); // resolves to '#search-1'
-
-await log.trace(searchTrace, () async {
-  log.d('Searching database...');    // captures and outputs '#search-1'
-  await Future.delayed(Duration(milliseconds: 100));
-  log.i('Database fetch completed'); // captures and outputs '#search-1'
-});
-```
-
-![Zone-based trace propagation](screenshots/trace_1.png)
-
-#### `TraceId` configurations
-
-Supported `TraceId` configurations:
-* `TraceId.auto(group)`: Automatically incremented IDs scoped to a specific
-  group name.
-* `TraceId.global()`: Automatically incremented sequential IDs without a group
-  prefix: `{1}`, `{2}`...
-* `TraceId.manual(group, num)`: Pre-defined IDs, useful when matching external transaction identifiers.
-
-![TraceId configurations](screenshots/trace_2.png)
-
-#### `TraceId` suffix
-
-A suffix can be added to any TraceID:
+Both `children` and `tail` accept a list of `LogElement` instances.
+`LogElement` is a class that represents a single log element, such as
+a sequence number, log level name, timestamp, trace ID, path, or message.
 
 ```dart
-Future<Response> request(Uri uri) async {
-  final traceId = TraceId.auto('request');
+import 'package:team_logger/team_logger.dart';
 
-  log.i('$uri', traceId: traceId);
-  // ... request ...
-
-  // If request failed, retry:
-  for (var i = 0; i < 3; i++) {
-    log.w('$uri. Attempt #${i + 2}', traceId: traceId.withSuffix('${i + 2}'));
-    // ... retry ...
-  }
-}
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    rows: const [
+      LogRow(
+        maxLength: 120,
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(),
+        ],
+        tail: [
+          LogTags(),
+        ],
+      ),
+    ],
+  );
 ```
 
-![TraceId suffix](screenshots/trace_3.png)
+The `maxLength` parameter limits the width of the log message. If the log
+message exceeds the `maxLength`, it will be wrapped to the next line.
 
-#### `TraceId` laziness
+The `LogElement` class has several subclasses that can be used to represent
+different log elements:
+- `LogSequenceNum()`: Sequence number of the log message.
+- `LogLevelName.short()`: Short name of the log level.
+- `LogTime.onlyTime()`: Time of the log message.
+- `LogPath()`: Path of the log message.
+- `LogTraceId()`: Trace ID of the log message.
+- `LogMessage()`: Message of the log message.
+- `LogTags()`: Tags of the log message.
 
-`TraceId.auto` and `TraceId.global` use lazy increment. In other words, the
-number is incremented only when `TraceId` is actually used:
+![Message layout](screenshots/layout_1.png)
+
+### 2. Colors & Dynamic Themes
+
+`team_logger` supports color-coded and structured console output using
+the [ansi_escape_codes](https://pub.dev/packages/ansi_escape_codes) package.
+
+#### Color Themes & Palettes
+
+You can use the default theme:
 
 ```dart
-log.level = LogLevels.all;
-
-log.d('Debug message', traceId: TraceId.auto('lazy'));   // lazy-1
-log.i('Info message', traceId: TraceId.auto('lazy'));    // lazy-2
-log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-3
-
-log.level = LogLevels.warning;
-
-log.d('Debug message', traceId: TraceId.auto('lazy'));   // not displayed
-log.i('Info message', traceId: TraceId.auto('lazy'));    // not displayed
-log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-4
+final theme = LogMainTheme.defaultActiveTheme;
+final log = Logger('app')
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: theme,
+      // ...
+    );
 ```
 
-![TraceId laziness](screenshots/trace_4.png)
+Or customize it to your liking using pre-made color palettes:
+
+* **Grayscale Palettes**: `LogThemeData.gray5` to `LogThemeData.gray20`,
+  providing gray tones to match dark or light terminal backgrounds.
+* **RGB Palettes**: Color configurations named after their RGB values, such as
+  `rgb411` (red for errors), `rgb431` (gold for warnings), and `rgb234` (blue
+  for info logs).
+
+```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  info: LogThemeData.rgb122,
+);
+```
+
+Or create your own palette:
+
+```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  info: LogThemeData.seed(
+    normal: ansi.rgb030,
+    emphasis: ansi.rgb252,
+    dim: ansi.rgb020,
+    punctuation: ansi.rgb550,
+    // ...
+  ),
+);
+```
+
+![Color themes & palettes](screenshots/themes_1.png)
+
+#### Dynamic Depth Color Shifting (`LogDepthTheme`)
+
+To improve readability of nested collections (maps, lists, or custom objects),
+`team_logger` supports depth-based color configurations. By specifying a list
+of `LogDepthTheme` configs, brackets, punctuation and description colors shift
+dynamically based on their nesting level:
+
+```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  info: LogThemeData.seed(
+    // ...
+    depthThemes: [
+      LogDepthTheme.yellow,
+      LogDepthTheme.orange,
+      LogDepthTheme.magenta,
+      LogDepthTheme.red,
+    ],
+  ),
+);
+```
+
+Or:
+
+```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  info: LogThemeData.seed(
+    // ...
+    depthThemes: [
+      LogDepthTheme(
+        brackets: ansi.gray20,
+        punctuation: ansi.gray20,
+        description: ansi.gray20,
+      ),
+      LogDepthTheme(
+        brackets: ansi.gray16,
+        punctuation: ansi.gray16,
+        description: ansi.gray16,
+      ),
+      LogDepthTheme(
+        brackets: ansi.gray12,
+        punctuation: ansi.gray12,
+        description: ansi.gray12,
+      ),
+      LogDepthTheme(
+        brackets: ansi.gray8,
+        punctuation: ansi.gray8,
+        description: ansi.gray8,
+      ),
+    ],
+  ),
+);
+```
+
+![Dynamic depth color shifting](screenshots/themes_2.png)
+
+#### No Colors
+
+To remove ANSI escape codes, use `LogMainTheme.noColors`:
+
+```dart
+final noColorsTheme = LogMainTheme.noColors;
+log = Logger('app')
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.noColors,
+      // ...
+    );
+```
+
+![No colors](screenshots/themes_3.png)
 
 ---
 
-### 2. Data Output
+### 3. Active vs. Inactive Mode
+
+To keep console output clean without losing execution context, `team_logger`
+supports Active and Inactive styling modes:
+
+* **Active Theme** (`theme`): Applied to logs that match active namespaces,
+  level thresholds, active trace groups, or tags.
+* **Inactive Theme** (`inactiveTheme`): Applied to other logs. These logs are
+  printed using lower-contrast colors, keeping background context visible
+  without cluttering the output of high-priority events.
+
+If `inactiveTheme` is added, all logs are automatically set to inactive:
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    inactiveTheme: LogMainTheme.defaultInactiveTheme, // Pre-configured dimmed theme
+    rows: const [
+      LogRow(
+        maxLength: 100,
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(),
+        ],
+        tail: [LogTags()],
+      ),
+    ],
+  );
+```
+
+![Inactive theme](screenshots/active_1.png)
+
+#### Activate By Level
+
+Logs can be activated based on various criteria. For example, based on
+a minimum level:
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    inactiveTheme: LogMainTheme.defaultInactiveTheme,
+    activeLevel: LogLevels.info,
+    // ...
+  );
+```
+
+![Activate by level](screenshots/active_2.png)
+
+#### Activate By Logger
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    inactiveTheme: LogMainTheme.defaultInactiveTheme,
+    activeLoggers: ['net'],
+    // ...
+  );
+```
+
+![Activate by logger](screenshots/active_3.png)
+
+#### Activate By Trace IDs
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    inactiveTheme: LogMainTheme.defaultInactiveTheme,
+    activeTraceGroups: {'user', 'net'},
+    // ...
+  );
+```
+
+![Activate by trace IDs](screenshots/active_4.png)
+
+#### Activate By Tags
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    inactiveTheme: LogMainTheme.defaultInactiveTheme,
+    activeTags: {'success'},
+    // ...
+  );
+```
+
+![Activate by tag](screenshots/active_5.png)
+
+#### Activate By Callback
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    inactiveTheme: LogMainTheme.defaultInactiveTheme,
+    isLogActive: (log) => log.hasData,
+    // ...
+  );
+```
+
+![Activate by callback](screenshots/active_6.png)
+
+---
+
+### 4. Console BBCode Tags
+
+The `BbCodeFormatter` parses BBCode tags in log messages to apply styles defined in the active theme:
+
+| Tag | Result |
+| :--- | :--- |
+| `[b]bold text[/b]` | Bold text |
+| `[success]Operation completed[/success]` | Success style (Green) |
+| `[error]Failure[/error]` | Error style (Red) |
+| `[warning]Caution[/warning]` | Warning style (Gold) |
+
+---
+
+### 5. Data Output
 
 #### Data Parameter
 
@@ -375,7 +606,7 @@ log.d(
 
 ---
 
-### 3. Formatting Complex Objects
+### 6. Formatting Complex Objects
 
 #### `Loggable` Mixin
 
@@ -496,10 +727,7 @@ final class Point with Loggable {
 }
 
 final class Speed with Loggable {
-  final double value;
-  final double accuracy;
-
-  const Speed(this.value, this.accuracy);
+  // ...
 
   @override
   void collectLoggableData(LoggableData data) {
@@ -513,7 +741,7 @@ final class Speed with Loggable {
         view: '${value.toStringAsFixed(1)}±${accuracy.toStringAsFixed(1)}',
         units: 'm/s',
       )
-      ..prop('accuracy', accuracy, hidden: true); // For GUI
+      ..prop('accuracy', accuracy, hidden: true); // for GUI
   }
 }
 
@@ -527,12 +755,10 @@ log.d('Speed (short)', data: Speed(143, 2.5));
 
 ```dart
 final class RouteInfo with Loggable {
-  final List<Point> points;
   final Duration duration;
   final double distance;
 
   const RouteInfo({
-    required this.points,
     required this.duration,
     required this.distance,
   });
@@ -555,13 +781,11 @@ final class RouteInfo with Loggable {
           LoggableView(distance.toStringAsFixed(1), 'km'),
           LoggableView((distance / 1.852).toStringAsFixed(1), 'NM'),
         ]),
-      )
-      ..prop('points', points);
+      );
   }
 }
 
 final routeInfo = RouteInfo(
-  points: [Point(51.894167, 1.482222), Point(51.47, -0.179444)],
   duration: Duration(minutes: 90),
   distance: 124,
 );
@@ -636,87 +860,82 @@ log.d('NotLoggableObject (MyConverter)', data: notLoggableObject);
 
 ![Custom type converters](screenshots/loggable_5.png)
 
----
+### 7. Trace Propagation (`TraceId`)
 
-### 4. Colors & Dynamic Themes
+#### Zone-Based Trace Propagation
 
-`team_logger` supports color-coded and structured console output using
-the [ansi_escape_codes](https://pub.dev/packages/ansi_escape_codes) package.
-
-#### Active vs. Inactive Mode
-To keep console output clean without losing execution context, `team_logger` supports Active and Inactive styling modes:
-*   **Active Theme** (`theme`): Applied to logs that match active namespaces, level thresholds, active trace groups, or tags.
-*   **Inactive Theme** (`inactiveTheme`): Applied to other logs. These logs are printed using lower-contrast colors (such as dimmed grays), keeping background context visible without cluttering the output of high-priority events.
+Instead of passing correlation IDs manually through nested function calls,
+`team_logger` uses **Dart Zones** to associate a `TraceId` with all synchronous
+and asynchronous operations inside the execution context:
 
 ```dart
-final activeTheme = LogMainTheme.defaultActiveTheme;
-final inactiveTheme = LogMainTheme.defaultInactiveTheme; // Pre-configured dimmed theme
+final searchTrace = TraceId.auto('search'); // resolves to '#search-1'
+
+await log.trace(searchTrace, () async {
+  log.d('Searching database...');    // captures and outputs '#search-1'
+  await Future.delayed(Duration(milliseconds: 100));
+  log.i('Database fetch completed'); // captures and outputs '#search-1'
+});
 ```
 
-#### Color Themes & Palettes
+![Zone-based trace propagation](screenshots/trace_1.png)
 
-The package includes several pre-configured theme options:
-*   **Grayscale Palettes**: `LogThemeData.gray5` to `LogThemeData.gray20`, providing gray tones to match dark or light terminal backgrounds.
-*   **RGB Palettes**: Color configurations named after coordinate values, such as `rgb411` (red for errors), `rgb431` (gold for warnings), and `rgb234` (blue for info logs).
+#### `TraceId` configurations
 
-#### Granular Component Styling
-`LogThemeData` allows you to customize the `ansi.Style` (foreground, background, bold, italic, underline) of each component:
+Supported `TraceId` configurations:
+* `TraceId.auto(group)`: Automatically incremented IDs scoped to a specific
+  group name.
+* `TraceId.global()`: Automatically incremented sequential IDs without a group
+  prefix: `{1}`, `{2}`...
+* `TraceId.manual(group, num)`: Pre-defined IDs, useful when matching external transaction identifiers.
+
+![TraceId configurations](screenshots/trace_2.png)
+
+#### `TraceId` suffix
+
+A suffix can be added to any TraceID:
 
 ```dart
-final myCustomTheme = LogThemeData.seed(
-  normal: const ansi.Style(foreground: ansi.rgb555), // White text
-  emphasis: const ansi.Style(foreground: ansi.rgb530, bold: true), // Orange text
-  dim: const ansi.Style(foreground: ansi.gray8), // Dimmed text
-  punctuation: const ansi.Style(foreground: ansi.rgb333), // Braces and colons
-  dataNameStyle: const ansi.Style(foreground: ansi.rgb245, italic: true), // Class names
-  dataKeyStyle: const ansi.Style(foreground: ansi.rgb444, bold: true), // Keys
-  dataValueStyle: const ansi.Style(foreground: ansi.rgb555), // Values
-  depthThemes: [
-    // Depth styling configurations
-  ],
-);
+Future<Response> request(Uri uri) async {
+  final traceId = TraceId.auto('request');
+
+  log.i('$uri', traceId: traceId);
+  // ... request ...
+
+  // If request failed, retry:
+  for (var i = 0; i < 3; i++) {
+    log.w('$uri. Attempt #${i + 2}', traceId: traceId.withSuffix('${i + 2}'));
+    // ... retry ...
+  }
+}
 ```
 
-#### Dynamic Depth Color Shifting (`LogDepthTheme`)
-To improve readability of nested collections (maps, lists, or custom objects), `team_logger` supports depth-based color configurations. By specifying a list of `LogDepthTheme` configs, brackets and punctuation colors shift dynamically based on their nesting level:
+![TraceId suffix](screenshots/trace_3.png)
+
+#### `TraceId` laziness
+
+`TraceId.auto` and `TraceId.global` use lazy increment. In other words, the
+number is incremented only when `TraceId` is actually used:
 
 ```dart
-final customDepthThemeData = LogThemeData.seed(
-  depthThemes: const [
-    LogDepthTheme(
-      brackets: ansi.rgb355, // Blue brackets at depth 0
-      punctuation: ansi.gray10,
-    ),
-    LogDepthTheme(
-      brackets: ansi.rgb535, // Purple brackets at depth 1
-      punctuation: ansi.gray8,
-    ),
-    LogDepthTheme(
-      brackets: ansi.rgb553, // Yellow brackets at depth 2
-      punctuation: ansi.gray6,
-    ),
-  ],
-);
+log.level = LogLevels.all;
+
+log.d('Debug message', traceId: TraceId.auto('lazy'));   // lazy-1
+log.i('Info message', traceId: TraceId.auto('lazy'));    // lazy-2
+log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-3
+
+log.level = LogLevels.warning;
+
+log.d('Debug message', traceId: TraceId.auto('lazy'));   // not displayed
+log.i('Info message', traceId: TraceId.auto('lazy'));    // not displayed
+log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-4
 ```
 
-Nested elements shift themes sequentially (`depth % depthThemes.length`), allowing distinct colors to mark different hierarchy levels.
-
----
-
-### 5. Console BBCode Tags
-
-The `BbCodeFormatter` parses BBCode tags in log messages to apply styles defined in the active theme:
-
-| Tag | Result |
-| :--- | :--- |
-| `[b]bold text[/b]` | Bold text |
-| `[success]Operation completed[/success]` | Success style (Green) |
-| `[error]Failure[/error]` | Error style (Red) |
-| `[warning]Caution[/warning]` | Warning style (Gold) |
+![TraceId laziness](screenshots/trace_4.png)
 
 ---
 
-### 6. Circular Buffer (`LogStorage`)
+### 8. Circular Buffer (`LogStorage`)
 
 `LogStorage` retains a fixed count of logs in memory. This is designed for capturing diagnostic snapshots, telemetry display in debug screens, or passing logs to local storage.
 

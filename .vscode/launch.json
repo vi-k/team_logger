@@ -19,11 +19,18 @@
             "program": "bin/readme_examples/quick_start.dart",
         },
         {
-            "name": "README: trace",
+            "name": "README: themes",
             "request": "launch",
             "type": "dart",
             "cwd": "example",
-            "program": "bin/readme_examples/trace.dart",
+            "program": "bin/readme_examples/themes.dart",
+        },
+        {
+            "name": "README: active & inactive",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/active.dart",
         },
         {
             "name": "README: data",
@@ -38,6 +45,13 @@
             "type": "dart",
             "cwd": "example",
             "program": "bin/readme_examples/loggable.dart",
+        },
+        {
+            "name": "README: trace",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/trace.dart",
         },
     ]
 }

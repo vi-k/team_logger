@@ -26,22 +26,27 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   ConsoleLogPrinter({
     LogMainTheme? theme,
     this.inactiveTheme,
-    this.activeLevel = LogLevels.off,
-    this.activeLoggers = const {},
-    this.activeTraceGroups = const {},
-    this.activeTags = const {},
+    int? activeLevel,
+    Set<String>? activeLoggers,
+    Set<String>? activeTraceGroups = const {},
+    Set<String>? activeTags = const {},
     this.isLogActive,
     required this.rows,
     this.output = print,
   })  : assert(
           inactiveTheme != null ||
-              activeLoggers.isEmpty &&
-                  activeTraceGroups.isEmpty &&
-                  activeTags.isEmpty &&
+              activeLevel == null &&
+                  activeLoggers == null &&
+                  activeTraceGroups == null &&
+                  activeTags == null &&
                   isLogActive == null,
           'inactiveTheme must be set first',
         ),
-        theme = theme ?? LogMainTheme.defaultActiveTheme;
+        theme = theme ?? LogMainTheme.defaultActiveTheme,
+        activeLevel = activeLevel ?? LogLevels.off,
+        activeLoggers = activeLoggers ?? {},
+        activeTraceGroups = activeTraceGroups ?? {},
+        activeTags = activeTags ?? {};
 
   bool _isLogActive(Log log) =>
       inactiveTheme == null ||
@@ -70,6 +75,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     final theme = main[log.level];
     final printer = _printers[(isActive, log.level)] ??= ansi.StackedPrinter(
       defaultStyle: theme.data.normal,
+      ansiCodesEnabled: main != LogMainTheme.noColors,
       output: output,
     );
 

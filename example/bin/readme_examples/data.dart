@@ -1,4 +1,4 @@
-import 'package:example/readme_examples/log.dart';
+import 'package:example/readme_examples/default_log.dart';
 import 'package:intl/intl.dart';
 import 'package:team_logger/team_logger.dart';
 

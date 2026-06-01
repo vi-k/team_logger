@@ -1,4 +1,4 @@
-import 'package:example/readme_examples/log.dart';
+import 'package:example/readme_examples/default_log.dart';
 
 final class Person {
   final String name;
