@@ -72,7 +72,7 @@ abstract final class Data {
         {'lat': '43.23288724409935', 'lon': '76.93205011077225'},
       ],
       'client_name': 'Salon',
-    }
+    },
   ];
 
   static const errorResponse = {'code': 50000, 'error': 'Something went wrong'};
@@ -274,6 +274,6 @@ final class ManualNotLoggableObjectConverter
       config: config,
     );
 
-    return '${theme.data.dataNameStyle('$NotLoggableObject')}$body';
+    return '${theme.data.nameStyle('$NotLoggableObject')}$body';
   }
 }

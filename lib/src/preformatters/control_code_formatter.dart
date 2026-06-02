@@ -10,10 +10,10 @@ final class ControlCodeFormatter with Loggable implements LogPreFormatter {
   const ControlCodeFormatter({this.excludeEscCode = true});
 
   @override
-  String call(LogThemeData theme, String text) {
+  String call(LogTheme theme, String text) {
     final buf = StringBuffer();
-    final open = theme.paddingStyle.open;
-    final close = theme.paddingStyle.close;
+    final open = theme.data.paddingStyle.open;
+    final close = theme.data.paddingStyle.close;
 
     for (final charCode in text.codeUnits) {
       final controlCode = ansi.ControlFunctionsC0.byIndex(charCode);

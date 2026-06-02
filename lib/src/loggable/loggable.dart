@@ -533,8 +533,8 @@ abstract mixin class Loggable {
       final key => obj2str(key),
     };
 
-    return '${theme.data.dataKeyStyle(key)}${depthTheme.punctuation(':')}'
-        ' ${theme.data.dataValueStyle(obj2str(entry.value))}';
+    return '${theme.data.keyStyle(key)}${depthTheme.punctuation(':')}'
+        ' ${theme.data.valueStyle(obj2str(entry.value))}';
   }
 
   static String mapToString(
@@ -611,7 +611,7 @@ abstract mixin class Loggable {
     String? units,
     LogTheme theme,
   ) =>
-      units == null ? '' : theme.data.dataUnitsStyle(theme.formatValue(units));
+      units == null ? '' : theme.data.unitsStyle(theme.formatValue(units));
 }
 
 final class _LoggableWrapper with Loggable {

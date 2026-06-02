@@ -7,3 +7,6 @@
 README:
 - lazy messages
 - output: print/log
+- Message Layouting
+- Circular Buffer
+- Console BBCode Tags

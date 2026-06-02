@@ -9,9 +9,10 @@ import '../preformatters/control_code_formatter.dart';
 import '../preformatters/log_pre_formatter.dart';
 import '../printer/extensions.dart';
 
-part 'log_theme_data.dart';
+part 'log_lazy_style.dart';
 part 'log_style.dart';
 part 'log_theme.dart';
+part 'log_theme_data.dart';
 
 typedef LogThemeFormatter<T extends Object?> = String Function(
   LogTheme theme,
@@ -35,6 +36,7 @@ final class LogMainTheme with Loggable {
   final LogThemeData _critical;
 
   final int minLevel;
+  final Map<String, LogLazyStyle> messageStyles;
   final ansi.Style traceIdStyle;
   final ansi.Style tagsStyle;
   final ansi.Style hiddenStyle;
@@ -65,6 +67,7 @@ final class LogMainTheme with Loggable {
     LogThemeData error = LogThemeData.noColors,
     LogThemeData critical = LogThemeData.noColors,
     this.minLevel = LogLevels.all,
+    this.messageStyles = defaultMessageStyles,
     this.traceIdStyle = _activeTraceIdStyle,
     this.tagsStyle = _tagsStyle,
     this.hiddenStyle = _hiddenStyle,
@@ -107,6 +110,7 @@ final class LogMainTheme with Loggable {
     LogThemeData warning = LogThemeData.noColors,
     LogThemeData error = LogThemeData.noColors,
     LogThemeData critical = LogThemeData.noColors,
+    this.messageStyles = defaultMessageStyles,
     this.traceIdStyle = const ansi.NoStyle(),
     this.tagsStyle = const ansi.NoStyle(),
     this.hiddenStyle = const ansi.NoStyle(),
@@ -136,7 +140,13 @@ final class LogMainTheme with Loggable {
         stackTraceTitle = defaultStackTraceTitle,
         stringInQuotes = true;
 
-  static const LogMainTheme noColors = LogMainTheme._();
+  static const LogMainTheme noColors = LogMainTheme._(
+    messageStyles: defaultNoColorsMessageStyles,
+  );
+
+  static const LogMainTheme noColorsNoBbCodes = LogMainTheme._(
+    messageStyles: defaultNoColorsNoBbCodesMessageStyles,
+  );
 
   LogTheme get verbose => LogTheme._(this, LogLevels.verbose);
 
@@ -213,6 +223,36 @@ final class LogMainTheme with Loggable {
     hiddenStyle: _hiddenStyle,
   );
 
+  static const defaultMessageStyles = {
+    'b': LogLazyStyle(_boldStyle),
+    'signal': LogLazyStyle.resolved(
+      ansi.Style(
+        background: ansi.Color256.rgb055,
+        foreground: ansi.Color256.rgb000,
+      ),
+    ),
+    'warning': LogLazyStyle(_warningStyle),
+    'error': LogLazyStyle(_errorStyle),
+  };
+
+  static const Map<String, LogLazyStyle> defaultNoColorsMessageStyles = {};
+
+  static const Map<String, LogLazyStyle> defaultNoColorsNoBbCodesMessageStyles =
+      {
+    'b': LogLazyStyle.resolved(ansi.NoStyle()),
+    'signal': LogLazyStyle.resolved(ansi.NoStyle()),
+    'success': LogLazyStyle.resolved(ansi.NoStyle()),
+    'warning': LogLazyStyle.resolved(ansi.NoStyle()),
+    'error': LogLazyStyle.resolved(ansi.NoStyle()),
+  };
+
+  static ansi.Style _boldStyle(LogTheme theme) => theme.data.bold;
+
+  static ansi.Style _errorStyle(LogTheme theme) => theme.main.error.data.normal;
+
+  static ansi.Style _warningStyle(LogTheme theme) =>
+      theme.main.warning.data.normal;
+
   static String _defaultCountFormatter(LogTheme theme, int count) =>
       '₌${subscript(count)}';
 
@@ -231,6 +271,7 @@ final class LogMainTheme with Loggable {
 
   LogMainTheme copyWith({
     int? minLevel,
+    Map<String, LogLazyStyle>? messageStyles,
     LogThemeData? verbose,
     LogThemeData? debug,
     LogThemeData? info,
@@ -261,6 +302,7 @@ final class LogMainTheme with Loggable {
   }) =>
       LogMainTheme(
         minLevel: minLevel ?? this.minLevel,
+        messageStyles: messageStyles ?? this.messageStyles,
         verbose: verbose ?? _verbose,
         debug: debug ?? _debug,
         info: info ?? _info,
@@ -295,6 +337,7 @@ final class LogMainTheme with Loggable {
   void collectLoggableData(LoggableData data) {
     data
       ..prop('minLevel', minLevel, view: LogLevels.name(minLevel))
+      ..lazyStyles('messageStyles', messageStyles)
       ..theme('verbose', _verbose)
       ..theme('debug', _debug)
       ..theme('info', _info)

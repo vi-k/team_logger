@@ -19,6 +19,8 @@ final log = Logger('app')
   ..publisher = MultiPublisher([
     ConsoleLogPrinter(
       theme: theme,
+      // theme: LogMainTheme.noColors,
+      // theme: LogMainTheme.noColorsNoBbCodes,
       inactiveTheme: inactiveTheme,
       isLogActive: (log) => true,
       // activeLevel: LogLevels.error,
@@ -29,7 +31,7 @@ final log = Logger('app')
       rows: const [
         // LogRow.singleLine(
         LogRow(
-          maxLength: 100,
+          maxLength: 120,
           maxLines: 20,
           children: [
             LogSequenceNum(),
@@ -93,7 +95,10 @@ void f() {
   for (var i = 0; i < 1; i++) {
     for (final level in LogLevels.values) {
       log.trace(TraceId.auto('feature'), () {
-        eventLog[level].log('Loggable object', data: Data.loggableObject);
+        eventLog[level].log(
+          'Loggable [signal]object[/signal]',
+          data: Data.loggableObject,
+        );
 
         final httpTraceId = TraceId.auto('http');
 
@@ -114,14 +119,12 @@ void f() {
           tags: ['response'],
         );
 
-        if (level >= LogLevels.error) {
-          httpLog[level].log(
-            '[500 Internal Server Error] ${Data.postUrl}',
-            traceId: httpTraceId,
-            data: Data.errorResponse,
-            tags: ['response', 'error'],
-          );
-        }
+        httpLog[level].log(
+          '[error][500 Internal Server Error][/error] ${Data.postUrl}',
+          traceId: httpTraceId,
+          data: Data.errorResponse,
+          tags: ['response', 'error'],
+        );
       });
     }
   }

@@ -191,14 +191,17 @@ message exceeds the `maxLength`, it will be wrapped to the next line.
 The `LogElement` class has several subclasses that can be used to represent
 different log elements:
 - `LogSequenceNum()`: Sequence number of the log message.
+- `LogLevelName.full()`: Full name of the log level.
 - `LogLevelName.short()`: Short name of the log level.
+- `LogTime.dateTime()`: Date and time of the log message.
+- `LogTime.iso8601()`: Date and time of the log message in ISO 8601 format.
 - `LogTime.onlyTime()`: Time of the log message.
 - `LogPath()`: Path of the log message.
 - `LogTraceId()`: Trace ID of the log message.
 - `LogMessage()`: Message of the log message.
 - `LogTags()`: Tags of the log message.
 
-![Message layout](screenshots/layout_1.png)
+<!-- ![Message layout](screenshots/layout_1.png) -->
 
 ### 2. Colors & Dynamic Themes
 
@@ -442,14 +445,16 @@ final log = Logger('app')
 
 ### 4. Console BBCode Tags
 
-The `BbCodeFormatter` parses BBCode tags in log messages to apply styles defined in the active theme:
+The `BbCodeFormatter` parses BBCode tags in log messages to apply styles
+defined in the active theme:
 
-| Tag | Result |
-| :--- | :--- |
-| `[b]bold text[/b]` | Bold text |
-| `[success]Operation completed[/success]` | Success style (Green) |
-| `[error]Failure[/error]` | Error style (Red) |
-| `[warning]Caution[/warning]` | Warning style (Gold) |
+| Tag                                      | Result        |
+|:-----------------------------------------|:--------------|
+| `[b]bold text[/b]`                       | Bold text     |
+| `[success]Operation completed[/success]` | Success style |
+| `[warning]Caution[/warning]`             | Warning style |
+| `[error]Failure[/error]`                 | Error style   |
+| `[signal]Signal[/signal]`                | Signal style  |
 
 ---
 

@@ -8,7 +8,7 @@ final class MultiLogPreFormatter with Loggable implements LogPreFormatter {
   const MultiLogPreFormatter(this.formatters);
 
   @override
-  String call(LogThemeData theme, String text) =>
+  String call(LogTheme theme, String text) =>
       formatters.fold(text, (text, formatter) => formatter(theme, text));
 
   @override

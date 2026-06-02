@@ -245,7 +245,7 @@ final class LoggableData {
 
     String name2str() {
       final name = _type.typeName ?? _type.value.toString();
-      return theme.data.dataNameStyle(valueFormat?.call(name) ?? name);
+      return theme.data.nameStyle(valueFormat?.call(name) ?? name);
     }
 
     String prop2str(Prop<Object?> p) => p.toLogString(
@@ -297,7 +297,7 @@ final class Prop<T extends Object?> {
     int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    String name2str() => theme.data.dataKeyStyle(theme.formatValue(name));
+    String name2str() => theme.data.keyStyle(theme.formatValue(name));
 
     final effectiveConfig = this.config.merge(config);
 

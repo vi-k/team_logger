@@ -8,13 +8,16 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
   const BbCodeFormatter();
 
   @override
-  String call(LogThemeData theme, String text) {
+  String call(LogTheme theme, String text) {
     final buf = StringBuffer();
     var last = 0;
 
     final re = _reExpando[theme] ??= RegExp(
       r'(?<prefix>(?:.)*?)\[(?<tag>'
-      '${theme.messageStyles.keys.join('|')}'
+      '${{
+        ...theme.data.messageStyles.keys,
+        ...theme.main.messageStyles.keys,
+      }.join('|')}'
       r')\](?<content>(?:.)*?)\[\/\k<tag>\]',
       dotAll: true,
     );
@@ -22,7 +25,7 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
 
     for (final m in matches) {
       final tag = m.namedGroup('tag')!;
-      final style = theme.messageStyles[tag];
+      final style = theme.messageStyle(tag);
       if (style == null) {
         return m[0]!;
       }

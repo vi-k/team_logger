@@ -11,7 +11,7 @@ final class LogThemeData with Loggable {
   final ansi.Style levelNameStyle;
   final ansi.Style timeStyle;
   final ansi.Style pathStyle;
-  final Map<String, ansi.Style> messageStyles;
+  final Map<String, LogLazyStyle> messageStyles;
   final ansi.Style controlCodesStyle;
   final ansi.Style quotesStyle;
   final ansi.Style colonStyle;
@@ -19,10 +19,10 @@ final class LogThemeData with Loggable {
   final ansi.Style lineBreakStyle;
   final ansi.Style paddingStyle;
   final ansi.Style sectionStyle;
-  final ansi.Style dataNameStyle;
-  final ansi.Style dataKeyStyle;
-  final ansi.Style dataValueStyle;
-  final ansi.Style dataUnitsStyle;
+  final ansi.Style nameStyle;
+  final ansi.Style keyStyle;
+  final ansi.Style valueStyle;
+  final ansi.Style unitsStyle;
   final List<LogDepthTheme> depthThemes;
   final ansi.Style stackTraceActiveStyle;
   final ansi.Style stackTraceInactiveStyle;
@@ -47,10 +47,10 @@ final class LogThemeData with Loggable {
     required this.lineBreakStyle,
     required this.paddingStyle,
     required this.sectionStyle,
-    required this.dataNameStyle,
-    required this.dataKeyStyle,
-    required this.dataValueStyle,
-    required this.dataUnitsStyle,
+    required this.nameStyle,
+    required this.keyStyle,
+    required this.valueStyle,
+    required this.unitsStyle,
     required this.depthThemes,
     required this.stackTraceActiveStyle,
     required this.stackTraceInactiveStyle,
@@ -59,16 +59,16 @@ final class LogThemeData with Loggable {
 
   LogThemeData.seed({
     required this.normal,
-    ansi.Style? inverse,
-    ansi.Style? bold,
     required this.emphasis,
     required this.dim,
     required this.punctuation,
-    this.sequenceNumStyle = const ansi.NoStyle(),
+    ansi.Style? bold,
+    ansi.Style? inverse,
+    ansi.Style? sequenceNumStyle,
     ansi.Style? levelNameStyle,
-    this.timeStyle = const ansi.NoStyle(),
+    ansi.Style? timeStyle,
     ansi.Style? pathStyle,
-    required Map<String, ansi.Style> messageStyles,
+    Map<String, LogLazyStyle>? messageStyles,
     ansi.Style? controlCodesStyle,
     ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
@@ -76,28 +76,30 @@ final class LogThemeData with Loggable {
     ansi.Style? lineBreakStyle,
     ansi.Style? paddingStyle,
     ansi.Style? sectionStyle,
-    this.dataNameStyle = const ansi.NoStyle(),
-    ansi.Style? dataKeyStyle,
-    this.dataValueStyle = const ansi.NoStyle(),
-    ansi.Style? dataUnitsStyle,
+    ansi.Style? nameStyle,
+    ansi.Style? keyStyle,
+    ansi.Style? valueStyle,
+    ansi.Style? unitsStyle,
     required this.depthThemes,
     ansi.Style? stackTraceActiveStyle,
     ansi.Style? stackTraceInactiveStyle,
-    this.tags = const {},
+    Set<String>? tags,
   })  : bold = bold ?? emphasis.bold,
         inverse = inverse ??
             ansi.Style(
               foreground: _black,
               background: normal.foregroundColor,
             ),
+        sequenceNumStyle = sequenceNumStyle ?? const ansi.NoStyle(),
         levelNameStyle = levelNameStyle ??
             inverse ??
             ansi.Style(
               foreground: _black,
               background: normal.foregroundColor,
             ),
+        timeStyle = timeStyle ?? const ansi.NoStyle(),
         pathStyle = pathStyle ?? emphasis,
-        messageStyles = Map.of(messageStyles)..['b'] = emphasis.bold,
+        messageStyles = messageStyles ?? defaultMessageStyles,
         controlCodesStyle = controlCodesStyle ?? punctuation,
         quotesStyle = quotesStyle ?? punctuation,
         colonStyle = colonStyle ?? punctuation,
@@ -105,23 +107,26 @@ final class LogThemeData with Loggable {
         lineBreakStyle = lineBreakStyle ?? punctuation,
         paddingStyle = paddingStyle ?? punctuation,
         sectionStyle = sectionStyle ?? emphasis.bold,
-        dataKeyStyle = dataKeyStyle ?? emphasis,
-        dataUnitsStyle = dataUnitsStyle ?? dim,
+        nameStyle = nameStyle ?? const ansi.NoStyle(),
+        keyStyle = keyStyle ?? emphasis,
+        valueStyle = valueStyle ?? const ansi.NoStyle(),
+        unitsStyle = unitsStyle ?? dim,
         stackTraceActiveStyle = stackTraceActiveStyle ?? emphasis,
-        stackTraceInactiveStyle = stackTraceInactiveStyle ?? dim;
+        stackTraceInactiveStyle = stackTraceInactiveStyle ?? dim,
+        tags = tags ?? const {};
 
   LogThemeData.inactiveSeed({
     required this.normal,
-    this.inverse = const ansi.NoStyle(),
+    ansi.Style? emphasis,
+    ansi.Style? dim,
+    ansi.Style? punctuation,
     ansi.Style? bold,
-    this.emphasis = const ansi.NoStyle(),
-    this.dim = const ansi.NoStyle(),
-    this.punctuation = const ansi.NoStyle(),
-    this.sequenceNumStyle = const ansi.NoStyle(),
+    ansi.Style? inverse,
+    ansi.Style? sequenceNumStyle,
     ansi.Style? levelNameStyle,
-    this.timeStyle = const ansi.NoStyle(),
+    ansi.Style? timeStyle,
     ansi.Style? pathStyle,
-    Map<String, ansi.Style> messageStyles = defaultInactiveMessageStyles,
+    Map<String, LogLazyStyle>? messageStyles,
     ansi.Style? controlCodesStyle,
     ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
@@ -129,35 +134,54 @@ final class LogThemeData with Loggable {
     ansi.Style? lineBreakStyle,
     ansi.Style? paddingStyle,
     ansi.Style? sectionStyle,
-    this.dataNameStyle = const ansi.NoStyle(),
-    ansi.Style? dataKeyStyle,
-    this.dataValueStyle = const ansi.NoStyle(),
-    ansi.Style? dataUnitsStyle,
-    this.depthThemes = const [
-      LogDepthTheme(
-        brackets: ansi.NoStyle(),
-        description: ansi.NoStyle(),
-        punctuation: ansi.NoStyle(),
-      ),
-    ],
+    ansi.Style? nameStyle,
+    ansi.Style? keyStyle,
+    ansi.Style? valueStyle,
+    ansi.Style? unitsStyle,
+    List<LogDepthTheme>? depthThemes,
     ansi.Style? stackTraceActiveStyle,
     ansi.Style? stackTraceInactiveStyle,
-    this.tags = const {},
-  })  : bold = bold ?? emphasis,
-        levelNameStyle = levelNameStyle ?? inverse,
-        pathStyle = pathStyle ?? emphasis,
-        messageStyles = Map.of(messageStyles)..['b'] = emphasis.bold,
-        controlCodesStyle = controlCodesStyle ?? punctuation,
-        quotesStyle = quotesStyle ?? punctuation,
-        colonStyle = colonStyle ?? punctuation,
-        ellipsisStyle = ellipsisStyle ?? punctuation,
-        lineBreakStyle = lineBreakStyle ?? punctuation,
-        paddingStyle = paddingStyle ?? punctuation,
-        sectionStyle = sectionStyle ?? emphasis.bold,
-        dataKeyStyle = dataKeyStyle ?? emphasis,
-        dataUnitsStyle = dataUnitsStyle ?? dim,
-        stackTraceActiveStyle = stackTraceActiveStyle ?? emphasis,
-        stackTraceInactiveStyle = stackTraceInactiveStyle ?? dim;
+    Set<String>? tags = const {},
+  })  : emphasis = emphasis ?? const ansi.NoStyle(),
+        dim = dim ?? const ansi.NoStyle(),
+        punctuation = punctuation ?? const ansi.NoStyle(),
+        bold = bold ?? emphasis?.bold ?? const ansi.NoStyle(),
+        inverse = inverse ??
+            ansi.Style(
+              foreground: _black,
+              background: normal.foregroundColor,
+            ),
+        sequenceNumStyle = sequenceNumStyle ?? const ansi.NoStyle(),
+        levelNameStyle = levelNameStyle ?? const ansi.NoStyle(),
+        timeStyle = timeStyle ?? const ansi.NoStyle(),
+        pathStyle = pathStyle ?? emphasis ?? const ansi.NoStyle(),
+        messageStyles = messageStyles ?? defaultInactiveMessageStyles,
+        controlCodesStyle =
+            controlCodesStyle ?? punctuation ?? const ansi.NoStyle(),
+        quotesStyle = quotesStyle ?? punctuation ?? const ansi.NoStyle(),
+        colonStyle = colonStyle ?? punctuation ?? const ansi.NoStyle(),
+        ellipsisStyle = ellipsisStyle ?? punctuation ?? const ansi.NoStyle(),
+        lineBreakStyle = lineBreakStyle ?? punctuation ?? const ansi.NoStyle(),
+        paddingStyle = paddingStyle ?? punctuation ?? const ansi.NoStyle(),
+        sectionStyle =
+            sectionStyle ?? bold ?? emphasis?.bold ?? const ansi.NoStyle(),
+        nameStyle = nameStyle ?? const ansi.NoStyle(),
+        keyStyle = keyStyle ?? emphasis ?? const ansi.NoStyle(),
+        valueStyle = valueStyle ?? const ansi.NoStyle(),
+        unitsStyle = unitsStyle ?? dim ?? const ansi.NoStyle(),
+        depthThemes = depthThemes ??
+            const [
+              LogDepthTheme(
+                brackets: ansi.NoStyle(),
+                description: ansi.NoStyle(),
+                punctuation: ansi.NoStyle(),
+              ),
+            ],
+        stackTraceActiveStyle =
+            stackTraceActiveStyle ?? emphasis ?? const ansi.NoStyle(),
+        stackTraceInactiveStyle =
+            stackTraceInactiveStyle ?? dim ?? const ansi.NoStyle(),
+        tags = tags ?? const {};
 
   static const LogThemeData noColors = LogThemeData(
     normal: ansi.NoStyle(),
@@ -170,7 +194,7 @@ final class LogThemeData with Loggable {
     levelNameStyle: ansi.NoStyle(),
     timeStyle: ansi.NoStyle(),
     pathStyle: ansi.NoStyle(),
-    messageStyles: {},
+    messageStyles: defaultNoColorsMessageStyles,
     controlCodesStyle: ansi.NoStyle(),
     quotesStyle: ansi.NoStyle(),
     colonStyle: ansi.NoStyle(),
@@ -178,14 +202,28 @@ final class LogThemeData with Loggable {
     lineBreakStyle: ansi.NoStyle(),
     paddingStyle: ansi.NoStyle(),
     sectionStyle: ansi.NoStyle(),
-    dataNameStyle: ansi.NoStyle(),
-    dataKeyStyle: ansi.NoStyle(),
-    dataValueStyle: ansi.NoStyle(),
-    dataUnitsStyle: ansi.NoStyle(),
+    nameStyle: ansi.NoStyle(),
+    keyStyle: ansi.NoStyle(),
+    valueStyle: ansi.NoStyle(),
+    unitsStyle: ansi.NoStyle(),
     depthThemes: [LogDepthTheme.noStyle()],
     stackTraceActiveStyle: ansi.NoStyle(),
     stackTraceInactiveStyle: ansi.NoStyle(),
   );
+
+  static const defaultMessageStyles = {
+    'success': LogLazyStyle.resolved(ansi.rgb050),
+  };
+
+  static const defaultMutedMessageStyles = {
+    'success': LogLazyStyle.resolved(ansi.rgb040),
+  };
+
+  static const defaultInactiveMessageStyles = {
+    'success': LogLazyStyle.resolved(ansi.rgb020),
+  };
+
+  static const Map<String, LogLazyStyle> defaultNoColorsMessageStyles = {};
 
   static final gray5 = LogThemeData.seed(
     normal: ansi.gray5,
@@ -1384,25 +1422,11 @@ final class LogThemeData with Loggable {
     depthThemes: LogDepthTheme.defaultMutedThemesWoBlueAndRed,
   );
 
-  static const _black = ansi.Color256.gray0;
-
   static const defaultPunctuation = ansi.rgb044;
+
   static const defaultMutedPunctuation = ansi.rgb033;
 
-  static const Map<String, ansi.Style> defaultMessageStyles = {
-    'b': ansi.Style(bold: true),
-    'success': ansi.rgb050,
-  };
-
-  static const Map<String, ansi.Style> defaultMutedMessageStyles = {
-    'b': ansi.Style(bold: true),
-    'success': ansi.rgb040,
-  };
-
-  static const Map<String, ansi.Style> defaultInactiveMessageStyles = {
-    'b': ansi.Style(bold: true),
-    'success': ansi.rgb020,
-  };
+  static const _black = ansi.Color256.gray0;
 
   LogThemeData copyWith({
     ansi.Style? normal,
@@ -1414,7 +1438,7 @@ final class LogThemeData with Loggable {
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
-    Map<String, ansi.Style>? messageStyles,
+    Map<String, LogLazyStyle>? messageStyles,
     ansi.Style? controlCodesStyle,
     ansi.Style? punctuation,
     String? colon,
@@ -1427,10 +1451,10 @@ final class LogThemeData with Loggable {
     String? padding,
     ansi.Style? paddingStyle,
     ansi.Style? sectionStyle,
-    ansi.Style? dataNameStyle,
-    ansi.Style? dataKeyStyle,
-    ansi.Style? dataValueStyle,
-    ansi.Style? dataUnitsStyle,
+    ansi.Style? nameStyle,
+    ansi.Style? keyStyle,
+    ansi.Style? valueStyle,
+    ansi.Style? unitsStyle,
     List<LogDepthTheme>? depthThemes,
     ansi.Style? stackTraceActiveStyle,
     ansi.Style? stackTraceInactiveStyle,
@@ -1457,10 +1481,10 @@ final class LogThemeData with Loggable {
       lineBreakStyle: lineBreakStyle ?? this.lineBreakStyle,
       paddingStyle: paddingStyle ?? this.paddingStyle,
       sectionStyle: sectionStyle ?? this.sectionStyle,
-      dataNameStyle: dataNameStyle ?? this.dataNameStyle,
-      dataKeyStyle: dataKeyStyle ?? this.dataKeyStyle,
-      dataValueStyle: dataValueStyle ?? this.dataValueStyle,
-      dataUnitsStyle: dataUnitsStyle ?? this.dataUnitsStyle,
+      nameStyle: nameStyle ?? this.nameStyle,
+      keyStyle: keyStyle ?? this.keyStyle,
+      valueStyle: valueStyle ?? this.valueStyle,
+      unitsStyle: unitsStyle ?? this.unitsStyle,
       depthThemes: depthThemes ?? this.depthThemes,
       stackTraceActiveStyle:
           stackTraceActiveStyle ?? this.stackTraceActiveStyle,
@@ -1476,7 +1500,7 @@ final class LogThemeData with Loggable {
     required ansi.Style emphasis,
     ansi.Style? bold,
     required ansi.Style dim,
-    List<LogDepthTheme>? dataBlockThemes,
+    List<LogDepthTheme>? depthThemes,
   }) {
     bold ??= emphasis.bold;
     inverse ??= ansi.Style(
@@ -1492,11 +1516,10 @@ final class LogThemeData with Loggable {
       dim: dim,
       levelNameStyle: inverse,
       pathStyle: emphasis,
-      messageStyles: Map.of(messageStyles)..['b'] = bold,
       sectionStyle: bold,
-      dataKeyStyle: emphasis,
-      dataUnitsStyle: dim,
-      depthThemes: dataBlockThemes,
+      keyStyle: emphasis,
+      unitsStyle: dim,
+      depthThemes: depthThemes,
       stackTraceActiveStyle: emphasis,
       stackTraceInactiveStyle: dim,
     );
@@ -1534,7 +1557,7 @@ final class LogThemeData with Loggable {
       ..style('levelNameStyle', this, levelNameStyle)
       ..style('timeStyle', this, timeStyle)
       ..style('pathStyle', this, pathStyle)
-      ..mapStyles('messageStyles', messageStyles)
+      ..lazyStyles('messageStyles', messageStyles)
       ..style('controlCodesStyle', this, controlCodesStyle)
       ..style('quotesStyle', this, quotesStyle)
       ..style('colonStyle', this, colonStyle)
@@ -1542,10 +1565,10 @@ final class LogThemeData with Loggable {
       ..style('lineBreakStyle', this, lineBreakStyle)
       ..style('paddingStyle', this, paddingStyle)
       ..style('sectionStyle', this, sectionStyle)
-      ..style('dataNameStyle', this, dataNameStyle)
-      ..style('dataKeyStyle', this, dataKeyStyle)
-      ..style('dataValueStyle', this, dataValueStyle)
-      ..style('dataUnitsStyle', this, dataUnitsStyle)
+      ..style('nameStyle', this, nameStyle)
+      ..style('keyStyle', this, keyStyle)
+      ..style('valueStyle', this, valueStyle)
+      ..style('unitsStyle', this, unitsStyle)
       ..depthThemes('depthThemes', depthThemes)
       ..style('stackTraceActiveStyle', this, stackTraceActiveStyle)
       ..style('stackTraceInactiveStyle', this, stackTraceInactiveStyle)
@@ -1852,10 +1875,19 @@ extension on LoggableData {
     prop(name, styles, view: '"$values"');
   }
 
-  void mapStyles(String name, Map<String, ansi.Style> styles) {
+  void lazyStyles(String name, Map<String, LogLazyStyle> styles) {
     final mapBuilder = Loggable.mapBuilder();
     for (final MapEntry(:key, value: style) in styles.entries) {
-      mapBuilder.prop(key, style, showName: false, view: style(key));
+      mapBuilder.prop(
+        key,
+        style,
+        showName: false,
+        view: switch (style) {
+          _LogResolvedStyle(:final style) => style(key),
+          _LogLazyStyle(:final call) =>
+            LoggableView.convert((_, theme, __) => call(theme)(key)),
+        },
+      );
     }
 
     prop(name, mapBuilder);

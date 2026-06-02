@@ -42,9 +42,19 @@ final class LogTheme with Loggable {
 
   AnsiPair get paddingAnsiPair => AnsiPair(main.padding, data.paddingStyle);
 
-  String formatValue(String value) => main.valueFormatter(data, value);
+  ansi.Style? messageStyle(String tag) => switch (data.messageStyles[tag]) {
+        _LogResolvedStyle(:final style) => style,
+        _LogLazyStyle(:final call) => call(this),
+        null => switch (main.messageStyles[tag]) {
+            _LogResolvedStyle(:final style) => style,
+            _LogLazyStyle(:final call) => call(this),
+            null => null,
+          },
+      };
 
-  String formatMessage(String value) => main.messageFormatter(data, value);
+  String formatValue(String value) => main.valueFormatter(this, value);
+
+  String formatMessage(String value) => main.messageFormatter(this, value);
 
   String formatIndex(int index) => main.indexFormatter(this, index);
 
