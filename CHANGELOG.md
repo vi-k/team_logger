@@ -1,6 +1,6 @@
-<!-- ## 0.2.0 -->
+## 0.2.0
 
-<!-- - Public release of the library. -->
+- Publish.
 
 ## 0.1.0-0.1.70
 
