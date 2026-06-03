@@ -19,6 +19,13 @@
             "program": "bin/readme_examples/quick_start.dart",
         },
         {
+            "name": "README: layout",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/layout.dart",
+        },
+        {
             "name": "README: themes",
             "request": "launch",
             "type": "dart",

@@ -42,20 +42,19 @@ formatting, and customizable styling themes.
 
 ---
 
-## Installation
+## Table of contents
 
-Add `team_logger` to your `pubspec.yaml` file:
-
-```yaml
-dependencies:
-  team_logger: ^0.1.69
-```
-
-Or run:
-
-```bash
-dart pub add team_logger
-```
+- [Quick Start](#quick-start)
+- [Deep Dive](#deep-dive)
+  - [1. Message Layouting](#1-message-layouting)
+  - [2. Colors & Dynamic Themes](#2-colors--dynamic-themes)
+  - [3. Active vs Inactive Modes](#3-active-vs-inactive-modes)
+  - [4. BBCode Tags](#4-bbcode-tags)
+  - [5. Data Output](#5-data-output)
+  - [6. Formatting Complex Objects](#6-formatting-complex-objects)
+  - [7. Trace Propagation (`TraceId`)](#7-trace-propagation-traceid)
+  - [8. Circular Buffer (`LogStorage`)](#8-circular-buffer-logstorage)
+- [License](#license)
 
 ---
 
@@ -127,7 +126,6 @@ Output:
 
 ![Quick start](screenshots/quick_start_1.png)
 
-
 When filtering by sequence number **all lines** included in the message will be
 displayed:
 
@@ -168,7 +166,7 @@ final log = Logger('app')
   ..publisher = ConsoleLogPrinter(
     rows: const [
       LogRow(
-        maxLength: 120,
+        maxLength: 100,
         children: [
           LogSequenceNum(),
           LogLevelName.short(),
@@ -183,10 +181,24 @@ final log = Logger('app')
       ),
     ],
   );
+
+log.d(
+  'User info',
+  traceId: TraceId.auto('user'),
+  data: {
+    'firstName': 'Alex',
+    'lastName': 'Brown',
+    'age': 30,
+    'sex': 'male',
+    'children': [
+      {'name': 'Mary', 'age': 5},
+      {'name': 'Bob', 'age': 2},
+    ],
+  },
+);
 ```
 
-The `maxLength` parameter limits the width of the log message. If the log
-message exceeds the `maxLength`, it will be wrapped to the next line.
+![Message layout](screenshots/layout_1.png)
 
 The `LogElement` class has several subclasses that can be used to represent
 different log elements:
@@ -201,7 +213,168 @@ different log elements:
 - `LogMessage()`: Message of the log message.
 - `LogTags()`: Tags of the log message.
 
-<!-- ![Message layout](screenshots/layout_1.png) -->
+The `maxLength` parameter limits the width of the log message. If the log
+message exceeds the `maxLength`, it will be wrapped to the next line.
+
+`LogMessage` takes up all the remaining space in the line. If you need to place
+something to the right of `LogMessage`, use the `tail` parameter (as is done
+for `LogTags`).
+
+#### Single line
+
+The message can be displayed as a single line (it will be wrapped by the
+terminal):
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    rows: const [
+      LogRow.singleLine(
+        children: [
+          // ...
+        ],
+      ),
+    ],
+  );
+```
+
+![Single line](screenshots/layout_2.png)
+
+A single-line log is harder to analyze visually, but its advantage is that it
+takes up only one line in your IDE’s console buffer. This is important when the
+buffer has a line limit (10,000 for VSCode/Antigravity) and there are a lot of
+logs. Such lines are also easier to filter: when filtering, the IDE will show
+you only those lines containing the text you're looking for, rather than the
+entire message if it spans multiple lines.
+
+#### Filter logs
+
+`team_logger` makes it a little easier to search for and filter messages by
+duplicating key message information in each line, but it hides this information
+so it doesn't interfere with log analysis:
+
+```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  hiddenStyle: ansi.rgb050,
+);
+```
+
+![Filter logs](screenshots/layout_3.png)
+
+This way, you'll always be able to filter by sequence number, level, time,
+namespace path, trace ID, and tags.
+
+When filtering by message content or data, you still won’t see the full
+message. But in this case, once you’ve found the log you’re looking for, you
+can always filter by its sequence number. Just remember that even if you can’t
+see the sequence number, it’s still there. Highlight it with your mouse and
+copy it to the clipboard, and paste it into the filter field.
+
+Some IDEs do not support the ANSI hidden style (Android Studio). In that case,
+you may need to adjust the `hiddenStyle` foreground color so that it matches
+the background of your IDE's debug console.
+
+#### Why do we need rows?
+
+When a log entry contains a stack trace, by default it is displayed within the
+`LogMessage`, directly below the message itself, strictly within the space
+allocated for the message:
+
+```dart
+void someOperation() {
+  try {
+    calcResult();
+  } on Object catch (error, stackTrace) {
+    log.d('Operation failed', error: error, stackTrace: stackTrace);
+  }
+}
+
+int calcResult() {
+  return 1 ~/ 0;
+}
+
+// ...
+
+someOperation();
+```
+
+![Stack trace inside message](screenshots/layout_4.png)
+
+And you may need more space for the stack trace. In that case, it’s best to
+move it to a separate row:
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    rows: [
+      const LogRow(
+        maxLength: 100,
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(showStackTrace: false), // remove stack trace from message
+        ],
+        tail: [LogTags()],
+      ),
+      LogRow(
+        when: (log) => log.stackTrace != null,
+        maxLength: 100,
+        children: [
+          // We remove any unnecessary information, keeping only the sequence
+          // number, but visually hiding it (by default, the first line is
+          // visible).
+          LogSequenceNum(hidden: true),
+          LogStackTrace(),
+        ],
+        // We'll keep the tags, but hide them.
+        tail: [LogTags(hidden: true)],
+      ),
+    ],
+  );
+```
+
+![Separate stack trace](screenshots/layout_5.png)
+
+#### Constraints
+
+Size constraints can be set for all elements:
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    rows: [
+      LogRow(
+        maxLength: 100,
+        children: [
+          LogSequenceNum(
+            // Reserving space for numbering
+            constraints: Constraints(min: 7),
+            // Align to the right
+            textAlign: LogTextAlign.right,
+          ),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(
+            // We make the space for the namespace path expand as new data is
+            // added, but we do not limit its growth
+            constraints: Constraints.growable(max: 20),
+          ),
+          LogTraceId(),
+          LogMessage(),
+        ],
+        tail: [LogTags()],
+      ),
+    ],
+  );
+```
+
+![Constraints](screenshots/layout_6.png)
 
 ### 2. Colors & Dynamic Themes
 
@@ -325,7 +498,7 @@ log = Logger('app')
 
 ---
 
-### 3. Active vs. Inactive Mode
+### 3. Active vs. Inactive Modes
 
 To keep console output clean without losing execution context, `team_logger`
 supports Active and Inactive styling modes:

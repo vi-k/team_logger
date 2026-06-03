@@ -3,6 +3,7 @@ import 'package:team_logger/team_logger.dart';
 late Logger log;
 
 void initLog({
+  int? level,
   LogMainTheme? theme,
   LogMainTheme? inactiveTheme,
   void Function(String)? output,
@@ -12,9 +13,10 @@ void initLog({
   Set<String>? activeTags,
   bool Function(Log log)? isLogActive,
   int? maxLength,
+  List<LogRow>? rows,
 }) {
   log = Logger('app')
-    ..level = LogLevels.all
+    ..level = level ?? LogLevels.all
     ..publisher = ConsoleLogPrinter(
       theme: theme ?? LogMainTheme.defaultActiveTheme,
       inactiveTheme: inactiveTheme,
@@ -24,19 +26,21 @@ void initLog({
       activeTraceGroups: activeTraceGroups,
       activeTags: activeTags,
       isLogActive: isLogActive,
-      rows: [
-        LogRow(
-          maxLength: maxLength ?? 100,
-          children: [
-            LogSequenceNum(),
-            LogLevelName.short(),
-            LogTime.onlyTime(),
-            LogPath(),
-            LogTraceId(),
-            LogMessage(),
+      rows:
+          rows ??
+          [
+            LogRow(
+              maxLength: maxLength ?? 100,
+              children: [
+                LogSequenceNum(),
+                LogLevelName.short(),
+                LogTime.onlyTime(),
+                LogPath(),
+                LogTraceId(),
+                LogMessage(),
+              ],
+              tail: [LogTags()],
+            ),
           ],
-          tail: [LogTags()],
-        ),
-      ],
     );
 }

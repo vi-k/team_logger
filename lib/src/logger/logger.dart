@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:logger_builder/logger_builder.dart';
+import 'package:meta/meta.dart';
 
 import '../loggable/loggable.dart';
 import '../loggable/loggable_config.dart';

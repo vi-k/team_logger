@@ -3,11 +3,13 @@
 - stackTrace переносить на след. строку, если не вмещается.
 - для Iterable параметр в конфиге, чтобы использовать
   efficientLengthIterableToString.
+- При ограничении сообщения (Constraints), ellipsis "…" появляется на каждой
+  строке, даже на невидимых
 
 README:
 
 - [x] Quick start
-- [ ] 1. Message Layouting
+- [x] 1. Message Layouting
 - [x] 2. Colors & Dynamic Themes
 - [x] 3. Active vs. Inactive Mode
 - [x] 4. Console BBCode Tags
@@ -17,3 +19,4 @@ README:
 - [x] 8. Circular Buffer (`LogStorage`)
 - [ ] lazy messages
 - [ ] output: print/log
+- [ ] zones

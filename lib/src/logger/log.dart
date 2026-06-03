@@ -8,7 +8,8 @@ final class LogNoData {
 }
 
 final class Log extends CustomLog with Loggable {
-  static int _lastSequenceNum = 0;
+  @visibleForTesting
+  static int lastSequenceNum = 0;
   static const noData = LogNoData._();
 
   final DateTime time;
@@ -29,7 +30,7 @@ final class Log extends CustomLog with Loggable {
     super.error,
     super.stackTrace,
     super.zone,
-  })  : sequenceNum = ++_lastSequenceNum,
+  })  : sequenceNum = ++lastSequenceNum,
         time = clock.now();
 
   bool get hasData => data is! LogNoData;
