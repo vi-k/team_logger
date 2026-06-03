@@ -9,7 +9,7 @@ import 'log_vertical_align.dart';
 abstract interface class LogTime implements LogBlock {
   const factory LogTime.dateTime({
     DateTime Function(Log log)? getTime,
-    LogStyle? style,
+    LogStyles? styles,
     Constraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
@@ -23,7 +23,7 @@ abstract interface class LogTime implements LogBlock {
 
   const factory LogTime.iso8601({
     DateTime Function(Log log)? getTime,
-    LogStyle? style,
+    LogStyles? styles,
     Constraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
@@ -36,7 +36,7 @@ abstract interface class LogTime implements LogBlock {
 
   const factory LogTime.onlyTime({
     DateTime Function(Log log)? getTime,
-    LogStyle? style,
+    LogStyles? styles,
     Constraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
@@ -67,7 +67,7 @@ abstract interface class LogTime implements LogBlock {
 
 final class _DateTime implements LogTime {
   final DateTime Function(Log log)? getTime;
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -80,7 +80,7 @@ final class _DateTime implements LogTime {
 
   const _DateTime({
     this.getTime,
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -96,7 +96,7 @@ final class _DateTime implements LogTime {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.data.timeStyle;
+        : styles?[log.level] ?? theme.data.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -122,7 +122,7 @@ final class _DateTime implements LogTime {
 
 final class _Iso8601 implements LogTime {
   final DateTime Function(Log log)? getTime;
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -134,7 +134,7 @@ final class _Iso8601 implements LogTime {
 
   const _Iso8601({
     this.getTime,
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -149,7 +149,7 @@ final class _Iso8601 implements LogTime {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.data.timeStyle;
+        : styles?[log.level] ?? theme.data.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();
@@ -170,7 +170,7 @@ final class _Iso8601 implements LogTime {
 
 final class _OnlyTime implements LogTime {
   final DateTime Function(Log log)? getTime;
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -183,7 +183,7 @@ final class _OnlyTime implements LogTime {
 
   const _OnlyTime({
     this.getTime,
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -199,7 +199,7 @@ final class _OnlyTime implements LogTime {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.data.timeStyle;
+        : styles?[log.level] ?? theme.data.timeStyle;
     var time = getTime?.call(log) ?? log.time;
     if (utc) {
       time = time.toUtc();

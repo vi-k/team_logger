@@ -8,7 +8,7 @@ import 'log_vertical_align.dart';
 
 abstract interface class LogLevelName implements LogBlock {
   const factory LogLevelName.full({
-    LogStyle? style,
+    LogStyles? styles,
     Constraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
@@ -20,7 +20,7 @@ abstract interface class LogLevelName implements LogBlock {
   }) = _FullLevelName;
 
   const factory LogLevelName.short({
-    LogStyle? style,
+    LogStyles? styles,
     Constraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
@@ -33,7 +33,7 @@ abstract interface class LogLevelName implements LogBlock {
 }
 
 final class _FullLevelName implements LogLevelName {
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -44,7 +44,7 @@ final class _FullLevelName implements LogLevelName {
   final bool hidden;
 
   const _FullLevelName({
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -59,7 +59,7 @@ final class _FullLevelName implements LogLevelName {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.data.levelNameStyle;
+        : styles?[log.level] ?? theme.data.levelNameStyle;
     final levelName = upperCase ? log.levelName.toUpperCase() : log.levelName;
     final levelNameStr = '$open$levelName$close';
 
@@ -77,7 +77,7 @@ final class _FullLevelName implements LogLevelName {
 }
 
 final class _ShortLevelName implements LogLevelName {
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -88,7 +88,7 @@ final class _ShortLevelName implements LogLevelName {
   final bool hidden;
 
   const _ShortLevelName({
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -103,7 +103,7 @@ final class _ShortLevelName implements LogLevelName {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.data.levelNameStyle;
+        : styles?[log.level] ?? theme.data.levelNameStyle;
     final levelName =
         upperCase ? log.shortLevelName.toUpperCase() : log.shortLevelName;
     final levelNameStr = '$open$levelName$close';

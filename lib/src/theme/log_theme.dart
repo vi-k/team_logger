@@ -43,11 +43,11 @@ final class LogTheme with Loggable {
   AnsiPair get paddingAnsiPair => AnsiPair(main.padding, data.paddingStyle);
 
   ansi.Style? messageStyle(String tag) => switch (data.messageStyles[tag]) {
-        _LogResolvedStyle(:final style) => style,
-        _LogLazyStyle(:final call) => call(this),
+        _LogStyle(:final style) => style,
+        LogLazyStyle(:final call) => call(this),
         null => switch (main.messageStyles[tag]) {
-            _LogResolvedStyle(:final style) => style,
-            _LogLazyStyle(:final call) => call(this),
+            _LogStyle(:final style) => style,
+            LogLazyStyle(:final call) => call(this),
             null => null,
           },
       };

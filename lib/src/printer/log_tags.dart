@@ -7,7 +7,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 final class LogTags implements LogBlock {
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -18,7 +18,7 @@ final class LogTags implements LogBlock {
   final bool hidden;
 
   const LogTags({
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -38,7 +38,7 @@ final class LogTags implements LogBlock {
     final tagsStr = '$open${tags.map((tag) => '#$tag').join(' ')}$close';
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.main.tagsStyle;
+        : styles?[log.level] ?? theme.main.tagsStyle;
 
     return LogBox(
       log,

@@ -7,7 +7,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 final class LogTraceId implements LogBlock {
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -18,7 +18,7 @@ final class LogTraceId implements LogBlock {
   final bool hidden;
 
   const LogTraceId({
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -39,7 +39,7 @@ final class LogTraceId implements LogBlock {
         log.traceIds.map((e) => '$open$e$close').join(separator);
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.main.traceIdStyle;
+        : styles?[log.level] ?? theme.main.traceIdStyle;
 
     return LogBox(
       log,

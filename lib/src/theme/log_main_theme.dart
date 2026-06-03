@@ -9,8 +9,8 @@ import '../preformatters/control_code_formatter.dart';
 import '../preformatters/log_pre_formatter.dart';
 import '../printer/extensions.dart';
 
-part 'log_lazy_style.dart';
 part 'log_style.dart';
+part 'log_styles.dart';
 part 'log_theme.dart';
 part 'log_theme_data.dart';
 
@@ -36,7 +36,7 @@ final class LogMainTheme with Loggable {
   final LogThemeData _critical;
 
   final int minLevel;
-  final Map<String, LogLazyStyle> messageStyles;
+  final Map<String, LogStyle> messageStyles;
   final ansi.Style traceIdStyle;
   final ansi.Style tagsStyle;
   final ansi.Style hiddenStyle;
@@ -144,7 +144,7 @@ final class LogMainTheme with Loggable {
     messageStyles: defaultNoColorsMessageStyles,
   );
 
-  static const LogMainTheme noColorsNoBbCodes = LogMainTheme._(
+  static const LogMainTheme noColorsNoTags = LogMainTheme._(
     messageStyles: defaultNoColorsNoBbCodesMessageStyles,
   );
 
@@ -225,7 +225,7 @@ final class LogMainTheme with Loggable {
 
   static const defaultMessageStyles = {
     'b': LogLazyStyle(_boldStyle),
-    'signal': LogLazyStyle.resolved(
+    'signal': LogStyle(
       ansi.Style(
         background: ansi.Color256.rgb055,
         foreground: ansi.Color256.rgb000,
@@ -235,15 +235,14 @@ final class LogMainTheme with Loggable {
     'error': LogLazyStyle(_errorStyle),
   };
 
-  static const Map<String, LogLazyStyle> defaultNoColorsMessageStyles = {};
+  static const Map<String, LogStyle> defaultNoColorsMessageStyles = {};
 
-  static const Map<String, LogLazyStyle> defaultNoColorsNoBbCodesMessageStyles =
-      {
-    'b': LogLazyStyle.resolved(ansi.NoStyle()),
-    'signal': LogLazyStyle.resolved(ansi.NoStyle()),
-    'success': LogLazyStyle.resolved(ansi.NoStyle()),
-    'warning': LogLazyStyle.resolved(ansi.NoStyle()),
-    'error': LogLazyStyle.resolved(ansi.NoStyle()),
+  static const Map<String, LogStyle> defaultNoColorsNoBbCodesMessageStyles = {
+    'b': LogStyle(ansi.NoStyle()),
+    'signal': LogStyle(ansi.NoStyle()),
+    'success': LogStyle(ansi.NoStyle()),
+    'warning': LogStyle(ansi.NoStyle()),
+    'error': LogStyle(ansi.NoStyle()),
   };
 
   static ansi.Style _boldStyle(LogTheme theme) => theme.data.bold;
@@ -271,7 +270,7 @@ final class LogMainTheme with Loggable {
 
   LogMainTheme copyWith({
     int? minLevel,
-    Map<String, LogLazyStyle>? messageStyles,
+    Map<String, LogStyle>? messageStyles,
     LogThemeData? verbose,
     LogThemeData? debug,
     LogThemeData? info,

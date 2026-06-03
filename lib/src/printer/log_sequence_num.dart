@@ -7,7 +7,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 final class LogSequenceNum implements LogBlock {
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -17,7 +17,7 @@ final class LogSequenceNum implements LogBlock {
   final bool hidden;
 
   const LogSequenceNum({
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -32,7 +32,7 @@ final class LogSequenceNum implements LogBlock {
     final sequenceNumStr = '$open${log.sequenceNum}$close';
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.data.sequenceNumStyle;
+        : styles?[log.level] ?? theme.data.sequenceNumStyle;
 
     return LogBox(
       log,

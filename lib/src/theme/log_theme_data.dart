@@ -11,7 +11,7 @@ final class LogThemeData with Loggable {
   final ansi.Style levelNameStyle;
   final ansi.Style timeStyle;
   final ansi.Style pathStyle;
-  final Map<String, LogLazyStyle> messageStyles;
+  final Map<String, LogStyle> messageStyles;
   final ansi.Style controlCodesStyle;
   final ansi.Style quotesStyle;
   final ansi.Style colonStyle;
@@ -68,7 +68,7 @@ final class LogThemeData with Loggable {
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
-    Map<String, LogLazyStyle>? messageStyles,
+    Map<String, LogStyle>? messageStyles,
     ansi.Style? controlCodesStyle,
     ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
@@ -126,7 +126,7 @@ final class LogThemeData with Loggable {
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
-    Map<String, LogLazyStyle>? messageStyles,
+    Map<String, LogStyle>? messageStyles,
     ansi.Style? controlCodesStyle,
     ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
@@ -212,18 +212,18 @@ final class LogThemeData with Loggable {
   );
 
   static const defaultMessageStyles = {
-    'success': LogLazyStyle.resolved(ansi.rgb050),
+    'success': LogStyle(ansi.rgb050),
   };
 
   static const defaultMutedMessageStyles = {
-    'success': LogLazyStyle.resolved(ansi.rgb040),
+    'success': LogStyle(ansi.rgb040),
   };
 
   static const defaultInactiveMessageStyles = {
-    'success': LogLazyStyle.resolved(ansi.rgb020),
+    'success': LogStyle(ansi.rgb020),
   };
 
-  static const Map<String, LogLazyStyle> defaultNoColorsMessageStyles = {};
+  static const Map<String, LogStyle> defaultNoColorsMessageStyles = {};
 
   static final gray5 = LogThemeData.seed(
     normal: ansi.gray5,
@@ -1438,7 +1438,7 @@ final class LogThemeData with Loggable {
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
-    Map<String, LogLazyStyle>? messageStyles,
+    Map<String, LogStyle>? messageStyles,
     ansi.Style? controlCodesStyle,
     ansi.Style? punctuation,
     String? colon,
@@ -1875,7 +1875,7 @@ extension on LoggableData {
     prop(name, styles, view: '"$values"');
   }
 
-  void lazyStyles(String name, Map<String, LogLazyStyle> styles) {
+  void lazyStyles(String name, Map<String, LogStyle> styles) {
     final mapBuilder = Loggable.mapBuilder();
     for (final MapEntry(:key, value: style) in styles.entries) {
       mapBuilder.prop(
@@ -1883,8 +1883,8 @@ extension on LoggableData {
         style,
         showName: false,
         view: switch (style) {
-          _LogResolvedStyle(:final style) => style(key),
-          _LogLazyStyle(:final call) =>
+          _LogStyle(:final style) => style(key),
+          LogLazyStyle(:final call) =>
             LoggableView.convert((_, theme, __) => call(theme)(key)),
         },
       );

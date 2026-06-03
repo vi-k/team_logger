@@ -7,7 +7,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 final class LogPath implements LogBlock {
-  final LogStyle? style;
+  final LogStyles? styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -17,7 +17,7 @@ final class LogPath implements LogBlock {
   final bool hidden;
 
   const LogPath({
-    this.style,
+    this.styles,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -31,7 +31,7 @@ final class LogPath implements LogBlock {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final style = hidden
         ? theme.main.hiddenStyle
-        : this.style?[log.level] ?? theme.data.pathStyle;
+        : styles?[log.level] ?? theme.data.pathStyle;
     final pathStr = '$open${log.path}$close';
 
     return LogBox(

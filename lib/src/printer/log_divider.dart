@@ -7,7 +7,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 final class LogDivider implements LogBlock {
-  final LogStyle style;
+  final LogStyles styles;
   final Constraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
@@ -16,7 +16,7 @@ final class LogDivider implements LogBlock {
 
   const LogDivider(
     this.divider, {
-    this.style = LogStyle.noColors,
+    this.styles = LogStyles.noColors,
     this.constraints = const Constraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
@@ -28,7 +28,7 @@ final class LogDivider implements LogBlock {
       LogBox(
         log,
         theme,
-        [style[log.level](divider)],
+        [styles[log.level](divider)],
         constraints: constraints.restrict(remainingLength),
         showEllipsis: false,
         textAlign: textAlign,

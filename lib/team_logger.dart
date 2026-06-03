@@ -11,6 +11,7 @@ export 'src/preformatters/control_code_formatter.dart';
 export 'src/preformatters/custom_log_preformatter.dart';
 export 'src/preformatters/log_pre_formatter.dart';
 export 'src/preformatters/multi_log_pre_formatter.dart';
+export 'src/preformatters/null_formatter.dart';
 export 'src/printer/console_log_printer.dart';
 export 'src/printer/constraints.dart';
 export 'src/printer/extensions.dart';
