@@ -443,18 +443,97 @@ final log = Logger('app')
 
 ---
 
-### 4. Console BBCode Tags
+### 4. BBCode Tags
+
+`LogMainTheme` has a `messageFormatter` parameter for formatting messages. By
+default, it is set to `BbCodeFormatter`.
+
+#### Default tags
 
 The `BbCodeFormatter` parses BBCode tags in log messages to apply styles
-defined in the active theme:
+defined in the theme:
 
-| Tag                                      | Result        |
-|:-----------------------------------------|:--------------|
-| `[b]bold text[/b]`                       | Bold text     |
-| `[success]Operation completed[/success]` | Success style |
-| `[warning]Caution[/warning]`             | Warning style |
-| `[error]Failure[/error]`                 | Error style   |
-| `[signal]Signal[/signal]`                | Signal style  |
+```dart
+log.d('This is a [b]bold[/b] text');
+log.d('This is a [success]success[/success] text');
+log.d('This is a [warning]warning[/warning] text within the not-warning text');
+log.d('This is a [error]error[/error] text within the not-error text');
+log.d('This is a [signal]signal[/signal] to get attention');
+```
+
+![BBCode tags](screenshots/bbcode_1.png)
+
+#### User tags
+
+You can add your own tags:
+
+```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  messageStyles: {
+    'b': LogStyle(ansi.bold),
+    'i': LogStyle(ansi.italic),
+    's': LogStyle(ansi.strikethrough),
+    'u': LogStyle(ansi.underline),
+  },
+);
+
+log.d('This is a [b]bold[/b] text', theme: theme);
+log.d('This is a [i]italic[/i] text', theme: theme);
+log.d('This is a [s]strikethrough[/s] text', theme: theme);
+log.d('This is a [u]underline[/u] text', theme: theme);
+```
+
+![User defined tags](screenshots/bbcode_2.png)
+
+#### Lazy Style
+
+If the style depends on the current theme settings, use `LogLazyStyle`:
+
+```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  messageStyles: {
+    'fatal': LogLazyStyle((theme) => theme.main.critical.data.normal),
+  },
+);
+
+log.d('This is [fatal]a fatal error[/fatal]');
+```
+
+![LogLazyStyle](screenshots/bbcode_3.png)
+
+#### No Colors
+
+When switching to the `LogMainTheme.noColors` theme, the tags will remain in
+the message text; since this theme does not include message styles:
+
+```dart
+final theme = LogMainTheme.noColors;
+```
+
+![No colors](screenshots/bbcode_4.png)
+
+If you need to remove the tags, add them to messageStyles:
+
+```dart
+final theme = LogMainTheme.noColors.copyWith(
+  messageStyles: const {
+    'b': LogNoStyle(),
+    'i': LogNoStyle(),
+    's': LogNoStyle(),
+    'u': LogNoStyle(),
+  },
+);
+```
+
+![No colors, no tags](screenshots/bbcode_5.png)
+
+There is a pre-made theme for default tags: `LogMainTheme.noColorsNoTags`.
+
+```dart
+final theme = LogMainTheme.noColorsNoTags;
+```
+
+![No colors, no tags2](screenshots/bbcode_6.png)
 
 ---
 
@@ -942,10 +1021,12 @@ log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-4
 
 ### 8. Circular Buffer (`LogStorage`)
 
-`LogStorage` retains a fixed count of logs in memory. This is designed for capturing diagnostic snapshots, telemetry display in debug screens, or passing logs to local storage.
+`LogStorage` retains a fixed count of logs in memory. This is designed for
+capturing diagnostic snapshots, telemetry display in debug screens, or passing
+logs to local storage.
 
 ```dart
-final logStorage = LogStorage(maxCount: 100);
+final logStorage = LogStorage(maxCount: 1000);
 
 // Attach to the logger publisher
 log.publisher = MultiPublisher([
@@ -956,6 +1037,11 @@ log.publisher = MultiPublisher([
 // Retrieve the in-memory log history
 List<Log> history = logStorage.snapshot();
 ```
+
+See also [flutter_team_logger](https://pub.dev/packages/flutter_team_logger),
+which uses `LogStorage`.
+
+![flutter_team_logger](screenshots/flutter_team_logger.png)
 
 ---
 

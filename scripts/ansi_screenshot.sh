@@ -130,6 +130,11 @@ import AppKit
 struct Style {
     var fg: NSColor
     var bg: NSColor?
+    var isBold: Bool = false
+    var isItalic: Bool = false
+    var isUnderline: Bool = false
+    var isStrikethrough: Bool = false
+    var isHidden: Bool = false
 }
 
 struct Cell {
@@ -146,20 +151,48 @@ guard args.count >= 4 else {
 
 let inputPath = args[1]
 let outputPath = args[2]
-let lineSpacing = max(0, Double(args[3]) ?? 2.0)
+let lineSpacing = max(0, Double(args[3]) ?? 0.0)
 
 let defaultFG = NSColor(calibratedWhite: 0.88, alpha: 1.0)
 let canvasBG = NSColor(calibratedWhite: 0.10, alpha: 1.0)
 
-let font =
+let regularFont =
     NSFont(name: "Menlo-Regular", size: 13)
     ?? NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+
+let boldFont =
+    NSFont(name: "Menlo-Bold", size: 13)
+    ?? NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
+
+let italicFont =
+    NSFont(name: "Menlo-Italic", size: 13)
+    ?? NSFontManager.shared.convert(regularFont, toHaveTrait: .italicFontMask)
+
+let boldItalicFont =
+    NSFont(name: "Menlo-BoldItalic", size: 13)
+    ?? NSFontManager.shared.convert(boldFont, toHaveTrait: .italicFontMask)
+
+func fontForStyle(_ style: Style) -> NSFont {
+    if style.isBold && style.isItalic {
+        return boldItalicFont
+    }
+
+    if style.isBold {
+        return boldFont
+    }
+
+    if style.isItalic {
+        return italicFont
+    }
+
+    return regularFont
+}
 
 let padX: CGFloat = 18
 let padY: CGFloat = 16
 
-let charAdvance = ceil(("W" as NSString).size(withAttributes: [.font: font]).width)
-let lineHeight = ceil(font.ascender - font.descender + font.leading + CGFloat(lineSpacing))
+let charAdvance = ceil(("W" as NSString).size(withAttributes: [.font: regularFont]).width)
+let lineHeight = ceil(regularFont.ascender - regularFont.descender + regularFont.leading + CGFloat(lineSpacing))
 
 func ansi256Color(_ n: Int) -> NSColor {
     if n < 0 { return defaultFG }
@@ -294,8 +327,26 @@ func parseAnsiLineToCells(_ line: String) -> [Cell] {
                     switch c {
                     case 0:
                         style = Style(fg: defaultFG, bg: nil)
+                    case 1:
+                        style.isBold = true
+                    case 3:
+                        style.isItalic = true
+                    case 4:
+                        style.isUnderline = true
                     case 8:
-                        style = Style(fg: NSColor.clear, bg: nil)
+                        style.isHidden = true
+                    case 9:
+                        style.isStrikethrough = true
+                    case 22:
+                        style.isBold = false
+                    case 23:
+                        style.isItalic = false
+                    case 24:
+                        style.isUnderline = false
+                    case 28:
+                        style.isHidden = false
+                    case 29:
+                        style.isStrikethrough = false
                     case 39:
                         style.fg = defaultFG
                     case 49:
@@ -408,12 +459,20 @@ for (lineIndex, cells) in parsed.enumerated() {
             ).fill()
         }
 
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: cell.style.fg,
+        var attrs: [NSAttributedString.Key: Any] = [
+            .font: fontForStyle(cell.style),
+            .foregroundColor: cell.style.isHidden ? NSColor.clear : cell.style.fg,
             .paragraphStyle: paragraphStyle,
             .kern: 0
         ]
+
+        if cell.style.isUnderline {
+            attrs[.underlineStyle] = NSUnderlineStyle.single.rawValue
+        }
+
+        if cell.style.isStrikethrough {
+            attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+        }
 
         (cell.text as NSString).draw(
             in: NSRect(

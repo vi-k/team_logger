@@ -47,6 +47,13 @@
             "program": "bin/readme_examples/loggable.dart",
         },
         {
+            "name": "README: bbcode",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/readme_examples/bbcode.dart",
+        },
+        {
             "name": "README: trace",
             "request": "launch",
             "type": "dart",

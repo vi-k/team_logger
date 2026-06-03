@@ -20,7 +20,7 @@ final log = Logger('app')
     ConsoleLogPrinter(
       theme: theme,
       // theme: LogMainTheme.noColors,
-      // theme: LogMainTheme.noColorsNoBbCodes,
+      // theme: LogMainTheme.noColorsNoTags,
       inactiveTheme: inactiveTheme,
       isLogActive: (log) => true,
       // activeLevel: LogLevels.error,
