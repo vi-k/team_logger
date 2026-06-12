@@ -14,18 +14,16 @@ void main() {
   );
   printLogs();
 
-  print('----- By logger -----');
+  print('----- By namespace -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-
-    activeLoggers: {'net'},
+    activeNamespaces: {'net'},
   );
   printLogs();
 
   print('----- By trace -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-
     activeTraceGroups: {'user', 'net'},
   );
   printLogs();
@@ -33,7 +31,6 @@ void main() {
   print('----- By tag -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-
     activeTags: {'success'},
   );
   printLogs();
@@ -41,7 +38,6 @@ void main() {
   print('----- By callback -----');
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-
     isLogActive: (log) => log.hasData,
   );
   printLogs();

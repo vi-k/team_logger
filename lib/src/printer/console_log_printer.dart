@@ -14,8 +14,8 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogMainTheme theme;
   final LogMainTheme? inactiveTheme;
   final bool Function(Log log)? isLogActive;
-  final int activeLevel;
-  final Set<String> activeLoggers;
+  final Set<int> activeLevels;
+  final Set<String> activeNamespaces;
   final Set<String> activeTraceGroups;
   final Set<String> activeTags;
   final List<LogRow> rows;
@@ -26,8 +26,9 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   ConsoleLogPrinter({
     LogMainTheme? theme,
     this.inactiveTheme,
-    int? activeLevel,
-    Set<String>? activeLoggers,
+    int? activeMinLevel,
+    Set<int>? activeLevels,
+    Set<String>? activeNamespaces,
     Set<String>? activeTraceGroups,
     Set<String>? activeTags,
     this.isLogActive,
@@ -35,26 +36,45 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     this.output = print,
   })  : assert(
           inactiveTheme != null ||
-              activeLevel == null &&
-                  activeLoggers == null &&
+              activeMinLevel == null &&
+                  activeLevels == null &&
+                  activeNamespaces == null &&
                   activeTraceGroups == null &&
                   activeTags == null &&
                   isLogActive == null,
           'inactiveTheme must be set first',
         ),
         theme = theme ?? LogMainTheme.defaultActiveTheme,
-        activeLevel = activeLevel ?? LogLevels.off,
-        activeLoggers = activeLoggers ?? {},
+        activeLevels = _buildLevels(activeLevels, activeMinLevel),
+        activeNamespaces = activeNamespaces ?? {},
         activeTraceGroups = activeTraceGroups ?? {},
         activeTags = activeTags ?? {};
 
   bool _isLogActive(Log log) =>
       inactiveTheme == null ||
-      log.level >= activeLevel ||
       (isLogActive?.call(log) ?? false) ||
-      activeLoggers.contains(log.path) ||
+      activeLevels.contains(log.level) ||
+      activeNamespaces.contains(log.path) ||
       log.traceIds.any((e) => activeTraceGroups.contains(e.group)) ||
       log.tags.any(activeTags.contains);
+
+  static Set<int> _buildLevels(Set<int>? levels, int? minLevel) {
+    final result = <int>{};
+
+    if (levels != null) {
+      for (final l in LogLevels.values) {
+        if (levels.contains(l)) {
+          result.add(l);
+        }
+      }
+    }
+
+    if (minLevel != null) {
+      result.addAll(LogLevels.levels(minLevel));
+    }
+
+    return result;
+  }
 
   @override
   void publish(Log log) {
@@ -161,7 +181,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
         printer.write(box.lines[i]);
       }
       if (remainingLength != null && row.alignTail) {
-        printer.write(main.padding * remainingLength);
+        printer.write(theme.styledPadding(remainingLength));
       }
       for (final box in tailBoxes) {
         printer.write(box.lines[i]);

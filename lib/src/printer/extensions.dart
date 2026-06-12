@@ -1,6 +1,5 @@
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 
-import '../loggable/loggable.dart';
 import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
 import 'constraints.dart';
@@ -41,17 +40,18 @@ extension AnsiParserExtensions on ansi.Parser {
     if (newLength > length) {
       switch (textAlign) {
         case LogTextAlign.left:
-          return padRight(newLength, theme.styledPadding);
+          return '$input${theme.styledPadding(newLength - length)}';
 
         case LogTextAlign.right:
-          return padLeft(newLength, theme.styledPadding);
+          return '${theme.styledPadding(newLength - length)}$input';
 
         case LogTextAlign.center:
           final needToAdd = newLength - length;
           final left = needToAdd ~/ 2;
           final right = needToAdd - left;
-          final padding = theme.styledPadding;
-          return '${padding * left}$input${padding * right}';
+          return '${theme.styledPadding(left)}'
+              '$input'
+              '${theme.styledPadding(right)}';
       }
     }
 
@@ -60,12 +60,18 @@ extension AnsiParserExtensions on ansi.Parser {
     }
 
     return showEllipsis
-        ? terminatedSubstring(theme.ellipsisAnsiPair, 0, maxLength: newLength)
+        ? terminatedSubstring(
+            theme.main.ellipsis,
+            theme.data.ellipsisStyle,
+            0,
+            maxLength: newLength,
+          )
         : substring(0, maxLength: newLength);
   }
 
   String terminatedSubstring(
-    AnsiPair terminator,
+    String terminator,
+    ansi.Style terminatorStyle,
     int start, {
     required int maxLength,
   }) {
@@ -76,30 +82,6 @@ extension AnsiParserExtensions on ansi.Parser {
     }
 
     return '${substring(start, maxLength: maxLength - terminator.length)}'
-        '$terminator';
-  }
-}
-
-final class AnsiPair with Loggable {
-  final String string;
-  final ansi.Style style;
-
-  const AnsiPair(this.string, this.style);
-
-  bool get isEmpty => string.isEmpty;
-
-  bool get isNotEmpty => string.isNotEmpty;
-
-  int get length => string.length;
-
-  @override
-  String toString() => style(string);
-
-  @override
-  void collectLoggableData(LoggableData data) {
-    data
-      ..showName = false
-      ..showBrackets = false
-      ..prop('string', string, showName: false, view: '"${style(string)}"');
+        '${terminatorStyle(terminator)}';
   }
 }

@@ -156,7 +156,8 @@ final class LogBox with Loggable {
         } else {
           boxLines.add(
             parser.terminatedSubstring(
-              theme.ellipsisAnsiPair,
+              theme.main.ellipsis,
+              theme.data.ellipsisStyle,
               start,
               maxLength: textWidth,
             ),

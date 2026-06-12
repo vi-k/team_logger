@@ -8,7 +8,7 @@ void initLog({
   LogMainTheme? inactiveTheme,
   void Function(String)? output,
   int? activeLevel,
-  Set<String>? activeLoggers,
+  Set<String>? activeNamespaces,
   Set<String>? activeTraceGroups,
   Set<String>? activeTags,
   bool Function(Log log)? isLogActive,
@@ -21,13 +21,12 @@ void initLog({
       theme: theme ?? LogMainTheme.defaultActiveTheme,
       inactiveTheme: inactiveTheme,
       output: output ?? print,
-      activeLevel: activeLevel,
-      activeLoggers: activeLoggers,
+      activeMinLevel: activeLevel,
+      activeNamespaces: activeNamespaces,
       activeTraceGroups: activeTraceGroups,
       activeTags: activeTags,
       isLogActive: isLogActive,
-      rows:
-          rows ??
+      rows: rows ??
           [
             LogRow(
               maxLength: maxLength ?? 100,

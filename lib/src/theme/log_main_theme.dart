@@ -7,7 +7,6 @@ import '../logger/logger.dart';
 import '../preformatters/bb_code_formatter.dart';
 import '../preformatters/control_code_formatter.dart';
 import '../preformatters/log_pre_formatter.dart';
-import '../printer/extensions.dart';
 
 part 'log_style.dart';
 part 'log_styles.dart';

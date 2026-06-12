@@ -5,18 +5,12 @@
   efficientLengthIterableToString.
 - При ограничении сообщения (Constraints), ellipsis "…" появляется на каждой
   строке, даже на невидимых
+- дефолтный конфиг (сейчас настройки напрямую в теме) и force-конфиг для
+  игнорирования настроек пользователя:
+  defaultConfig <- userConfig <- forceConfig
 
 README:
 
-- [x] Quick start
-- [x] 1. Message Layouting
-- [x] 2. Colors & Dynamic Themes
-- [x] 3. Active vs. Inactive Mode
-- [x] 4. Console BBCode Tags
-- [x] 5. Data Output
-- [x] 6. Formatting Complex Objects
-- [x] 7. Trace Propagation (`TraceId`)
-- [x] 8. Circular Buffer (`LogStorage`)
 - [ ] lazy messages
 - [ ] output: print/log
 - [ ] zones

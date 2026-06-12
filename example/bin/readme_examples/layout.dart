@@ -14,89 +14,90 @@ Future<void> main() async {
     ],
   };
 
-  // print('----- Log layout -----');
-  // initLog(
-  //   rows: [
-  //     LogRow(
-  //       maxLength: 100,
-  //       children: [
-  //         LogSequenceNum(),
-  //         LogLevelName.short(),
-  //         LogTime.onlyTime(),
-  //         LogPath(),
-  //         LogTraceId(),
-  //         LogMessage(),
-  //       ],
-  //       tail: [LogTags()],
-  //     ),
-  //   ],
-  // );
+  print('----- Log layout -----');
+  initLog(
+    rows: [
+      LogRow(
+        maxLength: 100,
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(),
+        ],
+        tail: [LogTags()],
+      ),
+    ],
+  );
 
-  // log.d('User info', traceId: TraceId.auto('user'), data: person);
+  log.d('User info', traceId: TraceId.auto('user'), data: person);
 
-  // print('----- Single line -----');
-  // initLog(
-  //   rows: [
-  //     LogRow.singleLine(
-  //       children: [
-  //         LogSequenceNum(),
-  //         LogLevelName.short(),
-  //         LogTime.onlyTime(),
-  //         LogPath(),
-  //         LogTraceId(),
-  //         LogMessage(),
-  //       ],
-  //       tail: [LogTags()],
-  //     ),
-  //   ],
-  // );
-  // log.d('User info', traceId: TraceId.auto('user'), data: person);
+  print('----- Single line -----');
+  initLog(
+    rows: [
+      LogRow.singleLine(
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(),
+        ],
+        tail: [LogTags()],
+      ),
+    ],
+  );
+  log.d('User info', traceId: TraceId.auto('user'), data: person);
 
-  // print('----- Hidden key info -----');
-  // initLog(
-  //   theme: LogMainTheme.defaultActiveTheme.copyWith(hiddenStyle: ansi.rgb050),
-  // );
-  // log.d('User info', traceId: TraceId.auto('user'), data: person);
+  print('----- Hidden key info -----');
+  initLog(
+    theme: LogMainTheme.defaultActiveTheme.copyWith(hiddenStyle: ansi.rgb050),
+  );
+  log.d('User info', traceId: TraceId.auto('user'), data: person);
 
-  // print('----- Stack trace -----');
-  // initLog();
-  // someOperation();
+  print('----- Stack trace -----');
+  initLog();
+  someOperation();
 
-  // print('----- Separate stack trace -----');
-  // initLog(
-  //   rows: [
-  //     const LogRow(
-  //       maxLength: 100,
-  //       children: [
-  //         LogSequenceNum(),
-  //         LogLevelName.short(),
-  //         LogTime.onlyTime(),
-  //         LogPath(),
-  //         LogTraceId(),
-  //         LogMessage(showStackTrace: false),
-  //       ],
-  //       tail: [LogTags()],
-  //     ),
-  //     LogRow(
-  //       when: (log) => log.stackTrace != null,
-  //       maxLength: 100,
-  //       children: [
-  //         // We remove any unnecessary information, keeping only the sequence
-  //         // number, but visually hiding it (by default, the first line is
-  //         // visible).
-  //         LogSequenceNum(hidden: true),
-  //         LogStackTrace(),
-  //       ],
-  //       // We'll keep the tags, but hide them.
-  //       tail: [LogTags(hidden: true)],
-  //     ),
-  //   ],
-  // );
-  // someOperation();
+  print('----- Separate stack trace -----');
+  initLog(
+    rows: [
+      const LogRow(
+        maxLength: 100,
+        children: [
+          LogSequenceNum(),
+          LogLevelName.short(),
+          LogTime.onlyTime(),
+          LogPath(),
+          LogTraceId(),
+          LogMessage(showStackTrace: false),
+        ],
+        tail: [LogTags()],
+      ),
+      LogRow(
+        when: (log) => log.stackTrace != null,
+        maxLength: 100,
+        children: [
+          // We remove any unnecessary information, keeping only the sequence
+          // number, but visually hiding it (by default, the first line is
+          // visible).
+          LogSequenceNum(hidden: true),
+          LogStackTrace(),
+        ],
+        // We'll keep the tags, but hide them.
+        tail: [LogTags(hidden: true)],
+      ),
+    ],
+  );
+  someOperation();
 
-  // print('----- Constraints -----');
+  print('----- Constraints -----');
   initLog(
     level: LogLevels.debug,
+    theme: LogMainTheme.defaultActiveTheme.copyWith(padding: '.'),
     rows: [
       LogRow(
         maxLength: 100,
@@ -141,7 +142,6 @@ void someOperation() {
     calcResult();
   } on Object catch (error, stackTrace) {
     log.d('Operation failed', error: error, stackTrace: stackTrace);
-    log.d('Operation failed', error: error);
   }
 }
 

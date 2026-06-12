@@ -17,30 +17,15 @@ final class LogTheme with Loggable {
 
   String get styledOpeningQuote => data.quotesStyle(main.openingQuote);
 
-  AnsiPair get openingQuoteAnsiPair =>
-      AnsiPair(main.openingQuote, data.quotesStyle);
-
   String get styledClosingQuote => data.quotesStyle(main.closingQuote);
-
-  AnsiPair get closingQuoteAnsiPair =>
-      AnsiPair(main.closingQuote, data.quotesStyle);
 
   String get styledColon => data.colonStyle(main.colon);
 
-  AnsiPair get colonAnsiPair => AnsiPair(main.colon, data.colonStyle);
-
   String get styledEllipsis => data.ellipsisStyle(main.ellipsis);
-
-  AnsiPair get ellipsisAnsiPair => AnsiPair(main.ellipsis, data.ellipsisStyle);
 
   String get styledLineBreak => data.lineBreakStyle(main.lineBreak);
 
-  AnsiPair get lineBreakAnsiPair =>
-      AnsiPair(main.lineBreak, data.lineBreakStyle);
-
-  String get styledPadding => data.paddingStyle(main.padding);
-
-  AnsiPair get paddingAnsiPair => AnsiPair(main.padding, data.paddingStyle);
+  String styledPadding(int count) => data.paddingStyle(main.padding * count);
 
   ansi.Style? messageStyle(String tag) => switch (data.messageStyles[tag]) {
         _LogStyle(:final style) => style,
@@ -76,6 +61,6 @@ final class LogTheme with Loggable {
       ..prop('styledColon', styledColon)
       ..prop('styledEllipsis', styledEllipsis)
       ..prop('styledLineBreak', styledLineBreak)
-      ..prop('styledPadding', styledPadding);
+      ..prop('styledPadding', styledPadding(1));
   }
 }

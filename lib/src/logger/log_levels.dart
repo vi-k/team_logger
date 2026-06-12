@@ -45,4 +45,7 @@ abstract final class LogLevels {
         off => 'off',
         _ => '$level',
       };
+
+  static Set<int> levels(int minLevel) =>
+      values.where((l) => l >= minLevel).toSet();
 }

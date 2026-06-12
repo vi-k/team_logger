@@ -46,7 +46,7 @@ formatting, and customizable styling themes.
 
 - [Quick Start](#quick-start)
 - [Deep Dive](#deep-dive)
-  - [1. Message Layouting](#1-message-layouting)
+  - [1. Message Layout](#1-message-layout)
   - [2. Colors & Dynamic Themes](#2-colors--dynamic-themes)
   - [3. Active vs Inactive Modes](#3-active-vs-inactive-modes)
   - [4. BBCode Tags](#4-bbcode-tags)
@@ -145,7 +145,7 @@ When filtering by tag, all messages with tag `#http` and
 
 ## Deep Dive
 
-### 1. Message Layouting
+### 1. Message Layout
 
 Configuring log output layout is done through the `rows` parameter in the
 `ConsoleLogPrinter`. This parameter accepts a list of `LogRow` instances.
@@ -547,14 +547,12 @@ final log = Logger('app')
   ..publisher = ConsoleLogPrinter(
     theme: LogMainTheme.defaultActiveTheme,
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-    activeLevel: LogLevels.info,
+    activeMinLevel: LogLevels.info,
     // ...
   );
 ```
 
-![Activate by level](screenshots/active_2.png)
-
-#### Activate By Logger
+Or based on any levels:
 
 ```dart
 final log = Logger('app')
@@ -562,12 +560,28 @@ final log = Logger('app')
   ..publisher = ConsoleLogPrinter(
     theme: LogMainTheme.defaultActiveTheme,
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
-    activeLoggers: ['net'],
+    activeLevels: {LogLevels.info, LogLevels.warning, LogLevels.error, LogLevels.critical},
     // ...
   );
 ```
 
-![Activate by logger](screenshots/active_3.png)
+
+![Activate by level](screenshots/active_2.png)
+
+#### Activate By Namespace
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    theme: LogMainTheme.defaultActiveTheme,
+    inactiveTheme: LogMainTheme.defaultInactiveTheme,
+    activeNamespaces: ['net'],
+    // ...
+  );
+```
+
+![Activate by namespace](screenshots/active_3.png)
 
 #### Activate By Trace IDs
 
@@ -613,6 +627,148 @@ final log = Logger('app')
 ```
 
 ![Activate by callback](screenshots/active_6.png)
+
+#### How can this be used?
+
+Activation or deactivation logs is only useful when each developer uses them
+individually, to temporarily filter out other's logs and focus on their own.
+
+But `team_logger` does not support dynamic activation or deactivation of logs.
+All activation conditions must be specified at the time the root logger is
+created. This raises a valid question: how, then, can this be applied to large
+teams?
+
+**Answer:** By using a custom environment. Here's how you can do it:
+
+##### a) create a class for the developer's personal environment settings:
+
+```dart
+final MyDevEnvironment myDevEnvironment = MyDevEnvironment._();
+
+// Developer Environment Settings.
+final class MyDevEnvironment {
+  MyDevEnvironment._();
+
+  bool logSingleLine = false;
+  int logLength = 120;
+  int? logMaxLines;
+  bool logAlwaysIsActive = false;
+  bool Function(Log log)? logIsActive;
+  int logActiveMinLevel = LogLevels.off;
+  Set<int> logActiveLevels = <int>{};
+  Set<String> logActiveNamespaces = <String>{};
+  Set<String> logActiveTraceGroups = <String>{};
+  Set<String> logActiveTags = <String>{};
+}
+  ```
+
+##### b) create `main_dev.dart`:
+
+```dart
+import 'main.dart' as production;
+
+void main() {
+  myDevEnvironment
+    ..logLength = 130
+    ..logMaxLines = 20
+    ..logActiveNamespaces = {'app', 'network'}
+    ..logActiveTraceGroups = {'events'};
+
+  production.main();
+}
+```
+
+##### c) Configure your IDE to run `main_dev.dart` instead of `main.dart`:
+
+VSCode/Antigravity example:
+
+```json
+// .vscode/launch.json
+{
+    // ...
+    "configurations": [
+        {
+            "name": "My awesome program",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_dev.dart",
+            // ...
+        },
+        // ...
+    ]
+}
+```
+
+But let your CI/CD continue to use `main.dart`.
+
+##### d) add `main_dev.dart` to `.gitignore`:
+
+`main_dev.dart` should remain a personal file for each developer, so it should
+not be added to your version control system.
+
+Now each developer will need to create their own version of `main_dev.dart`
+with their own settings.
+
+Or, you can automate this process:
+
+##### e) create the `main_dev.template.dart` template for `main_dev.dart`:
+
+```dart
+// template: Do not change this file directly. This file is used as a template to generate `main_dev.dart`
+
+import 'main.dart' as production;
+
+void main() {
+  myDevEnvironment
+    ..logLength = 120
+    ..logMaxLines = 20
+    ..logActiveNamespaces = {'app', 'network'}
+    ..logActiveTraceGroups = {'events'};
+
+  production.main();
+}
+```
+
+##### f) create `preLaunchTask`:
+
+```json
+// .vscode/launch.json
+{
+    // ...
+    "configurations": [
+        {
+            "name": "My awesome program",
+            "preLaunchTask": "initDevEnvironment",
+            // ...
+        },
+        // ...
+    ]
+}
+
+// .vscode/tasks.json
+{
+    // ...
+    "tasks": [
+        {
+            "label": "initDevEnvironment",
+            "type": "shell",
+            "command": "[[ -e lib/main_dev.dart ]] || cp lib/main_dev.template.dart lib/main_dev.dart && sed -i '' '/^\\/\\/ template:/d' lib/main_dev.dart",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        // ...
+    ]
+}
+```
+
+This task will run before each application build and create `main_dev.dart` if
+necessary.
 
 ---
 
