@@ -6,7 +6,7 @@ import 'loggable.dart';
 /// [enumDotShorthand] - сокращенное представление enums в виде `.value`.
 /// Если равно null, значение берётся из [LogMainTheme.enumDotShorthand].
 ///
-/// [collectionMaxLength] - максимальное количество элементов в коллекции
+/// [collectionMaxCount] - максимальное количество элементов в коллекции
 /// (для [List], [Set] и [Iterable]). Если равно null, нет ограничений.
 ///
 /// [collectionMaxStringLength] - максимальная длина результирующей строки
@@ -15,9 +15,9 @@ import 'loggable.dart';
 /// а списки первый и последний элемент без сокращений. Если равно null,
 /// ограничений.
 ///
-/// [collectionShowLength] - показывать ли длину коллекции в виде `₌₄`
+/// [collectionShowCount] - показывать ли длину коллекции в виде `₌₄`
 /// (только для List и Set). Если равно null, значение берётся из
-/// [LogMainTheme.collectionShowLength].
+/// [LogMainTheme.collectionShowCount].
 ///
 /// [collectionShowIndexes] - показывать ли индексы элементов в виде `₀:`,
 /// `₁:` и т.д. Если равно null, значение берётся из
@@ -37,7 +37,7 @@ import 'loggable.dart';
 ///     [1, 2, [3, 4, 5]],
 ///     config: LoggableConfig(
 ///       units: 'kg',
-///       collectionMaxLength: 2,
+///       collectionMaxCount: 2,
 ///     ),
 ///   ),
 /// );
@@ -45,9 +45,9 @@ import 'loggable.dart';
 /// ```
 final class LoggableConfig with Loggable {
   final bool? enumDotShorthand;
-  final int? collectionMaxLength;
+  final int? collectionMaxCount;
   final int? collectionMaxStringLength;
-  final bool? collectionShowLength;
+  final bool? collectionShowCount;
   final bool? collectionShowIndexes;
   final String? units;
   final String? doubleFormat;
@@ -56,9 +56,9 @@ final class LoggableConfig with Loggable {
 
   const LoggableConfig({
     this.enumDotShorthand,
-    this.collectionMaxLength,
+    this.collectionMaxCount,
     this.collectionMaxStringLength,
-    this.collectionShowLength,
+    this.collectionShowCount,
     this.collectionShowIndexes,
     this.units,
     this.doubleFormat,
@@ -68,11 +68,10 @@ final class LoggableConfig with Loggable {
 
   LoggableConfig merge(LoggableConfig other) => LoggableConfig(
         enumDotShorthand: enumDotShorthand ?? other.enumDotShorthand,
-        collectionMaxLength: collectionMaxLength ?? other.collectionMaxLength,
+        collectionMaxCount: collectionMaxCount ?? other.collectionMaxCount,
         collectionMaxStringLength:
             collectionMaxStringLength ?? other.collectionMaxStringLength,
-        collectionShowLength:
-            collectionShowLength ?? other.collectionShowLength,
+        collectionShowCount: collectionShowCount ?? other.collectionShowCount,
         collectionShowIndexes:
             collectionShowIndexes ?? other.collectionShowIndexes,
         units: units ?? other.units,
@@ -81,12 +80,12 @@ final class LoggableConfig with Loggable {
         stringInQuotes: stringInQuotes ?? other.stringInQuotes,
       );
 
-  LoggableResolvedConfig resolved(LogMainTheme theme) => LoggableResolvedConfig(
+  LoggableEffectiveConfig toEffectiveConfig(LogMainTheme theme) =>
+      LoggableEffectiveConfig(
         enumDotShorthand: enumDotShorthand ?? theme.enumDotShorthand,
-        collectionMaxLength: collectionMaxLength,
+        collectionMaxCount: collectionMaxCount,
         collectionMaxStringLength: collectionMaxStringLength,
-        collectionShowLength:
-            collectionShowLength ?? theme.collectionShowLength,
+        collectionShowCount: collectionShowCount ?? theme.collectionShowCount,
         collectionShowIndexes:
             collectionShowIndexes ?? theme.collectionShowIndexes,
         units: units,
@@ -99,9 +98,9 @@ final class LoggableConfig with Loggable {
   void collectLoggableData(LoggableData data) {
     data
       ..prop('enumDotShorthand', enumDotShorthand)
-      ..prop('collectionMaxLength', collectionMaxLength)
+      ..prop('collectionMaxCount', collectionMaxCount)
       ..prop('collectionMaxStringLength', collectionMaxStringLength)
-      ..prop('collectionShowLength', collectionShowLength)
+      ..prop('collectionShowCount', collectionShowCount)
       ..prop('collectionShowIndexes', collectionShowIndexes)
       ..prop('units', units)
       ..prop('doubleFormat', doubleFormat)
@@ -110,12 +109,12 @@ final class LoggableConfig with Loggable {
   }
 }
 
-final class LoggableResolvedConfig extends LoggableConfig with Loggable {
-  const LoggableResolvedConfig({
+final class LoggableEffectiveConfig extends LoggableConfig with Loggable {
+  const LoggableEffectiveConfig({
     required bool super.enumDotShorthand,
-    required super.collectionMaxLength,
+    required super.collectionMaxCount,
     required super.collectionMaxStringLength,
-    required bool super.collectionShowLength,
+    required bool super.collectionShowCount,
     required bool super.collectionShowIndexes,
     required super.units,
     required super.doubleFormat,
@@ -127,7 +126,7 @@ final class LoggableResolvedConfig extends LoggableConfig with Loggable {
   bool get enumDotShorthand => super.enumDotShorthand!;
 
   @override
-  bool get collectionShowLength => super.collectionShowLength!;
+  bool get collectionShowCount => super.collectionShowCount!;
 
   @override
   bool get collectionShowIndexes => super.collectionShowIndexes!;

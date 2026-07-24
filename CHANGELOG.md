@@ -1,3 +1,8 @@
+## 0.4.0
+
+- [breaking changes] Rename `collectionMaxLength` to `collectionMaxCount`.
+- Add [Loggable.objectToJson].
+
 ## 0.3.0
 
 - Update README.

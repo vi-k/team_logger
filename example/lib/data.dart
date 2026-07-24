@@ -198,6 +198,7 @@ final class LoggableObject with Loggable {
       'duration',
       duration,
       view: LoggableMultiView([
+        LoggableView(duration),
         LoggableView(duration.inMinutes, 'min'),
         LoggableView(duration.inSeconds, 'sec'),
       ]),
@@ -213,7 +214,7 @@ final class LoggableObject with Loggable {
       ]),
     )
     ..prop('distance', distance, units: 'm')
-    ..prop('points', points, collectionMaxLength: 2)
+    ..prop('points', points, collectionMaxCount: 2)
     ..prop('destinations', destinations);
 }
 
@@ -248,7 +249,7 @@ final class NotLoggableObjectConverter
     NotLoggableObject obj,
     LogTheme theme,
     int depth,
-    LoggableResolvedConfig config,
+    LoggableEffectiveConfig config,
   ) =>
       (Loggable.builder(obj)
             ..prop('name', obj.name)
@@ -263,7 +264,7 @@ final class ManualNotLoggableObjectConverter
     NotLoggableObject obj,
     LogTheme theme,
     int depth,
-    LoggableResolvedConfig config,
+    LoggableEffectiveConfig config,
   ) {
     final body = Loggable.mapToString(
       {'name': obj.name, 'list': obj.list},

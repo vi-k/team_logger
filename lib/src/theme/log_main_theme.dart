@@ -47,7 +47,7 @@ final class LogMainTheme with Loggable {
   final String padding;
   final bool errorAlwaysOnNewLine;
   final bool enumDotShorthand;
-  final bool collectionShowLength;
+  final bool collectionShowCount;
   final bool collectionShowIndexes;
   final LogPreFormatter valueFormatter;
   final LogPreFormatter messageFormatter;
@@ -78,7 +78,7 @@ final class LogMainTheme with Loggable {
     this.padding = defaultPadding,
     this.errorAlwaysOnNewLine = false,
     this.enumDotShorthand = true,
-    this.collectionShowLength = true,
+    this.collectionShowCount = true,
     this.collectionShowIndexes = true,
     this.valueFormatter = const ControlCodeFormatter(),
     this.messageFormatter = const BbCodeFormatter(),
@@ -128,7 +128,7 @@ final class LogMainTheme with Loggable {
         padding = defaultPadding,
         errorAlwaysOnNewLine = false,
         enumDotShorthand = true,
-        collectionShowLength = true,
+        collectionShowCount = true,
         collectionShowIndexes = true,
         valueFormatter = const ControlCodeFormatter(),
         messageFormatter = const BbCodeFormatter(),
@@ -287,7 +287,7 @@ final class LogMainTheme with Loggable {
     String? padding,
     bool? errorAlwaysOnNewLine,
     bool? enumDotShorthand,
-    bool? collectionShowLength,
+    bool? collectionShowCount,
     bool? collectionShowIndexes,
     LogPreFormatter? valueFormatter,
     LogPreFormatter? messageFormatter,
@@ -318,7 +318,7 @@ final class LogMainTheme with Loggable {
         padding: padding ?? this.padding,
         errorAlwaysOnNewLine: errorAlwaysOnNewLine ?? this.errorAlwaysOnNewLine,
         enumDotShorthand: enumDotShorthand ?? this.enumDotShorthand,
-        collectionShowLength: collectionShowLength ?? this.collectionShowLength,
+        collectionShowCount: collectionShowCount ?? this.collectionShowCount,
         collectionShowIndexes:
             collectionShowIndexes ?? this.collectionShowIndexes,
         valueFormatter: valueFormatter ?? this.valueFormatter,
@@ -353,7 +353,7 @@ final class LogMainTheme with Loggable {
       ..prop('padding', padding)
       ..prop('errorAlwaysOnNewLine', errorAlwaysOnNewLine)
       ..prop('enumDotShorthand', enumDotShorthand)
-      ..prop('collectionShowLength', collectionShowLength)
+      ..prop('collectionShowCount', collectionShowCount)
       ..prop('collectionShowIndexes', collectionShowIndexes)
       ..prop('valueFormatter', valueFormatter)
       ..prop('messageFormatter', messageFormatter)

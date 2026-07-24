@@ -33,8 +33,8 @@ Future<void> main() async {
     'List',
     data: [1.2, 2.3, 3.4, 4.5, 5.6],
     config: const LoggableConfig(
-      collectionMaxLength: 3,
-      collectionShowLength: true,
+      collectionMaxCount: 3,
+      collectionShowCount: true,
       collectionShowIndexes: true,
     ),
   );
@@ -42,13 +42,13 @@ Future<void> main() async {
   log.d(
     'Set',
     data: {1.2, 2.3, 3.4, 4.5, 5.6},
-    config: const LoggableConfig(collectionMaxLength: 3),
+    config: const LoggableConfig(collectionMaxCount: 3),
   );
 
   log.d(
     'Iterable',
     data: [1.2, 2.3, 3.4, 4.5, 5.6].where((e) => true),
-    config: const LoggableConfig(collectionMaxLength: 3),
+    config: const LoggableConfig(collectionMaxCount: 3),
   );
 
   print('----- Formatting -----');

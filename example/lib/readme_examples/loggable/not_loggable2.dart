@@ -14,7 +14,7 @@ class MyConverter implements LoggableTypeConverter<NotLoggableObject> {
     NotLoggableObject obj,
     LogTheme theme,
     int depth,
-    LoggableResolvedConfig config,
+    LoggableEffectiveConfig config,
   ) {
     final loggable = Loggable.builder(obj)
       ..prop('weight', obj.weight, units: 'kg')

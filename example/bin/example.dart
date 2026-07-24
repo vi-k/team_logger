@@ -108,14 +108,14 @@ void f() {
           data: LoggableMultiData({
             '': Data.postBody,
             'HEADERS': Data.postHeaders,
-          }, config: const LoggableConfig(collectionMaxLength: 2)),
+          }, config: const LoggableConfig(collectionMaxCount: 2)),
           tags: ['post'],
         );
         httpLog[level].log(
           '[success][200 OK][/success] ${Data.postUrl}',
           traceId: httpTraceId,
           data: Data.succesResponse,
-          config: const LoggableConfig(collectionMaxLength: 2),
+          config: const LoggableConfig(collectionMaxCount: 2),
           tags: ['response'],
         );
 
@@ -132,25 +132,25 @@ void f() {
   log.d(
     'json',
     data: Data.json,
-    config: const LoggableConfig(collectionMaxLength: 2),
+    config: const LoggableConfig(collectionMaxCount: 2),
   );
   log.d(
     '',
     data: LoggableMultiData({
       'JSON': Data.json,
-    }, config: const LoggableConfig(collectionMaxLength: 2)),
+    }, config: const LoggableConfig(collectionMaxCount: 2)),
   );
   log.d(
     '',
     data: Data.json,
-    config: const LoggableConfig(collectionMaxLength: 2),
+    config: const LoggableConfig(collectionMaxCount: 2),
   );
 
   for (final l in LogLevels.values) {
     log[l].log(
       '',
       data: Data.listOfLists,
-      config: const LoggableConfig(collectionMaxLength: 2),
+      config: const LoggableConfig(collectionMaxCount: 2),
     );
   }
 
@@ -204,7 +204,7 @@ void f() {
   log.d(
     'wrapped list',
     data: [1, 2, 3],
-    config: const LoggableConfig(collectionMaxLength: 2),
+    config: const LoggableConfig(collectionMaxCount: 2),
   );
 
   const notLoggableObject = NotLoggableObject('abc', [1, 2, 3]);
@@ -238,7 +238,7 @@ void f() {
   log.d(
     'storage snapshot',
     data: logStorage.snapshot(),
-    config: const LoggableConfig(collectionMaxLength: 2),
+    config: const LoggableConfig(collectionMaxCount: 2),
   );
 
   log.d(
@@ -261,4 +261,6 @@ void f() {
     },
     config: const LoggableConfig(stringInQuotes: false, units: 'kg'),
   );
+
+  print(Loggable.objectToJson(Data.loggableObject));
 }

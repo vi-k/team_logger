@@ -48,9 +48,9 @@ final class LoggableData {
     Object view = Prop.noView,
     LoggableConfig? config,
     bool? enumDotShorthand,
-    int? collectionMaxLength,
+    int? collectionMaxCount,
     int? collectionMaxStringLength,
-    bool? collectionShowLength,
+    bool? collectionShowCount,
     bool? collectionShowIndexes,
     String? units,
     String? doubleFormat,
@@ -61,9 +61,9 @@ final class LoggableData {
     assert(
       config == null ||
           (enumDotShorthand == null &&
-              collectionMaxLength == null &&
+              collectionMaxCount == null &&
               collectionMaxStringLength == null &&
-              collectionShowLength == null &&
+              collectionShowCount == null &&
               collectionShowIndexes == null &&
               units == null &&
               doubleFormat == null &&
@@ -82,9 +82,9 @@ final class LoggableData {
         config: config ??
             LoggableConfig(
               enumDotShorthand: enumDotShorthand,
-              collectionMaxLength: collectionMaxLength,
+              collectionMaxCount: collectionMaxCount,
               collectionMaxStringLength: collectionMaxStringLength,
-              collectionShowLength: collectionShowLength,
+              collectionShowCount: collectionShowCount,
               collectionShowIndexes: collectionShowIndexes,
               units: units,
               doubleFormat: doubleFormat,
@@ -106,9 +106,9 @@ final class LoggableData {
     Object view = Prop.noView,
     LoggableConfig? config,
     bool? enumDotShorthand,
-    int? collectionMaxLength,
+    int? collectionMaxCount,
     int? collectionMaxStringLength,
-    bool? collectionShowLength,
+    bool? collectionShowCount,
     bool? collectionShowIndexes,
     String? units,
     String? doubleFormat,
@@ -124,9 +124,9 @@ final class LoggableData {
       view: view,
       config: config,
       enumDotShorthand: enumDotShorthand,
-      collectionMaxLength: collectionMaxLength,
+      collectionMaxCount: collectionMaxCount,
       collectionMaxStringLength: collectionMaxStringLength,
-      collectionShowLength: collectionShowLength,
+      collectionShowCount: collectionShowCount,
       collectionShowIndexes: collectionShowIndexes,
       units: units,
       doubleFormat: doubleFormat,
@@ -147,9 +147,9 @@ final class LoggableData {
     Object view = Prop.noView,
     LoggableConfig? config,
     bool? enumDotShorthand,
-    int? collectionMaxLength,
+    int? collectionMaxCount,
     int? collectionMaxStringLength,
-    bool? collectionShowLength,
+    bool? collectionShowCount,
     bool? collectionShowIndexes,
     String? units,
     String? doubleFormat,
@@ -165,9 +165,9 @@ final class LoggableData {
       view: view,
       config: config,
       enumDotShorthand: enumDotShorthand,
-      collectionMaxLength: collectionMaxLength,
+      collectionMaxCount: collectionMaxCount,
       collectionMaxStringLength: collectionMaxStringLength,
-      collectionShowLength: collectionShowLength,
+      collectionShowCount: collectionShowCount,
       collectionShowIndexes: collectionShowIndexes,
       units: units,
       doubleFormat: doubleFormat,
@@ -188,9 +188,9 @@ final class LoggableData {
     bool showName = true,
     LoggableConfig? config,
     bool? enumDotShorthand,
-    int? collectionMaxLength,
+    int? collectionMaxCount,
     int? collectionMaxStringLength,
-    bool? collectionShowLength,
+    bool? collectionShowCount,
     bool? collectionShowIndexes,
     String? units,
     String? doubleFormat,
@@ -205,9 +205,9 @@ final class LoggableData {
       view: view,
       config: config,
       enumDotShorthand: enumDotShorthand,
-      collectionMaxLength: collectionMaxLength,
+      collectionMaxCount: collectionMaxCount,
       collectionMaxStringLength: collectionMaxStringLength,
-      collectionShowLength: collectionShowLength,
+      collectionShowCount: collectionShowCount,
       collectionShowIndexes: collectionShowIndexes,
       units: units,
       doubleFormat: doubleFormat,
@@ -233,6 +233,35 @@ final class LoggableData {
       view: value.toStringAsFixed(fractionDigits),
       units: units,
     );
+  }
+
+  Object? toJson({
+    LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) {
+    MapEntry<String, Object?> prop2entry(Prop<Object?> p) =>
+        p.toMapEntry(config: config);
+
+    Object? prop2json(Prop<Object?> p) {
+      final entry = prop2entry(p);
+      return p.showName ? {entry.key: entry.value} : entry.value;
+    }
+
+    final className = _type.typeName ?? _type.value.toString();
+    final propsList = this.props.where((p) => !p.hidden).toList();
+    final hasNonamed = propsList.any((p) => !p.showName);
+    final props = hasNonamed
+        ? propsList.map(prop2json).toList()
+        : Map.fromEntries(propsList.map(prop2entry));
+
+    return {
+      if (_type.showName) ':class': className,
+      if (!_type.showBrackets)
+        ':brackets': <String>[]
+      else if (_type.openingBracket != '(' || _type.closingBracket != ')')
+        ':brackets': [_type.openingBracket, _type.closingBracket],
+      ':props': props,
+      if (config.units case final units?) ':units': units,
+    };
   }
 
   String toLogString({
@@ -292,6 +321,27 @@ final class Prop<T extends Object?> {
     this.depthCorrection = 0,
   });
 
+  MapEntry<String, Object?> toMapEntry({
+    LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) {
+    final units = this.config.units ?? config.units;
+    final effectiveConfig = LoggableJsonConfig(
+      collectionMaxCount:
+          this.config.collectionMaxCount ?? config.collectionMaxCount,
+    );
+    final viewStr = switch (view) {
+      LoggableNoView() => null,
+      final LoggableView view => view.toLogString(value),
+      final view => view.toString(),
+    };
+    final valueJson =
+        viewStr ?? Loggable.objectToJson(value, config: effectiveConfig);
+    final propJson =
+        units == null ? valueJson : {':value': valueJson, ':units': units};
+
+    return MapEntry(showName ? name : '@$name', propJson);
+  }
+
   String toLogString({
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
@@ -300,29 +350,27 @@ final class Prop<T extends Object?> {
     String name2str() => theme.data.keyStyle(theme.formatValue(name));
 
     final effectiveConfig = this.config.merge(config);
-
-    final view = this.view;
-    final viewStr = switch (view) {
+    final effectiveView = switch (view) {
       LoggableNoView() => null,
-      LoggableView() => view.toLogString(value, theme: theme, depth: depth),
-      _ => '$view${Loggable.unitsToString(effectiveConfig.units, theme)}',
+      final LoggableView view =>
+        view.toLogString(value, theme: theme, depth: depth),
+      final view =>
+        '$view${Loggable.unitsToString(effectiveConfig.units, theme)}',
     };
-
-    final valueStr = viewStr ??
-        Loggable.objectToString(
-          value,
-          theme: theme,
-          depth: depth + 1 + depthCorrection,
-          config: effectiveConfig,
-        );
-
-    final styledValueStr = theme.formatValue(valueStr);
-
+    final styledValue = theme.formatValue(
+      effectiveView ??
+          Loggable.objectToString(
+            value,
+            theme: theme,
+            depth: depth + 1 + depthCorrection,
+            config: effectiveConfig,
+          ),
+    );
     final depthTheme = theme.depthTheme(depth);
     final prefix =
         showName ? '${name2str()}${depthTheme.punctuation(':')} ' : '';
 
-    return '$prefix$styledValueStr';
+    return '$prefix$styledValue';
   }
 
   @override
