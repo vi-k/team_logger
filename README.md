@@ -54,6 +54,7 @@ formatting, and customizable styling themes.
   - [6. Formatting Complex Objects](#6-formatting-complex-objects)
   - [7. Trace Propagation (`TraceId`)](#7-trace-propagation-traceid)
   - [8. Circular Buffer (`LogStorage`)](#8-circular-buffer-logstorage)
+  - [9. Saving Logs to Files (`FileLogStorage`)](#9-saving-logs-to-files-filelogstorage)
 - [License](#license)
 
 ---
@@ -1371,6 +1372,85 @@ See also [flutter_team_logger](https://pub.dev/packages/flutter_team_logger),
 which uses `LogStorage`.
 
 ![flutter_team_logger](screenshots/flutter_team_logger.png)
+
+---
+
+### 9. Saving Logs to Files (`FileLogStorage`)
+
+`FileLogStorage` stores logs on the user's device so they can later be sent
+for diagnostics. It lives in a separate library built on `dart:io` — import
+`package:team_logger/team_logger_io.dart` instead of `team_logger.dart`
+(it re-exports the whole core API). On the web, keep using the core library.
+
+Every application run gets its own **session**. A session is a chain of chunk
+files `<sessionId>.<index>.jsonl` written as JSON Lines, one JSON object per
+log. The first line of every chunk is a metadata line (`":meta"` key) with
+the session id, start time and any fields you pass in `meta`.
+
+```dart
+final storage = FileLogStorage(
+  directory: '/path/to/logs',            // e.g. from path_provider
+  meta: {'appVersion': '1.2.3'},         // written into the meta line
+  maxSessionSize: 10 * 1024 * 1024,      // per-session limit (chunk rotation)
+  maxChunkSize: 1024 * 1024,             // per-chunk limit
+  maxTotalSize: 100 * 1024 * 1024,       // limit for all sessions together
+  maxAge: const Duration(days: 7),       // sessions older than this are deleted
+);
+
+log.publisher = MultiPublisher([
+  ConsoleLogPrinter(rows: [...]),
+  storage,
+]);
+```
+
+Three size limits, from the outside in (the number of sessions and chunks
+is never limited — only sizes are):
+
+- **All sessions** (`maxTotalSize`, `maxAge`): on startup, sessions older
+  than `maxAge` are deleted, then the oldest sessions are removed until the
+  rest fit into `maxTotalSize` (minus a `maxSessionSize` reserve for the
+  current session).
+- **Per session** (`maxSessionSize`): when the session's total exceeds the
+  limit, the oldest chunk is deleted — the most recent logs are always kept.
+- **Per chunk** (`maxChunkSize`): when a chunk file reaches the limit, the
+  next chunk is started. Must fit into `maxSessionSize` at least twice.
+
+The `data` parameter of a log is saved as text by
+`Loggable.objectToString` (default) or as structured JSON by
+`Loggable.objectToJson`:
+
+```dart
+FileLogStorage(
+  directory: '...',
+  dataFormat: FileLogDataFormat.json,    // objectToJson
+);
+
+FileLogStorage(
+  directory: '...',
+  // dataFormat: FileLogDataFormat.text is the default (objectToString).
+  // The theme controls formatting; ANSI codes are preserved in the file,
+  // LogMainTheme.noColors (the default) produces clean text.
+  theme: LogMainTheme.defaultActiveTheme,
+);
+```
+
+To send logs for diagnostics, list the stored sessions and pack them into
+a single ZIP archive (each session stays a separate file inside), or export
+them as plain files:
+
+```dart
+await storage.flush();                   // make sure everything is on disk
+
+final sessions = await storage.sessions.list();
+await storage.sessions.archiveTo(File('/tmp/logs.zip'));          // one zip
+await storage.sessions.exportTo(Directory('/tmp/logs'));          // plain files
+
+// Inspect or clean up:
+for (final session in sessions) {
+  print('${session.id}: ${session.size} bytes, ${session.lastModified}');
+  print(await session.readMeta());       // {'sessionId': ..., 'appVersion': ...}
+}
+```
 
 ---
 

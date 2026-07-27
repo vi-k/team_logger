@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import 'package:logger_builder/logger_builder.dart';
 
-import '../loggable/loggable.dart';
 import '../logger/log_levels.dart';
 import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
@@ -83,12 +82,6 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     final theme = (isActive ? this.theme : inactiveTheme ?? this.theme);
     if (log.level < theme.minLevel) {
       return;
-    }
-
-    // TODO: убрать
-    // print(Loggable.objectToJson(log));
-    if (log.hasData) {
-      print(Loggable.objectToJson(log.data));
     }
 
     for (final row in rows) {

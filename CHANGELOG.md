@@ -5,6 +5,12 @@
   now accept the parameter [collectionMaxCount] = 0.
 - Add [Loggable.objectToJson].
 - Add [LoggableData.round].
+- Add file-based session log storage (`package:team_logger/team_logger_io.dart`):
+  [FileLogStorage] writes logs to per-session JSON Lines files with chunk
+  rotation ([maxSessionSize]/[maxChunkSize]), startup cleanup ([maxAge],
+  [maxTotalSize]) and a metadata line; [FileLogSessions]/[FileLogSession]
+  list, read, delete, export sessions and pack them into a single ZIP
+  archive ([archiveTo]).
 
 ## 0.3.0
 

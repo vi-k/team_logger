@@ -1,0 +1,369 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:clock/clock.dart';
+import 'package:logger_builder/logger_builder.dart';
+
+import '../loggable/loggable_config.dart';
+import '../loggable/loggable_json_config.dart';
+import '../logger/log_levels.dart';
+import '../logger/logger.dart';
+import '../theme/log_main_theme.dart';
+import 'file_log_codec.dart';
+import 'file_log_sessions.dart';
+
+/// A publisher that stores logs on disk, one session per application run.
+///
+/// A session is a chain of chunk files `<sessionId>.<index>.jsonl`, each
+/// limited by [maxChunkSize]. The session is limited by [maxSessionSize]:
+/// when the limit is exceeded, the oldest chunk is deleted, so the most
+/// recent logs are always kept. On startup, sessions older than [maxAge]
+/// are deleted, and, if [maxTotalSize] is set, the oldest sessions are
+/// deleted until the rest fit into the limit. The number of chunks and
+/// sessions is not limited — only sizes are.
+///
+/// Logs are written in batches in the background; `await flush()` guarantees
+/// everything published so far is on disk. After [close] publications are
+/// silently ignored.
+final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
+  /// The directory the session files are stored in (created recursively).
+  final String directory;
+
+  /// User fields of the metadata line written as the first line of every
+  /// chunk.
+  final Map<String, Object?>? meta;
+
+  final int minLevel;
+
+  /// Total size limit of one session, in bytes.
+  final int maxSessionSize;
+
+  /// Size limit of one chunk file, in bytes. When a chunk reaches it, the
+  /// next chunk is started. Must fit into [maxSessionSize] at least twice.
+  final int maxChunkSize;
+
+  /// Total size limit of all sessions together, in bytes. `null` — no limit.
+  final int? maxTotalSize;
+
+  /// Sessions older than this are deleted on startup. `null` — keep forever.
+  final Duration? maxAge;
+
+  /// Called on initialization, encoding and write errors. Errors are never
+  /// thrown; exceptions thrown by the callback itself are ignored.
+  final void Function(Object error, StackTrace stackTrace)? onError;
+
+  /// Completes when the storage is initialized: the directory is created,
+  /// old sessions are cleaned up, the session id is resolved and the first
+  /// chunk with the metadata line is reserved on disk. Never completes with
+  /// an error. Awaiting it is optional: logs published earlier are buffered.
+  late final Future<void> ready;
+
+  final FileLogCodec _codec;
+  final DateTime _started;
+
+  late String _sessionId;
+  late final List<int> _metaLineBytes;
+  var _disabled = false;
+  var _closed = false;
+  var _pending = 0;
+  var _chunkIndex = 1;
+  var _chunkSize = 0;
+
+  /// Размеры чанков текущей сессии на диске (индекс -> байты).
+  final Map<int, int> _chunkSizes = {};
+
+  FileLogStorage({
+    required this.directory,
+    String? sessionId,
+    this.meta,
+    this.minLevel = LogLevels.all,
+    this.maxSessionSize = 10 * 1024 * 1024,
+    this.maxChunkSize = 1024 * 1024,
+    this.maxTotalSize,
+    this.maxAge = const Duration(days: 7),
+    FileLogDataFormat dataFormat = FileLogDataFormat.text,
+    LogMainTheme? theme,
+    LoggableConfig config = const LoggableConfig(),
+    LoggableJsonConfig jsonConfig = const LoggableJsonConfig(),
+    this.onError,
+  })  : assert(maxChunkSize > 0, 'maxChunkSize must be positive'),
+        assert(
+          maxSessionSize >= 2 * maxChunkSize,
+          'maxSessionSize must fit at least two chunks '
+          '(maxSessionSize >= 2 * maxChunkSize)',
+        ),
+        assert(
+          maxTotalSize == null || maxTotalSize >= maxSessionSize,
+          'maxTotalSize must be >= maxSessionSize',
+        ),
+        _codec = FileLogCodec(
+          dataFormat: dataFormat,
+          theme: theme,
+          config: config,
+          jsonConfig: jsonConfig,
+        ),
+        _started = clock.now() {
+    _sessionId = sanitizeSessionId(sessionId ?? defaultSessionId(_started));
+    // Инициализация стартует в фоне, future сохраняется в [ready].
+    // ignore: discarded_futures
+    ready = _init();
+  }
+
+  /// The id of the current session.
+  ///
+  /// May get a numeric suffix during initialization if a session with the
+  /// same id already exists on disk (see [ready]).
+  String get sessionId => _sessionId;
+
+  /// Reader for the sessions stored in [directory], including the current
+  /// one.
+  FileLogSessions get sessions => FileLogSessions(directory);
+
+  @override
+  void publish(Log log) {
+    // После close публикация — no-op: базовый publish бросил бы StateError
+    // в точку логирования, а буфер никогда не был бы обработан.
+    if (_closed) return;
+
+    _pending++;
+    try {
+      super.publish(log);
+    } on Object {
+      _pending--;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> flush() {
+    // Базовый flush() зависает, если буфер пуст: его completer завершается
+    // только после обработки очередного батча.
+    if (_pending == 0) return ready;
+
+    return super.flush();
+  }
+
+  @override
+  Future<void> close() {
+    _closed = true;
+
+    return super.close();
+  }
+
+  @override
+  Future<void> handle(List<Log> logs, List<Log> retryBuffer) async {
+    // Батч не возвращается в retryBuffer: при недоступном диске это дало бы
+    // бесконечные повторы и рост памяти.
+    try {
+      await ready;
+      if (_disabled) return;
+
+      final lines = <String>[];
+      for (final log in logs) {
+        if (log.level < minLevel) continue;
+        try {
+          lines.add(_codec.encode(log));
+        } on Object catch (error, stackTrace) {
+          // Ошибка кодирования одного лога (бросающий toString и т.п.)
+          // не должна терять соседние логи батча.
+          _report(error, stackTrace);
+          lines.add(_encodeFallback(log, error));
+        }
+      }
+
+      if (lines.isNotEmpty) {
+        try {
+          await _write(lines);
+        } on Object catch (error, stackTrace) {
+          _report(error, stackTrace);
+          _recoverAfterWriteError();
+        }
+      }
+    } on Object catch (error, stackTrace) {
+      _report(error, stackTrace);
+    } finally {
+      _pending -= logs.length;
+    }
+  }
+
+  Future<void> _init() async {
+    try {
+      await Directory(directory).create(recursive: true);
+      await _cleanupOnStartup();
+
+      // Свободный id: сначала по существующим файлам (включая сессии,
+      // у которых первый чанк уже удалён ротацией)...
+      final existingIds = _existingSessionIds();
+      final base = _sessionId;
+      var n = 0;
+      var candidate = _sessionId;
+      while (existingIds.contains(candidate)) {
+        n++;
+        candidate = '$base-$n';
+      }
+
+      // ...затем резервируем сессию, эксклюзивно создавая первый чанк, —
+      // защита от гонки двух инстансов с одинаковым id, ещё не успевших
+      // ничего записать.
+      while (true) {
+        final file = File('$directory/${chunkName(candidate, 1)}');
+        try {
+          await file.create(exclusive: true);
+          break;
+        } on FileSystemException {
+          if (!file.existsSync()) rethrow;
+          n++;
+          candidate = '$base-$n';
+        }
+      }
+      _sessionId = candidate;
+
+      _metaLineBytes = utf8.encode(
+        '${_codec.encodeMeta(
+          sessionId: candidate,
+          started: _started,
+          meta: meta,
+        )}\n',
+      );
+      await File('$directory/${chunkName(candidate, 1)}').writeAsBytes(
+        _metaLineBytes,
+        mode: FileMode.writeOnlyAppend,
+        flush: true,
+      );
+      _chunkSize = _metaLineBytes.length;
+      _chunkSizes[1] = _chunkSize;
+    } on Object catch (error, stackTrace) {
+      _disabled = true;
+      _report(error, stackTrace);
+    }
+  }
+
+  /// Удаляет сессии старше [maxAge], затем — старейшие сессии, пока
+  /// остальные не влезут в `maxTotalSize - maxSessionSize` (резерв под
+  /// рост текущей сессии).
+  Future<void> _cleanupOnStartup() async {
+    final maxAge = this.maxAge;
+    final maxTotalSize = this.maxTotalSize;
+    if (maxAge == null && maxTotalSize == null) return;
+
+    // Старые -> новые.
+    final kept = await sessions.list().then(List.of);
+
+    if (maxAge != null) {
+      final deadline = clock.now().subtract(maxAge);
+      for (final session in [...kept]) {
+        if (session.lastModified.isBefore(deadline)) {
+          await session.delete();
+          kept.remove(session);
+        }
+      }
+    }
+
+    if (maxTotalSize != null) {
+      final allowed = maxTotalSize - maxSessionSize;
+      var total = kept.fold(0, (sum, session) => sum + session.size);
+      for (final session in kept) {
+        if (total <= allowed) break;
+        await session.delete();
+        total -= session.size;
+      }
+    }
+  }
+
+  Set<String> _existingSessionIds() => {
+        for (final entity in Directory(directory).listSync())
+          if (entity is File)
+            if (parseChunkName(entity.uri.pathSegments.last) case final parsed?)
+              parsed.sessionId,
+      };
+
+  /// Дописывает строки батча в чанки, режа батч по [maxChunkSize],
+  /// чтобы один большой батч не раздувал чанк и не выбрасывался ротацией
+  /// целиком. Только append: файлы никогда не усекаются.
+  Future<void> _write(List<String> lines) async {
+    final target = maxChunkSize;
+    final pending = BytesBuilder(copy: false);
+
+    Future<void> commit() async {
+      if (pending.isEmpty) return;
+      final bytes = pending.takeBytes();
+      final file = File('$directory/${chunkName(_sessionId, _chunkIndex)}');
+      await file.writeAsBytes(
+        bytes,
+        mode: FileMode.writeOnlyAppend,
+        flush: true,
+      );
+      _chunkSize += bytes.length;
+      _chunkSizes[_chunkIndex] = _chunkSize;
+    }
+
+    for (final line in lines) {
+      if (_chunkSize == 0 && pending.isEmpty) {
+        pending.add(_metaLineBytes);
+      }
+      pending.add(utf8.encode('$line\n'));
+
+      if (_chunkSize + pending.length >= target) {
+        await commit();
+        _chunkIndex++;
+        _chunkSize = 0;
+        await _deleteOldestChunks();
+      }
+    }
+
+    await commit();
+    if (_chunkSize >= target) {
+      _chunkIndex++;
+      _chunkSize = 0;
+    }
+    await _deleteOldestChunks();
+  }
+
+  /// После ошибки записи текущий чанк может содержать частично записанную
+  /// строку — переходим на новый чанк, чтобы следующая запись не склеилась
+  /// с обрывком в невалидный JSONL, и сверяем учтённый размер с фактическим.
+  void _recoverAfterWriteError() {
+    final file = File('$directory/${chunkName(_sessionId, _chunkIndex)}');
+    final stat = file.statSync();
+    if (stat.type != FileSystemEntityType.notFound) {
+      _chunkSizes[_chunkIndex] = stat.size;
+    } else {
+      _chunkSizes.remove(_chunkIndex);
+    }
+    _chunkIndex++;
+    _chunkSize = 0;
+  }
+
+  /// Удаляет старейшие чанки, пока суммарный размер сессии превышает
+  /// [maxSessionSize]. Последний записанный чанк не удаляется никогда.
+  Future<void> _deleteOldestChunks() async {
+    var total = _chunkSizes.values.fold(0, (sum, size) => sum + size);
+    while (total > maxSessionSize && _chunkSizes.length > 1) {
+      final oldest = _chunkSizes.keys.reduce((a, b) => a < b ? a : b);
+      final file = File('$directory/${chunkName(_sessionId, oldest)}');
+      if (file.existsSync()) {
+        await file.delete();
+      }
+      total -= _chunkSizes.remove(oldest)!;
+    }
+  }
+
+  String _encodeFallback(Log log, Object error) => jsonEncode(<String, Object?>{
+        'num': log.num,
+        'level': log.level,
+        'levelName': log.levelName,
+        'time': log.time.toUtc().toIso8601String(),
+        'encodeError': '$error',
+      });
+
+  void _report(Object error, StackTrace stackTrace) {
+    try {
+      onError?.call(error, stackTrace);
+    } on Object {
+      // Пользовательский onError не должен ронять конвейер записи
+      // и подвешивать flush().
+    }
+  }
+}
