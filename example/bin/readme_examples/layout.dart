@@ -20,7 +20,7 @@ Future<void> main() async {
       LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),
@@ -39,7 +39,7 @@ Future<void> main() async {
     rows: [
       LogRow.singleLine(
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),
@@ -68,7 +68,7 @@ Future<void> main() async {
       const LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),
@@ -84,7 +84,7 @@ Future<void> main() async {
           // We remove any unnecessary information, keeping only the sequence
           // number, but visually hiding it (by default, the first line is
           // visible).
-          LogSequenceNum(hidden: true),
+          LogNum(hidden: true),
           LogStackTrace(),
         ],
         // We'll keep the tags, but hide them.
@@ -102,7 +102,7 @@ Future<void> main() async {
       LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(
+          LogNum(
             // Reserving space for numbering
             constraints: Constraints(min: 7),
             // Align to the right
@@ -125,7 +125,7 @@ Future<void> main() async {
   final traceId = TraceId.auto('user');
   log.d('User info', data: person, traceId: traceId);
   // ignore: invalid_use_of_visible_for_testing_member
-  Log.lastSequenceNum = 100;
+  Log.lastNum = 100;
   final networkLog = log.createChild(name: 'network');
   networkLog.d(
     '[b]PATCH[/b] http://example.com/[b]user[/b]',
@@ -133,7 +133,7 @@ Future<void> main() async {
     traceId: traceId,
   );
   // ignore: invalid_use_of_visible_for_testing_member
-  Log.lastSequenceNum = 10000;
+  Log.lastNum = 10000;
   log.d('User info succesfully patched', traceId: traceId);
 }
 

@@ -1,11 +1,4 @@
 import 'loggable.dart';
-import 'loggable_config.dart';
-
-final class _NoData {
-  const _NoData();
-}
-
-const _noData = _NoData();
 
 /// Конфигурация для [objectToJson].
 ///
@@ -44,6 +37,8 @@ abstract base class LoggableJsonConfig with Loggable {
 }
 
 final class _LoggableJsonConfig extends LoggableJsonConfig {
+  static const _undefined = Object();
+
   const _LoggableJsonConfig({
     super.collectionMaxCount,
     super.units,
@@ -51,13 +46,13 @@ final class _LoggableJsonConfig extends LoggableJsonConfig {
 
   @override
   LoggableJsonConfig copyWith({
-    Object? collectionMaxCount = _noData,
-    Object? units = _noData,
+    Object? collectionMaxCount = _undefined,
+    Object? units = _undefined,
   }) =>
       _LoggableJsonConfig(
-        collectionMaxCount: collectionMaxCount is _NoData
+        collectionMaxCount: identical(collectionMaxCount, _undefined)
             ? this.collectionMaxCount
             : collectionMaxCount as int?,
-        units: units is _NoData ? this.units : units as String?,
+        units: identical(units, _undefined) ? this.units : units as String?,
       );
 }

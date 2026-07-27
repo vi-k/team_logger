@@ -15,15 +15,15 @@ final class RouteInfo with Loggable {
         duration,
         view: LoggableMultiView([
           LoggableView(duration),
-          LoggableView(duration.inMinutes, 'min'),
+          LoggableView(duration.inMinutes, units: 'min'),
         ]),
       )
       ..prop(
         'distance',
         distance,
         view: LoggableMultiView([
-          LoggableView(distance.toStringAsFixed(1), 'km'),
-          LoggableView((distance / 1.852).toStringAsFixed(1), 'NM'),
+          LoggableView(distance.toStringAsFixed(1), units: 'km'),
+          LoggableView((distance / 1.852).toStringAsFixed(1), units: 'NM'),
         ]),
       );
   }

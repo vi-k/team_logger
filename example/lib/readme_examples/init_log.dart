@@ -31,7 +31,7 @@ void initLog({
             LogRow(
               maxLength: maxLength ?? 100,
               children: [
-                LogSequenceNum(),
+                LogNum(),
                 LogLevelName.short(),
                 LogTime.onlyTime(),
                 LogPath(),

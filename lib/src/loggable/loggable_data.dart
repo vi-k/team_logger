@@ -56,7 +56,6 @@ final class LoggableData {
     String? doubleFormat,
     String? intFormat,
     bool? stringInQuotes,
-    int depthCorrection = 0,
   }) {
     assert(
       config == null ||
@@ -91,7 +90,6 @@ final class LoggableData {
               intFormat: intFormat,
               stringInQuotes: stringInQuotes,
             ),
-        depthCorrection: depthCorrection,
       ),
     );
   }
@@ -114,7 +112,6 @@ final class LoggableData {
     String? doubleFormat,
     String? intFormat,
     bool? stringInQuotes,
-    int depthCorrection = 0,
   }) {
     prop<T>(
       name,
@@ -132,7 +129,6 @@ final class LoggableData {
       doubleFormat: doubleFormat,
       intFormat: intFormat,
       stringInQuotes: stringInQuotes,
-      depthCorrection: depthCorrection,
     );
   }
 
@@ -155,7 +151,6 @@ final class LoggableData {
     String? doubleFormat,
     String? intFormat,
     bool? stringInQuotes,
-    int depthCorrection = 0,
   }) {
     prop<T>(
       name,
@@ -173,7 +168,6 @@ final class LoggableData {
       doubleFormat: doubleFormat,
       intFormat: intFormat,
       stringInQuotes: stringInQuotes,
-      depthCorrection: depthCorrection,
     );
   }
 
@@ -196,7 +190,6 @@ final class LoggableData {
     String? doubleFormat,
     String? intFormat,
     bool? stringInQuotes,
-    int depthCorrection = 0,
   }) {
     prop(
       name,
@@ -213,12 +206,11 @@ final class LoggableData {
       doubleFormat: doubleFormat,
       intFormat: intFormat,
       stringInQuotes: stringInQuotes,
-      depthCorrection: depthCorrection,
     );
   }
 
   /// Добавляет свойство double к описанию, форматируя его с помощью
-  /// [fractionDigits].
+  /// [fractionDigits]: 1.000 with fractionDigits 2 = '1.00'.
   void fixed(
     String name,
     double value,
@@ -226,6 +218,15 @@ final class LoggableData {
     bool showName = true,
     String? units,
   }) {
+    if (!value.isFinite) {
+      return prop<double>(
+        name,
+        value,
+        showName: showName,
+        units: units,
+      );
+    }
+
     prop<double>(
       name,
       value,
@@ -235,11 +236,44 @@ final class LoggableData {
     );
   }
 
+  /// Добавляет свойство double к описанию, округляя его до [precision]:
+  /// 1.000 with precision 2 = 1.
+  void round(
+    String name,
+    double value, {
+    int precision = 0,
+    bool showName = true,
+    String? units,
+  }) {
+    if (!value.isFinite) {
+      return prop<double>(
+        name,
+        value,
+        showName: showName,
+        units: units,
+      );
+    }
+
+    final scale = math.pow(10.0, precision);
+
+    prop<double>(
+      name,
+      value,
+      showName: showName,
+      view: (value * scale).roundToDouble() / scale,
+      units: units,
+    );
+  }
+
   Object? toJson({
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
+    // Не передаём units дочерним элементам: units описывают объект целиком
+    // и попадают в ":u" на его уровне.
+    final propConfig = config.copyWith(units: null);
+
     MapEntry<String, Object?> prop2entry(Prop<Object?> p) =>
-        p.toMapEntry(config: config);
+        p.toMapEntry(config: propConfig);
 
     Object? prop2json(Prop<Object?> p) {
       final entry = prop2entry(p);
@@ -254,13 +288,10 @@ final class LoggableData {
         : Map.fromEntries(propsList.map(prop2entry));
 
     return {
-      if (_type.showName) ':class': className,
-      if (!_type.showBrackets)
-        ':brackets': <String>[]
-      else if (_type.openingBracket != '(' || _type.closingBracket != ')')
-        ':brackets': [_type.openingBracket, _type.closingBracket],
-      ':props': props,
-      if (config.units case final units?) ':units': units,
+      if (_type.showName) Loggable._classKey: className,
+      Loggable._propsKey: props,
+      if (!_type.showBrackets) Loggable._bracketsKey: false,
+      if (config.units case final units?) Loggable._unitsKey: units,
     };
   }
 
@@ -283,10 +314,18 @@ final class LoggableData {
           config: config,
         );
 
-    return '${_type.showName ? name2str() : ''}'
-        '${depthTheme.brackets(_type.openingBracket)}'
-        '${props.where((p) => !p.hidden).map(prop2str).join(depthTheme.punctuation(', '))}'
-        '${depthTheme.brackets(_type.closingBracket)}';
+    final buf = StringBuffer();
+    if (_type.showName) buf.write(name2str());
+    if (_type.showBrackets) buf.write(depthTheme.brackets('('));
+    buf.write(
+      props
+          .where((p) => !p.hidden)
+          .map(prop2str)
+          .join(depthTheme.punctuation(', ')),
+    );
+    if (_type.showBrackets) buf.write(depthTheme.brackets(')'));
+
+    return buf.toString();
   }
 
   @override
@@ -309,7 +348,6 @@ final class Prop<T extends Object?> {
   final bool showName;
   final bool hidden;
   final LoggableConfig config;
-  final int depthCorrection;
 
   Prop._(
     this.name,
@@ -318,26 +356,26 @@ final class Prop<T extends Object?> {
     this.hidden = false,
     this.view = noView,
     this.config = const LoggableConfig(),
-    this.depthCorrection = 0,
   });
 
   MapEntry<String, Object?> toMapEntry({
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
-    final units = this.config.units ?? config.units;
-    final effectiveConfig = LoggableJsonConfig(
-      collectionMaxCount:
-          this.config.collectionMaxCount ?? config.collectionMaxCount,
-    );
-    final viewStr = switch (view) {
-      LoggableNoView() => null,
-      final LoggableView view => view.toLogString(value),
-      final view => view.toString(),
+    final effectiveConfig = this.config.mergeWithJsonConfig(config);
+
+    // Как и в [toLogString]: units применяются к значению ровно один раз —
+    // [Loggable.objectToJson] делает это сам, [LoggableView] сам управляет
+    // своими units, и только «сырой» view оборачивается здесь.
+    final propJson = switch (view) {
+      LoggableNoView() => Loggable.objectToJson(value, config: effectiveConfig),
+      final LoggableView view => view.toJson(value),
+      bool() || num() => Loggable.objectToJson(view, config: effectiveConfig),
+      final view => {
+          Loggable._viewKey: view.toString(),
+          if (effectiveConfig.units case final units?)
+            Loggable._unitsKey: units,
+        },
     };
-    final valueJson =
-        viewStr ?? Loggable.objectToJson(value, config: effectiveConfig);
-    final propJson =
-        units == null ? valueJson : {':value': valueJson, ':units': units};
 
     return MapEntry(showName ? name : '@$name', propJson);
   }
@@ -362,7 +400,7 @@ final class Prop<T extends Object?> {
           Loggable.objectToString(
             value,
             theme: theme,
-            depth: depth + 1 + depthCorrection,
+            depth: depth + 1,
             config: effectiveConfig,
           ),
     );
@@ -379,71 +417,116 @@ final class Prop<T extends Object?> {
 
 final class TypeProp extends Prop<Type> {
   final bool showBrackets;
-  final String _openingBracket;
-  final String _closingBracket;
   final String? typeName;
 
-  TypeProp(
+  TypeProp._(
     Type type, {
     String? name,
     super.showName = true,
     this.showBrackets = true,
-    String? openingBracket,
-    String? closingBracket,
-  })  : _openingBracket = openingBracket ?? '(',
-        _closingBracket = closingBracket ?? ')',
-        typeName = name,
+  })  : typeName = name,
         super._('type', type);
-
-  String get openingBracket => showBrackets ? _openingBracket : '';
-
-  String get closingBracket => showBrackets ? _closingBracket : '';
 
   TypeProp copyWith({
     String? name,
     bool? showName,
     bool? showBrackets,
   }) =>
-      TypeProp(
+      TypeProp._(
         value,
         name: name ?? typeName,
         showName: showName ?? this.showName,
         showBrackets: showBrackets ?? this.showBrackets,
-        openingBracket: openingBracket,
-        closingBracket: closingBracket,
       );
 }
 
 final class _LoggableBuilder extends LoggableData {
+  final LoggableConfig config;
+
   _LoggableBuilder(
     Object? obj, {
     required String? name,
     required bool showName,
     required bool showBrackets,
-    required String? openingBracket,
-    required String? closingBracket,
+    this.config = const LoggableConfig(),
   }) : super._(
-          TypeProp(
+          TypeProp._(
             obj.runtimeType,
             name: name,
             showName: showName,
             showBrackets: showBrackets,
-            openingBracket: openingBracket,
-            closingBracket: closingBracket,
           ),
         );
+
+  @override
+  Object? toJson({
+    LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) =>
+      super.toJson(config: this.config.mergeWithJsonConfig(config));
+
+  @override
+  String toLogString({
+    LogTheme theme = LogTheme.noColors,
+    int depth = 0,
+    String Function(String value)? valueFormat,
+    LoggableConfig config = const LoggableConfig(),
+  }) =>
+      super.toLogString(
+        theme: theme,
+        depth: depth,
+        valueFormat: valueFormat,
+        config: this.config.merge(config),
+      );
 }
 
 final class _LoggableMapBuilder extends LoggableData {
-  _LoggableMapBuilder()
-      : super._(
-          TypeProp(
-            Map<String, Object?>,
-            showName: false,
-            openingBracket: '{',
-            closingBracket: '}',
-          ),
+  final LoggableConfig config;
+
+  _LoggableMapBuilder({this.config = const LoggableConfig()})
+      : super._(TypeProp._(Map<String, Object?>, showName: false));
+
+  @override
+  Object? toJson({
+    LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) {
+    final effectiveConfig = this.config.mergeWithJsonConfig(config);
+
+    // Не передаём units дочерним элементам: units описывают объект целиком
+    // и попадают в ":u" на его уровне.
+    final propConfig = effectiveConfig.copyWith(units: null);
+
+    MapEntry<String, Object?> prop2entry(Prop<Object?> p) =>
+        p.toMapEntry(config: propConfig);
+
+    final propsList = this.props.where((p) => !p.hidden).toList();
+    final props = Map.fromEntries(propsList.map(prop2entry));
+
+    return {
+      ...props,
+      if (effectiveConfig.units case final units?) Loggable._unitsKey: units,
+    };
+  }
+
+  @override
+  String toLogString({
+    LogTheme theme = LogTheme.noColors,
+    int depth = 0,
+    String Function(String value)? valueFormat,
+    LoggableConfig config = const LoggableConfig(),
+  }) {
+    final effectiveConfig = this.config.merge(config);
+    final depthTheme = theme.depthTheme(depth);
+
+    String prop2str(Prop<Object?> p) => p.toLogString(
+          theme: theme,
+          depth: depth,
+          config: effectiveConfig,
         );
+
+    return '${depthTheme.brackets('{')}'
+        '${props.where((p) => !p.hidden).map(prop2str).join(depthTheme.punctuation(', '))}'
+        '${depthTheme.brackets('}')}';
+  }
 }
 
 final class _ComputedProp {

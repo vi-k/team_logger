@@ -11,8 +11,8 @@ final class Point with Loggable {
   void collectLoggableData(LoggableData data) {
     data
       ..showName = false
-      ..fixed('lat', lat, 5, showName: false, units: '°')
-      ..fixed('lon', lon, 5, showName: false, units: '°');
+      ..round('lat', lat, precision: 5, showName: false, units: '°')
+      ..round('lon', lon, precision: 5, showName: false, units: '°');
   }
 }
 

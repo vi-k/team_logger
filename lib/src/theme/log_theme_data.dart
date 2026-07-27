@@ -7,7 +7,7 @@ final class LogThemeData with Loggable {
   final ansi.Style emphasis;
   final ansi.Style dim;
   final ansi.Style punctuation;
-  final ansi.Style sequenceNumStyle;
+  final ansi.Style numStyle;
   final ansi.Style levelNameStyle;
   final ansi.Style timeStyle;
   final ansi.Style pathStyle;
@@ -35,7 +35,7 @@ final class LogThemeData with Loggable {
     required this.emphasis,
     required this.dim,
     required this.punctuation,
-    required this.sequenceNumStyle,
+    required this.numStyle,
     required this.levelNameStyle,
     required this.timeStyle,
     required this.pathStyle,
@@ -64,7 +64,7 @@ final class LogThemeData with Loggable {
     required this.punctuation,
     ansi.Style? bold,
     ansi.Style? inverse,
-    ansi.Style? sequenceNumStyle,
+    ansi.Style? numStyle,
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
@@ -90,7 +90,7 @@ final class LogThemeData with Loggable {
               foreground: _black,
               background: normal.foregroundColor,
             ),
-        sequenceNumStyle = sequenceNumStyle ?? const ansi.NoStyle(),
+        numStyle = numStyle ?? const ansi.NoStyle(),
         levelNameStyle = levelNameStyle ??
             inverse ??
             ansi.Style(
@@ -122,7 +122,7 @@ final class LogThemeData with Loggable {
     ansi.Style? punctuation,
     ansi.Style? bold,
     ansi.Style? inverse,
-    ansi.Style? sequenceNumStyle,
+    ansi.Style? numStyle,
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
@@ -151,7 +151,7 @@ final class LogThemeData with Loggable {
               foreground: _black,
               background: normal.foregroundColor,
             ),
-        sequenceNumStyle = sequenceNumStyle ?? const ansi.NoStyle(),
+        numStyle = numStyle ?? const ansi.NoStyle(),
         levelNameStyle = levelNameStyle ?? const ansi.NoStyle(),
         timeStyle = timeStyle ?? const ansi.NoStyle(),
         pathStyle = pathStyle ?? emphasis ?? const ansi.NoStyle(),
@@ -190,7 +190,7 @@ final class LogThemeData with Loggable {
     emphasis: ansi.NoStyle(),
     dim: ansi.NoStyle(),
     punctuation: ansi.NoStyle(),
-    sequenceNumStyle: ansi.NoStyle(),
+    numStyle: ansi.NoStyle(),
     levelNameStyle: ansi.NoStyle(),
     timeStyle: ansi.NoStyle(),
     pathStyle: ansi.NoStyle(),
@@ -1434,7 +1434,7 @@ final class LogThemeData with Loggable {
     ansi.Style? bold,
     ansi.Style? emphasis,
     ansi.Style? dim,
-    ansi.Style? sequenceNumStyle,
+    ansi.Style? numStyle,
     ansi.Style? levelNameStyle,
     ansi.Style? timeStyle,
     ansi.Style? pathStyle,
@@ -1468,7 +1468,7 @@ final class LogThemeData with Loggable {
       bold: bold ?? this.bold,
       emphasis: emphasis ?? this.emphasis,
       dim: dim ?? this.dim,
-      sequenceNumStyle: sequenceNumStyle ?? this.sequenceNumStyle,
+      numStyle: numStyle ?? this.numStyle,
       levelNameStyle: levelNameStyle ?? this.levelNameStyle,
       timeStyle: timeStyle ?? this.timeStyle,
       pathStyle: pathStyle ?? this.pathStyle,
@@ -1553,7 +1553,7 @@ final class LogThemeData with Loggable {
       ..style('emphasis', null, emphasis)
       ..style('dim', null, dim)
       ..style('punctuation', null, punctuation)
-      ..style('sequenceNumStyle', this, sequenceNumStyle)
+      ..style('numStyle', this, numStyle)
       ..style('levelNameStyle', this, levelNameStyle)
       ..style('timeStyle', this, timeStyle)
       ..style('pathStyle', this, pathStyle)

@@ -10,7 +10,19 @@ final class NotLoggableObject {
 
 class MyConverter implements LoggableTypeConverter<NotLoggableObject> {
   @override
-  String call(
+  Object? toJson(
+    NotLoggableObject obj,
+    LoggableJsonConfig config,
+  ) {
+    final loggable = Loggable.builder(obj)
+      ..prop('weight', obj.weight, units: 'kg')
+      ..prop('height', obj.height, units: 'm');
+
+    return loggable.toJson(config: config);
+  }
+
+  @override
+  String toLogString(
     NotLoggableObject obj,
     LogTheme theme,
     int depth,
@@ -22,6 +34,11 @@ class MyConverter implements LoggableTypeConverter<NotLoggableObject> {
 
     return loggable.toLogString(theme: theme, depth: depth, config: config);
   }
+
+  @override
+  LoggableData convertToData(NotLoggableObject obj) => Loggable.builder(obj)
+    ..prop('weight', obj.weight, units: 'kg')
+    ..prop('height', obj.height, units: 'm');
 }
 
 void run() {

@@ -9,11 +9,11 @@ final class LogNoData {
 
 final class Log extends CustomLog with Loggable {
   @visibleForTesting
-  static int lastSequenceNum = 0;
+  static int lastNum = 0;
   static const noData = LogNoData._();
 
   final DateTime time;
-  final int sequenceNum;
+  final int num;
   final String path;
   final List<TraceId> traceIds;
   final String message;
@@ -30,7 +30,7 @@ final class Log extends CustomLog with Loggable {
     super.error,
     super.stackTrace,
     super.zone,
-  })  : sequenceNum = ++lastSequenceNum,
+  })  : num = ++lastNum,
         time = clock.now();
 
   bool get hasData => data is! LogNoData;
@@ -40,10 +40,8 @@ final class Log extends CustomLog with Loggable {
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..prop('sequenceNum', sequenceNum, showName: false, view: '#$sequenceNum')
+      ..prop('num', num)
       ..prop('level', level, view: levelName)
-      ..hidden('levelName', levelName)
-      ..hidden('shortLevelName', shortLevelName)
       ..prop('time', time)
       ..prop('path', path);
 
@@ -56,13 +54,13 @@ final class Log extends CustomLog with Loggable {
       data.prop('tags', tags);
     }
     if (hasData) {
-      data.prop('hasData', true);
+      data.computed('hasData', true);
     }
     if (error != null) {
-      data.prop('hasError', true);
+      data.computed('hasError', true);
     }
     if (stackTrace != null) {
-      data.prop('hasStackTrace', true);
+      data.computed('hasStackTrace', true);
     }
   }
 }

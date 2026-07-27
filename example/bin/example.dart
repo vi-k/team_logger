@@ -34,7 +34,7 @@ final log = Logger('app')
           maxLength: 120,
           maxLines: 20,
           children: [
-            LogSequenceNum(),
+            LogNum(),
             LogLevelName.short(),
             LogTime.onlyTime(),
             LogPath(),
@@ -49,7 +49,7 @@ final log = Logger('app')
           when: _hasStackTrace,
           // alignTail: false,
           children: [
-            LogSequenceNum(hidden: true),
+            LogNum(hidden: true),
             LogLevelName.short(hidden: true),
             LogTime.onlyTime(hidden: true),
             LogPath(hidden: true),
@@ -140,6 +140,7 @@ void f() {
       'JSON': Data.json,
     }, config: const LoggableConfig(collectionMaxCount: 2)),
   );
+
   log.d(
     '',
     data: Data.json,
@@ -185,14 +186,14 @@ void f() {
   );
 
   log.d(
-    'enums',
+    'short enums',
     data: {
       'textAlign': LogTextAlign.left,
       'verticalAlign': LogVerticalAlign.top,
     },
   );
   log.d(
-    'wrapped enums',
+    'full enums',
     data: {
       'textAlign': LogTextAlign.left,
       'verticalAlign': LogVerticalAlign.top,
@@ -208,9 +209,9 @@ void f() {
   );
 
   const notLoggableObject = NotLoggableObject('abc', [1, 2, 3]);
-  log.d('NotLoggableObject', data: notLoggableObject);
+  log.d('NotLoggableObject #1', data: notLoggableObject);
   log.d(
-    'NotLoggableObject',
+    'NotLoggableObject #2',
     data: Loggable.builder(notLoggableObject)
       ..prop('name', notLoggableObject.name)
       ..prop('list', notLoggableObject.list),
@@ -218,13 +219,9 @@ void f() {
   Loggable.registerTypeConverter<NotLoggableObject>(
     NotLoggableObjectConverter(),
   );
-  log.d('NotLoggableObject', data: notLoggableObject);
-  Loggable.registerTypeConverter<NotLoggableObject>(
-    ManualNotLoggableObjectConverter(),
-  );
-  log.d('NotLoggableObject', data: notLoggableObject);
+  log.d('NotLoggableObject #3', data: notLoggableObject);
   Loggable.unregisterTypeConverter<NotLoggableObject>();
-  log.d('NotLoggableObject', data: notLoggableObject);
+  log.d('NotLoggableObject #4', data: notLoggableObject);
 
   log.d('map', data: {'a': 1, 'b': 2, 'c': 3});
   log.d(
@@ -233,6 +230,13 @@ void f() {
       ..prop('a', 1, units: 'kg')
       ..prop('b', 2, units: 'm')
       ..prop('c', 3, units: 'sec'),
+  );
+  log.d(
+    'built map',
+    data: Loggable.mapBuilder(config: const LoggableConfig(units: 'm'))
+      ..prop('a', 1)
+      ..prop('b', 2)
+      ..prop('c', 3),
   );
 
   log.d(
@@ -262,5 +266,20 @@ void f() {
     config: const LoggableConfig(stringInQuotes: false, units: 'kg'),
   );
 
-  print(Loggable.objectToJson(Data.loggableObject));
+  log.d('map',
+      data: Loggable.mapBuilder(config: LoggableConfig(units: 'm'))
+        ..prop('a', 1)
+        ..prop('b', 2)
+        ..prop('c', 3));
+
+  final point = Point(27.988056, 86.925278);
+  log.d(
+    'Mount Everest',
+    data: Loggable.builder(point,
+        showName: false,
+        showBrackets: false,
+        config: LoggableConfig(units: 'm'))
+      ..prop('lat', point.lat, showName: false)
+      ..prop('lon', point.lon, showName: false),
+  );
 }

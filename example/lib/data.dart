@@ -199,8 +199,8 @@ final class LoggableObject with Loggable {
       duration,
       view: LoggableMultiView([
         LoggableView(duration),
-        LoggableView(duration.inMinutes, 'min'),
-        LoggableView(duration.inSeconds, 'sec'),
+        LoggableView(duration.inMinutes, units: 'min'),
+        LoggableView(duration.inSeconds, units: 'sec'),
       ]),
     )
     ..prop('bearing', bearing, units: '°')
@@ -209,8 +209,8 @@ final class LoggableObject with Loggable {
       speed,
       units: 'm/s',
       view: LoggableMultiView([
-        LoggableView(speed, 'm/s'),
-        LoggableView(speed * 3.6, 'km/h'),
+        LoggableView(speed, units: 'm/s'),
+        LoggableView(speed * 3.6, units: 'km/h'),
       ]),
     )
     ..prop('distance', distance, units: 'm')
@@ -228,8 +228,8 @@ final class Point with Loggable {
   void collectLoggableData(LoggableData data) => data
     ..name = 'Point'
     ..showName = false
-    ..fixed('lat', lat, 5, showName: false)
-    ..fixed('lon', lon, 5, showName: false);
+    ..round('lat', lat, precision: 5, showName: false)
+    ..round('lon', lon, precision: 5, showName: false);
 }
 
 final class NotLoggableObject {
@@ -245,7 +245,22 @@ final class NotLoggableObject {
 final class NotLoggableObjectConverter
     implements LoggableTypeConverter<NotLoggableObject> {
   @override
-  String call(
+  LoggableData convertToData(NotLoggableObject obj) => Loggable.builder(obj)
+    ..prop('name', obj.name)
+    ..prop('list', obj.list);
+
+  @override
+  Object? toJson(
+    NotLoggableObject obj,
+    LoggableJsonConfig config,
+  ) =>
+      (Loggable.builder(obj)
+            ..prop('name', obj.name)
+            ..prop('list', obj.list))
+          .toJson(config: config);
+
+  @override
+  String toLogString(
     NotLoggableObject obj,
     LogTheme theme,
     int depth,
@@ -255,26 +270,4 @@ final class NotLoggableObjectConverter
             ..prop('name', obj.name)
             ..prop('list', obj.list))
           .toLogString(theme: theme, depth: depth, config: config);
-}
-
-final class ManualNotLoggableObjectConverter
-    implements LoggableTypeConverter<NotLoggableObject> {
-  @override
-  String call(
-    NotLoggableObject obj,
-    LogTheme theme,
-    int depth,
-    LoggableEffectiveConfig config,
-  ) {
-    final body = Loggable.mapToString(
-      {'name': obj.name, 'list': obj.list},
-      theme: theme,
-      depth: depth,
-      start: '(',
-      end: ')',
-      config: config,
-    );
-
-    return '${theme.data.nameStyle('$NotLoggableObject')}$body';
-  }
 }

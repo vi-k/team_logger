@@ -10,8 +10,8 @@ final class Point with Loggable {
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..fixed('lat', lat, 5)
-      ..fixed('lon', lon, 5);
+      ..round('lat', lat, precision: 5)
+      ..round('lon', lon, precision: 5);
   }
 }
 

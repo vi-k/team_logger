@@ -21,27 +21,35 @@ part 'loggable_data.dart';
 /// - получить с помощью [logClassInfo] описание класса в виде списка
 ///   параметров, которые можно потом наглядно показать в UI.
 abstract mixin class Loggable {
+  static const _kindKey = ':k';
+  static const _classKey = ':c';
+  static const _lengthKey = ':l';
+  static const _valueKey = ':v';
+  static const _viewKey = ':view';
+  static const _unitsKey = ':u';
+  static const _propsKey = ':p';
+  static const _bracketsKey = ':brackets';
+  static const _trimKey = ':trim';
+
   static final Map<Type, LoggableTypeConverter<Object?>> _converters = {};
 
   /// Метод должен заполнить [data] описанием исследуемого класса.
   void collectLoggableData(LoggableData data);
 
-  /// Создает [Loggable] из любого объекта.
+  /// Оборачивает объект для возможности передачи параметров логирования.
   ///
   /// Имеет смысл использовать только для примитивных типов, enums, коллекций
   /// и [Loggable] с целью передачи параметров логирования. Для других
   /// объектов, не поддерживающих [Loggable] напрямую, используйте
   /// [Loggable.builder].
   ///
-  /// В случае [Loggable] выполняет роль обёртки, чтобы передать параметры,
-  /// не установленные самим объектом.
-  ///
-  /// Параметры будут переданы в [Loggable.objectToString].
-  factory Loggable.from(
+  /// В случае [Loggable] позволяет передать параметры, не установленные самим
+  /// объектом.
+  static LoggableWrapper from(
     Object? obj, {
     LoggableConfig config = const LoggableConfig(),
   }) =>
-      _LoggableWrapper(obj, config: config);
+      LoggableWrapper(obj, config: config);
 
   /// Позволяет создать [LoggableData] для любого объекта, изначально
   /// не поддерживающего [Loggable].
@@ -70,24 +78,19 @@ abstract mixin class Loggable {
   /// );
   /// // Mount Everest: 27.988056, 86.925278
   /// ```
-  ///
-  /// Если вам нужны свои скобки, отличные от стандартных `()`, используйте
-  /// [openingBracket] и [closingBracket]:
   static LoggableData builder(
     Object? value, {
     String? name,
     bool showName = true,
     bool showBrackets = true,
-    String? openingBracket,
-    String? closingBracket,
+    LoggableConfig config = const LoggableConfig(),
   }) =>
       _LoggableBuilder(
         value,
         name: name,
         showName: showName,
         showBrackets: showBrackets,
-        openingBracket: openingBracket,
-        closingBracket: closingBracket,
+        config: config,
       );
 
   /// Позволяет создать из [LoggableData] структуру, схожую с [Map].
@@ -102,8 +105,18 @@ abstract mixin class Loggable {
   ///     ..prop('c', 3, units: 'sec'),
   /// );
   /// // map: {a: 1kg, b: 2m, c: 3sec}
+  ///
+  /// log.d('map', data: Loggable.mapBuilder(config: LoggableConfig(units: 'm'))
+  ///     ..prop('a', 1)
+  ///     ..prop('b', 2)
+  ///     ..prop('c', 3),
+  /// );
+  /// // map: {a: 1m, b: 2m, c: 3m}
   /// ```
-  static LoggableData mapBuilder() => _LoggableMapBuilder();
+  static LoggableData mapBuilder({
+    LoggableConfig config = const LoggableConfig(),
+  }) =>
+      _LoggableMapBuilder(config: config);
 
   static void registerTypeConverter<T extends Object?>(
     LoggableTypeConverter<T> converter,
@@ -117,7 +130,7 @@ abstract mixin class Loggable {
 
   @nonVirtual
   LoggableData logClassInfo() {
-    final data = LoggableData._(TypeProp(runtimeType));
+    final data = LoggableData._(TypeProp._(runtimeType));
     collectLoggableData(data);
     return data;
   }
@@ -137,61 +150,50 @@ abstract mixin class Loggable {
 
     final converter = _converters[obj.runtimeType];
     if (converter != null) {
-      return converter(obj, theme, depth, config.toEffectiveConfig(theme.main));
+      return converter.convertToData(obj).toLogString(
+            theme: theme,
+            depth: depth,
+            config: config.toEffectiveConfig(theme.main),
+          );
     }
 
-    switch (obj) {
-      case null:
-        return theme.formatValue('null');
-
-      case Enum():
-        return enumToString(obj, theme: theme, config: config);
-
-      case double():
-        return doubleToString(obj, theme: theme, config: config);
-
-      case int():
-        return intToString(obj, theme: theme, config: config);
-
-      case String():
-        return stringToString(obj, theme: theme, config: config);
-
-      case List<Object?>():
-        return listToString(obj, theme: theme, depth: depth, config: config);
-
-      case Set<Object?>():
-        return setToString(obj, theme: theme, depth: depth, config: config);
-
-      case Iterable<Object?>():
-        return iterableToString(
+    return switch (obj) {
+      null => 'null',
+      Enum() => _enumToString(obj, theme: theme, config: config),
+      int() => _intToString(obj, theme: theme, config: config),
+      double() => _doubleToString(obj, theme: theme, config: config),
+      String() => _stringToString(obj, theme: theme, config: config),
+      DateTime() => _dateTimeToString(obj, theme: theme),
+      List<Object?>() =>
+        listToString(obj, theme: theme, depth: depth, config: config),
+      Set<Object?>() =>
+        setToString(obj, theme: theme, depth: depth, config: config),
+      Iterable<Object?>() => iterableToString(
           obj,
           theme: theme,
           depth: depth,
           config: config,
-        );
-
-      case Map<Object?, Object?>():
-        return mapToString(
+        ),
+      Map<Object?, Object?>() => _mapToString(
           obj,
           theme: theme,
           depth: depth,
           config: config,
-        );
-
-      case Loggable():
-        return obj
-            .logClassInfo()
-            .toLogString(theme: theme, depth: depth, config: config);
-
-      case LoggableData():
-        return obj.toLogString(
+        ),
+      Loggable() => obj
+          .logClassInfo()
+          .toLogString(theme: theme, depth: depth, config: config),
+      LoggableData() => obj.toLogString(
           theme: theme,
           depth: depth,
           config: config,
-        );
-
-      case LoggableMultiData():
-        return obj.data.entries.map((e) {
+        ),
+      LoggableWrapper() => Loggable.objectToString(
+          obj.data,
+          theme: theme,
+          config: obj.config.merge(config),
+        ),
+      LoggableMultiData() => obj.data.entries.map((e) {
           final value = Loggable.objectToString(
             e.value,
             theme: theme,
@@ -203,78 +205,56 @@ abstract mixin class Loggable {
             final key =>
               '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
           };
-        }).join(depthTheme.punctuation(', '));
-
-      default:
-        return '${theme.formatValue(obj.toString())}'
-            '${unitsToString(config.units, theme)}';
-    }
+        }).join(depthTheme.punctuation(', ')),
+      _ => theme.formatValue(obj.toString())
+    };
   }
 
   static Object? objectToJson(
     Object? obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
-    switch (obj) {
-      case null:
-        return null;
-
-      case bool() || int() || String():
-        return switch (config.units) {
-          null => obj,
-          final units => {
-              ':value': obj,
-              ':units': units,
-            },
-        };
-
-      case double():
-        return doubleToJson(obj, config: config);
-
-      case Enum():
-        return enumToJson(obj, config: config);
-
-      case List<Object?>():
-        return listToJson(obj, config: config);
-
-      case Set<Object?>():
-        return setToJson(obj, config: config);
-
-      case Iterable<Object?>():
-        return iterableToJson(obj, config: config);
-
-      case Map<Object?, Object?>():
-        return mapToJson(obj, config: config);
-
-      case Loggable():
-        return obj.logClassInfo().toJson(config: config);
-
-      case LoggableData():
-        return obj.toJson(config: config);
-
-      // case LoggableMultiData():
-      //   return obj.data.entries.map((e) {
-      //     final value = Loggable.objectToString(
-      //       e.value,
-      //       theme: theme,
-      //       config: obj.config.merge(config),
-      //     );
-
-      //     return switch (e.key) {
-      //       '' => value,
-      //       final key =>
-      //         '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
-      //     };
-      //   }).join(depthTheme.punctuation(', '));
-
-      default:
-        return '$obj';
+    final converter = _converters[obj.runtimeType];
+    if (converter != null) {
+      return converter.convertToData(obj).toJson(config: config);
     }
+
+    return switch (obj) {
+      null || bool() || String() => obj,
+      int() => _intToJson(obj, config: config),
+      double() => _doubleToJson(obj, config: config),
+      Enum() => _enumToJson(obj, config: config),
+      DateTime() => _dateTimeToJson(obj),
+      Duration() => _durationToJson(obj),
+      List<Object?>() => listToJson(obj, config: config),
+      Set<Object?>() => setToJson(obj, config: config),
+      Iterable<Object?>() => iterableToJson(obj, config: config),
+      Map<Object?, Object?>() => _mapToJson(obj, config: config),
+      Loggable() => obj.logClassInfo().toJson(config: config),
+      LoggableData() => obj.toJson(config: config),
+      LoggableWrapper() => Loggable.objectToJson(
+          obj.data,
+          config: obj.config.mergeWithJsonConfig(config),
+        ),
+      LoggableMultiData() => {
+          _kindKey: 'multi',
+          ...obj.data.map((k, v) {
+            final value = Loggable.objectToJson(
+              v,
+              config: obj.config.mergeWithJsonConfig(config),
+            );
+
+            return MapEntry(k, value);
+          }),
+        },
+      _ => {_viewKey: obj.toString()}
+    };
   }
 
   /// Преобразует список в строку в виде `[₌₅ ₀:first, …, ₄:last]`.
   ///
   /// See [efficientLengthIterableToString].
+  @visibleForTesting
   static String listToString(
     List<Object?> list, {
     LogTheme theme = LogTheme.noColors,
@@ -290,13 +270,14 @@ abstract mixin class Loggable {
         config: config,
       );
 
+  @visibleForTesting
   static Object listToJson(
     List<Object?> list, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) =>
       _efficientLengthIterableToJson(
         list,
-        'List',
+        'list',
         isList: true,
         config: config,
       );
@@ -304,6 +285,7 @@ abstract mixin class Loggable {
   /// Преобразует множество в строку в виде `{₌₅ ₀:first, …, ₄:last}`.
   ///
   /// See [efficientLengthIterableToString].
+  @visibleForTesting
   static String setToString(
     Set<Object?> set, {
     LogTheme theme = LogTheme.noColors,
@@ -319,13 +301,14 @@ abstract mixin class Loggable {
         config: config,
       );
 
+  @visibleForTesting
   static Object setToJson(
     Set<Object?> set, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) =>
       _efficientLengthIterableToJson(
         set,
-        'Set',
+        'set',
         config: config,
       );
 
@@ -360,6 +343,7 @@ abstract mixin class Loggable {
   ///   - (₌₄ ₀:a, …, ₃:d)
   ///   - (₌₄ ₀:a, ₁:b, …, ₃:d)
   ///   - (₌₄ ₀:a, ₁:b, ₂:c, ₃:d)
+  @visibleForTesting
   static String efficientLengthIterableToString(
     Iterable<Object?> iterable, {
     LogTheme theme = LogTheme.noColors,
@@ -377,13 +361,33 @@ abstract mixin class Loggable {
     assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
 
     final depthTheme = theme.depthTheme(depth);
+    final showCount =
+        config.collectionShowCount ?? theme.main.collectionShowCount;
+    final showIndexes =
+        config.collectionShowIndexes ?? theme.main.collectionShowIndexes;
 
     final buf = StringBuffer(depthTheme.brackets(start));
+
+    // В этом режиме длина и последний элемент не нужны.
+    if (!showCount && maxCount == null && maxLength == null) {
+      _addAllIterableItemsToBuf(
+        buf,
+        iterable,
+        theme: theme,
+        depth: depth,
+        depthTheme: depthTheme,
+        config: config,
+        showIndexes: showIndexes,
+      );
+      buf.write(depthTheme.brackets(end));
+      return buf.toString();
+    }
+
+    final count = iterable.length;
     var reservedLength = start.length + end.length;
 
     // Добавляем размер коллекции.
-    if (config.collectionShowCount ?? theme.main.collectionShowCount) {
-      final count = iterable.length;
+    if (showCount) {
       final countText = '${theme.formatCount(count)}${count > 0 ? ' ' : ''}';
       reservedLength += countText.length;
       buf.write(depthTheme.description(countText));
@@ -396,11 +400,11 @@ abstract mixin class Loggable {
       depth: depth,
       depthTheme: depthTheme,
       config: config,
+      count: count,
       maxCount: maxCount,
       maxLength:
           maxLength == null ? null : math.max(maxLength - reservedLength, 0),
-      showIndexes:
-          config.collectionShowIndexes ?? theme.main.collectionShowIndexes,
+      showIndexes: showIndexes,
     );
 
     buf.write(depthTheme.brackets(end));
@@ -415,6 +419,7 @@ abstract mixin class Loggable {
     required int depth,
     required LogDepthTheme depthTheme,
     required LoggableConfig config,
+    required int count,
     required int? maxCount,
     required int? maxLength,
     required bool showIndexes,
@@ -434,9 +439,25 @@ abstract mixin class Loggable {
 
     bool hasSpaceFor(int len) => maxLength == null || len <= maxLength;
 
-    // Если список пуст, то ничего не добавляем.
-    final iterator = iterable.iterator;
-    if (!iterator.moveNext()) {
+    const delimiterStr = ', ';
+    late final delimiter = depthTheme.punctuation(delimiterStr);
+
+    // Этот путь не требует ни длины коллекции, ни доступа к последнему
+    // элементу.
+    if (maxLength == null && maxCount == null) {
+      _addAllIterableItemsToBuf(
+        buf,
+        iterable,
+        theme: theme,
+        depth: depth,
+        depthTheme: depthTheme,
+        config: config,
+        showIndexes: showIndexes,
+      );
+      return;
+    }
+
+    if (count == 0) {
       return;
     }
 
@@ -450,35 +471,24 @@ abstract mixin class Loggable {
       return;
     }
 
-    const delimiterStr = ', ';
-    late final delimiter = depthTheme.punctuation(delimiterStr);
     const delimiterSize = delimiterStr.length;
-
-    // Если нет ограничений, выводим все элементы.
-    if (maxLength == null && maxCount == null) {
-      buf.write(
-        showIndexes
-            ? iterable.indexed
-                .map((e) => indexedObj2str(e.$1, e.$2))
-                .join(delimiter)
-            : iterable.map(obj2str).join(delimiter),
-      );
-      return;
-    }
-
-    late final delimiterAndEllipsis =
+    final delimiterAndEllipsis =
         depthTheme.punctuation('$delimiterStr$ellipsisStr');
 
-    final count = iterable.length;
+    // В сокращённой записи первый и последний элементы имеют приоритет.
+    // Для промежуточных элементов нужен только один буфер: он позволяет
+    // заменить последний добавленный элемент на многоточие, если строка
+    // оказывается длиннее лимита.
+    final iterator = iterable.iterator..moveNext();
 
     final first = showIndexes
         ? indexedObj2str(0, iterator.current)
         : obj2str(iterator.current);
-    var l = first.lengthWithoutEscapeCodes;
+    final firstSize = first.lengthWithoutEscapeCodes;
     // Если первый элемент не помещается в строку, выводим многоточие: (₌ₙ …)
     // Но делаем это только в случае, когда размер элемента больше многоточия,
     // иначе лучше вывести сам элемент.
-    if (!hasSpaceFor(l) && l > ellipsisSize) {
+    if (!hasSpaceFor(firstSize) && firstSize > ellipsisSize) {
       buf.write(ellipsis);
       return;
     }
@@ -492,11 +502,11 @@ abstract mixin class Loggable {
     final last = showIndexes
         ? indexedObj2str(count - 1, iterable.last)
         : obj2str(iterable.last);
-    l += delimiterSize;
+    final lastSize = last.lengthWithoutEscapeCodes;
 
     if (count == 2) {
       // (₌₂ ₀:a, ₁:b)
-      if (hasSpaceFor(l + last.lengthWithoutEscapeCodes) &&
+      if (hasSpaceFor(firstSize + delimiterSize + lastSize) &&
           (maxCount == null || maxCount > 1)) {
         buf
           ..write(first)
@@ -506,7 +516,7 @@ abstract mixin class Loggable {
       }
 
       // (₌₂ ₀:a, …)
-      if (hasSpaceFor(l + ellipsisSize)) {
+      if (hasSpaceFor(firstSize + delimiterSize + ellipsisSize)) {
         buf
           ..write(first)
           ..write(delimiterAndEllipsis);
@@ -520,7 +530,7 @@ abstract mixin class Loggable {
 
     // Если первый элемент с многоточием не помещаются в строку, то выводим
     // только многоточие: (₌ₙ …)
-    if (!hasSpaceFor(l + ellipsisSize)) {
+    if (!hasSpaceFor(firstSize + delimiterSize + ellipsisSize)) {
       buf.write(ellipsis);
       return;
     }
@@ -533,30 +543,29 @@ abstract mixin class Loggable {
       return;
     }
 
-    // Бронируем место для последнего элемента.
-    l += last.lengthWithoutEscapeCodes;
+    // Бронируем место для разделителя и последнего элемента.
+    var usedSize = firstSize + delimiterSize + lastSize;
 
     // Если последний элемент не помещается в строку, выводим вместо него
     // многоточие: (₌ₙ ₀:a, …)
-    if (!hasSpaceFor(l)) {
+    if (!hasSpaceFor(usedSize)) {
       buf.write(delimiterAndEllipsis);
       return;
     }
 
-    (String, int)? bufferedItem;
+    String? bufferedItem;
 
     void writeBufferedItem() {
-      if (bufferedItem != null) {
+      if (bufferedItem case final item?) {
         buf
           ..write(delimiter)
-          ..write(bufferedItem.$1);
+          ..write(item);
       }
     }
 
-    final effectiveCount =
-        maxCount != null && maxCount < count ? maxCount : count;
+    final displayedCount = math.min(maxCount ?? count, count);
 
-    for (var i = 1; i < effectiveCount - 1; i++) {
+    for (var i = 1; i < displayedCount - 1; i++) {
       iterator.moveNext();
       final item = showIndexes
           ? indexedObj2str(i, iterator.current)
@@ -565,9 +574,9 @@ abstract mixin class Loggable {
 
       // Если новый элемент не вмещается, пытаемся вставить вместо него
       // многоточие.
-      if (!hasSpaceFor(l + itemSize)) {
+      if (!hasSpaceFor(usedSize + itemSize)) {
         // (₌₄ ₀:1, ₁:2, …, ₃:4)
-        if (hasSpaceFor(l + delimiterSize + ellipsisSize)) {
+        if (hasSpaceFor(usedSize + delimiterSize + ellipsisSize)) {
           writeBufferedItem();
           buf
             ..write(delimiterAndEllipsis)
@@ -594,17 +603,46 @@ abstract mixin class Loggable {
       }
 
       writeBufferedItem();
-      bufferedItem = (item, itemSize);
-      l += itemSize;
+      bufferedItem = item;
+      usedSize += itemSize;
     }
 
     writeBufferedItem();
-    if (count != effectiveCount) {
+    if (count != displayedCount) {
       buf.write(delimiterAndEllipsis);
     }
     buf
       ..write(delimiter)
       ..write(last);
+  }
+
+  static void _addAllIterableItemsToBuf(
+    StringBuffer buf,
+    Iterable<Object?> iterable, {
+    required LogTheme theme,
+    required int depth,
+    required LogDepthTheme depthTheme,
+    required LoggableConfig config,
+    required bool showIndexes,
+  }) {
+    String obj2str(Object? obj) => objectToString(
+          obj,
+          theme: theme,
+          depth: depth + 1,
+          config: config,
+        );
+
+    String indexedObj2str(int index, Object? obj) =>
+        '${depthTheme.description(theme.formatIndex(index))}${obj2str(obj)}';
+
+    final delimiter = depthTheme.punctuation(', ');
+    buf.write(
+      showIndexes
+          ? iterable.indexed
+              .map((item) => indexedObj2str(item.$1, item.$2))
+              .join(delimiter)
+          : iterable.map(obj2str).join(delimiter),
+    );
   }
 
   /// Преобразует коллекцию в [Map] для дальнейшего преобразования в Json.
@@ -617,14 +655,14 @@ abstract mixin class Loggable {
   ///
   /// ```
   /// {
-  ///   ":type": "Iterable"/"List"/"Set",
-  ///   ":length": 4,
-  ///   ":values": [a, d],
-  ///   ":units": "m"
+  ///   ":k": "iterable"/"list"/"set",
+  ///   ":l": 4,
+  ///   ":v": [a, d],
+  ///   ":u": "m"
   /// }
   /// ```
   ///
-  /// В этом случае последний элемент списка ":values" (если ":values" содержит
+  /// В этом случае последний элемент списка ":v" (если ":v" содержит
   /// более одного элемента) - это последний элемент исходной коллекции. Это
   /// сделано для того, чтобы сокращённую коллекцию развернуть в виде:
   /// (₌₄ ₀:a, …, ₃:d),
@@ -632,11 +670,12 @@ abstract mixin class Loggable {
   /// Метод предназначен только для коллекций, которые имеют эффективную
   /// длину (например, [List], [Set]) и эффективный доступ к последнему
   /// элементу. Для иных случаев используйте [iterableToJson].
+  @visibleForTesting
   static Object? efficientLengthIterableToJson(
     Iterable<Object?> iterable, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) =>
-      _efficientLengthIterableToJson(iterable, 'Iterable', config: config);
+      _efficientLengthIterableToJson(iterable, 'iterable', config: config);
 
   static Object _efficientLengthIterableToJson(
     Iterable<Object?> iterable,
@@ -645,7 +684,6 @@ abstract mixin class Loggable {
     required LoggableJsonConfig config,
   }) {
     // Не передаём units дочерним элементам.
-    // ignore: avoid_redundant_argument_values
     late final itemConfig = config.copyWith(units: null);
 
     Object? obj2json(Object? obj) => objectToJson(
@@ -664,16 +702,16 @@ abstract mixin class Loggable {
       return isList && config.units == null
           ? values
           : {
-              ':type': type,
-              ':values': values,
-              if (config.units case final units?) ':units': units,
+              _kindKey: type,
+              _valueKey: values,
+              if (config.units case final units?) _unitsKey: units,
             };
     }
 
     return {
-      ':type': type,
-      ':length': iterable.length,
-      ':values': switch (maxCount) {
+      _kindKey: type,
+      _lengthKey: iterable.length,
+      _valueKey: switch (maxCount) {
         0 => <Object>[],
         1 => [obj2json(iterable.first)],
         _ => [
@@ -681,7 +719,7 @@ abstract mixin class Loggable {
             obj2json(iterable.last),
           ],
       },
-      if (config.units case final units?) ':units': units,
+      if (config.units case final units?) _unitsKey: units,
     };
   }
 
@@ -691,9 +729,12 @@ abstract mixin class Loggable {
   /// [LoggableConfig.collectionMaxCount] или длина строки больше
   /// [LoggableConfig.collectionMaxStringLength], то результат будет урезан.
   ///
-  /// Метод предназначен только для коллекций, которые имеют эффективную
-  /// длину (например, [List], [Set]) и имеют эффективный доступ к последнему
-  /// элементу.
+  /// Метод не вычисляет длину коллекции и не обращается к её последнему
+  /// элементу, поэтому подходит и для однопроходных [Iterable]. При
+  /// сокращении сохраняются только первые элементы, после которых добавляется
+  /// многоточие. Если длина и последний элемент доступны эффективно,
+  /// используйте [efficientLengthIterableToString].
+  @visibleForTesting
   static String iterableToString(
     Iterable<Object?> iterable, {
     LogTheme theme = LogTheme.noColors,
@@ -770,12 +811,14 @@ abstract mixin class Loggable {
 
     // Если нет ограничений, выводим все элементы.
     if (maxLength == null && maxCount == null) {
-      buf.write(
-        showIndexes
-            ? iterable.indexed
-                .map((e) => indexedObj2str(e.$1, e.$2))
-                .join(delimiter)
-            : iterable.map(obj2str).join(delimiter),
+      _addAllIterableItemsToBuf(
+        buf,
+        iterable,
+        theme: theme,
+        depth: depth,
+        depthTheme: depthTheme,
+        config: config,
+        showIndexes: showIndexes,
       );
       return;
     }
@@ -806,7 +849,7 @@ abstract mixin class Loggable {
       var item = showIndexes ? indexedObj2str(i, e) : obj2str(e);
       var itemSize = item.lengthWithoutEscapeCodes;
       if (i != 0) {
-        item = '$delimiterStr$item';
+        item = '$delimiter$item';
         itemSize += delimiterSize;
       }
 
@@ -846,55 +889,32 @@ abstract mixin class Loggable {
   /// Преобразует коллекцию в [Map] для дальнейшего преобразования в Json.
   ///
   /// Результат будет возвращён в виде [Map]:
+  /// `{":k": "iterable", ":v": [a, b], ":trim": true, ":u": "m"}`.
   ///
-  /// ```
-  /// {
-  ///   ":type": "Iterable",
-  ///   ":values": [a, b],
-  ///   ":trimmed": true,
-  ///   ":units": "m"
-  /// }
-  /// ```
-  ///
-  /// Параметр ":trimmed" присутствует, если коллекция обрезана. В этом случае
-  /// список ":values" содержит первые элементы коллекции. Параметр ":trimmed"
+  /// Параметр ":trim" присутствует, если коллекция обрезана. В этом случае
+  /// список ":v" содержит первые элементы коллекции. Параметр ":trim"
   /// всегда равен `true`. В необрезанной коллекции он отсутствует.
   ///
   /// Обратите внимание на разницу с [efficientLengthIterableToJson]. И там,
-  /// и там будет возвращена коллекция с типом "Iterable". Для полной коллекции
+  /// и там будет возвращена коллекция с типом "iterable". Для полной коллекции
   /// результат будет совпадать, но в случае сокращения коллекции
   /// [efficientLengthIterableToJson] вернёт:
-  ///
-  /// ```
-  /// {
-  ///   ":type": "Iterable",
-  ///   ":length": 4,
-  ///   ":values": [a, b, d],
-  /// }
-  /// ```
+  /// `{":k": "iterable", ":l": 4, ":v": [a, b, d]}`.
   ///
   /// А [iterableToJson]:
+  /// `{":k": "iterable", ":v": [a, b, c], ":trim": true}`.
   ///
-  /// ```
-  /// {
-  ///   ":type": "Iterable",
-  ///   ":values": [a, b, c],
-  ///   ":trimmed": true,
-  /// }
-  /// ```
-  ///
-  /// В первом случае последний параметр списка ":values" - это последний
-  /// элемент исходной коллекции (₌₄ ₀:a, ₁:b, …, ₃:d), а параметр ":length"
-  /// содержит размер исходной коллекции. Во втором случае элементы списка
-  /// ":values" - это первые элементы коллекции (₀:a, ₁:b, ₂:c, …), а параметр
-  /// ":trimmed" указывает, что список не полон. [iterableToJson] не вычисляет
-  /// длину коллекции.
+  /// В первом случае последний параметр списка ":v" - это последний элемент
+  /// исходной коллекции (₌₄ ₀:a, ₁:b, …, ₃:d), а параметр ":l" - размер
+  /// исходной коллекции. Во втором случае элементы списка ":v" - это первые
+  /// элементы коллекции (₀:a, ₁:b, ₂:c, …), а параметр ":trim" указывает, что
+  /// список не полон. [iterableToJson] не вычисляет длину коллекции.
+  @visibleForTesting
   static Object iterableToJson(
     Iterable<Object?> iterable, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
     // Не передаём units дочерним элементам.
-    // ignore: avoid_redundant_argument_values
     late final itemConfig = config.copyWith(units: null);
 
     Object? obj2json(Object? obj) => objectToJson(
@@ -929,14 +949,14 @@ abstract mixin class Loggable {
     }
 
     return {
-      ':type': 'Iterable',
-      ':values': values.map(obj2json).toList(),
-      if (trimmed ?? false) ':trimmed': true,
-      if (config.units case final units?) ':units': units,
+      _kindKey: 'iterable',
+      _valueKey: values.map(obj2json).toList(),
+      if (trimmed ?? false) _trimKey: true,
+      if (config.units case final units?) _unitsKey: units,
     };
   }
 
-  static String mapEntryToString(
+  static String _mapEntryToString(
     MapEntry<Object?, Object?> entry, {
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
@@ -960,7 +980,7 @@ abstract mixin class Loggable {
         ' ${theme.data.valueStyle(obj2str(entry.value))}';
   }
 
-  static String mapToString(
+  static String _mapToString(
     Map<Object?, Object?> map, {
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
@@ -971,7 +991,7 @@ abstract mixin class Loggable {
     final depthTheme = theme.depthTheme(depth);
     final body = map.entries
         .map(
-          (e) => mapEntryToString(
+          (e) => _mapEntryToString(
             e,
             theme: theme,
             depth: depth,
@@ -983,43 +1003,74 @@ abstract mixin class Loggable {
     return '${depthTheme.brackets(start)}$body${depthTheme.brackets(end)}';
   }
 
-  static Map<String, Object?> mapToJson(
+  static Map<String, Object?> _mapToJson(
     Map<Object?, Object?> map, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
-  }) =>
-      map.map((k, v) {
-        final key = switch (k) {
-          String() => k,
-          _ => k.toString(),
-        };
+  }) {
+    // Не передаём units дочерним элементам.
+    late final itemConfig = config.copyWith(units: null);
 
-        return MapEntry(key, objectToJson(v, config: config));
-      });
+    final result = map.map((k, v) {
+      final key = switch (k) {
+        String() => k,
+        _ => k.toString(),
+      };
 
-  static String enumToString(
+      return MapEntry(key, objectToJson(v, config: itemConfig));
+    });
+
+    return switch (config.units) {
+      null => result,
+      final units => {...result, _unitsKey: units}
+    };
+  }
+
+  static String _enumToString(
     Enum obj, {
     LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
     final dotShorthand = '.${theme.formatValue(obj.name)}';
-    final value = (config.enumDotShorthand ?? theme.main.enumDotShorthand)
+    return (config.enumDotShorthand ?? theme.main.enumDotShorthand)
         ? dotShorthand
         : '${obj.runtimeType}${theme.data.emphasis(dotShorthand)}';
-
-    return '$value${unitsToString(config.units, theme)}';
   }
 
-  static Object enumToJson(
+  /// Преобразует Enum в [Map] для дальнейшего преобразования в Json.
+  ///
+  /// Результат возвращается в виде:
+
+  static Map<String, Object?> _enumToJson(
     Enum obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) =>
       {
-        ':enum': obj.runtimeType.toString(),
-        ':name': obj.name,
-        if (config.units case final units?) ':units': units,
+        _classKey: obj.runtimeType.toString(),
+        _valueKey: obj.name,
       };
 
-  static String doubleToString(
+  static Map<String, Object?> _dateTimeToJson(DateTime obj) => {
+        _kindKey: 'datetime',
+        _valueKey: obj.toIso8601String(),
+      };
+
+  static Map<String, Object?> _durationToJson(Duration obj) => {
+        _kindKey: 'duration',
+        _valueKey: obj.toString(),
+      };
+
+  static String _intToString(
+    int obj, {
+    LogTheme theme = LogTheme.noColors,
+    LoggableConfig config = const LoggableConfig(),
+  }) =>
+      '${switch (config.intFormat) {
+        null => obj.toString(),
+        final f => format('{:$f}', obj),
+      }}'
+      '${unitsToString(config.units, theme)}';
+
+  static String _doubleToString(
     double obj, {
     LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
@@ -1039,52 +1090,60 @@ abstract mixin class Loggable {
             : 'inf';
   }
 
-  static Object doubleToJson(
+  static Object _intToJson(
+    int obj, {
+    LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) =>
+      switch (config.units) {
+        null => obj,
+        final units => {
+            _valueKey: obj,
+            _unitsKey: units,
+          },
+      };
+
+  static Object _doubleToJson(
     double obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
     if (obj.isFinite) {
       if (config.units case final units?) {
-        return {':value': obj, ':units': units};
+        return {_valueKey: obj, _unitsKey: units};
       }
 
       return obj;
     }
 
     return {
-      ':type': 'double',
-      ':value': obj.isNaN
+      _kindKey: 'double',
+      _valueKey: obj.isNaN
           ? 'nan'
           : obj.isNegative
               ? '-inf'
               : 'inf',
-      if (config.units case final units?) ':units': units,
+      if (config.units case final units?) _unitsKey: units,
     };
   }
 
-  static String intToString(
-    int obj, {
-    LogTheme theme = LogTheme.noColors,
-    LoggableConfig config = const LoggableConfig(),
-  }) =>
-      '${switch (config.intFormat) {
-        null => obj.toString(),
-        final f => format('{:$f}', obj),
-      }}'
-      '${unitsToString(config.units, theme)}';
-
-  static String stringToString(
+  static String _stringToString(
     String obj, {
     LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
     final stringInQuotes = config.stringInQuotes ?? theme.main.stringInQuotes;
-    final openingQuote = stringInQuotes ? theme.styledOpeningQuote : '';
-    final closingQuote = stringInQuotes ? theme.styledClosingQuote : '';
 
-    return '$openingQuote${theme.formatValue(obj)}$closingQuote'
-        '${unitsToString(config.units, theme)}';
+    return stringInQuotes
+        ? '${theme.styledOpeningQuote}'
+            '${theme.formatValue(obj)}'
+            '${theme.styledClosingQuote}'
+        : theme.formatValue(obj);
   }
+
+  static String _dateTimeToString(
+    DateTime obj, {
+    LogTheme theme = LogTheme.noColors,
+  }) =>
+      theme.formatValue(obj.toIso8601String());
 
   static String unitsToString(
     String? units,
@@ -1093,34 +1152,36 @@ abstract mixin class Loggable {
       units == null ? '' : theme.data.unitsStyle(theme.formatValue(units));
 }
 
-final class _LoggableWrapper with Loggable {
-  final LoggableData _data;
+final class LoggableWrapper {
+  final Object? data;
+  final LoggableConfig config;
 
-  _LoggableWrapper(
-    Object? obj, {
-    LoggableConfig config = const LoggableConfig(),
-  }) : _data = LoggableData._(
-          TypeProp(Object, showName: false, showBrackets: false),
-        ) {
-    _data.prop(
-      'obj',
-      obj,
-      showName: false,
-      config: config,
-      depthCorrection: -1,
-    );
-  }
+  LoggableWrapper(
+    this.data, {
+    this.config = const LoggableConfig(),
+  });
 
-  @override
-  // ignore: invalid_override_of_non_virtual_member
-  LoggableData logClassInfo() => _data;
+  Object? toJson({
+    LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) =>
+      Loggable.objectToJson(
+        data,
+        config: this.config.mergeWithJsonConfig(config),
+      );
 
   @override
-  void collectLoggableData(LoggableData data) {}
+  String toString() => Loggable.objectToString(data, config: config);
 }
 
 abstract interface class LoggableTypeConverter<T extends Object?> {
-  String call(
+  LoggableData convertToData(T obj);
+
+  Object? toJson(
+    T obj,
+    LoggableJsonConfig config,
+  );
+
+  String toLogString(
     T obj,
     LogTheme theme,
     int depth,
@@ -1129,13 +1190,15 @@ abstract interface class LoggableTypeConverter<T extends Object?> {
 }
 
 abstract interface class LoggableView {
-  const factory LoggableView(Object? value, [String? units]) = _LoggableView;
+  const factory LoggableView(Object? value, {String? units}) = _LoggableView;
 
   static LoggableView convert<T extends Object>(
-    Object Function(T value, LogTheme theme, int depth) converter, [
+    Object Function(T value, LogTheme theme, int depth) converter, {
     String? units,
-  ]) =>
+  }) =>
       _LoggableViewConvert<T>(converter, units);
+
+  Object? toJson(Object? value);
 
   String toLogString(
     Object? value, {
@@ -1148,7 +1211,28 @@ final class _LoggableView implements LoggableView {
   final Object? value;
   final String? units;
 
-  const _LoggableView(this.value, [this.units]);
+  const _LoggableView(this.value, {this.units});
+
+  /// Игнорируем переданное значение. Используем ранее заданное.
+  @override
+  Object? toJson(Object? _) {
+    final v = value;
+
+    return switch (v) {
+      null => 'null',
+      bool() || num() => switch (units) {
+          null => v,
+          final units => {
+              Loggable._valueKey: v,
+              Loggable._unitsKey: units,
+            }
+        },
+      _ => {
+          Loggable._viewKey: v.toString(),
+          if (units case final units?) Loggable._unitsKey: units,
+        },
+    };
+  }
 
   /// Игнорируем переданное значение. Используем ранее заданное.
   @override
@@ -1167,9 +1251,35 @@ final class _LoggableViewConvert<T extends Object> implements LoggableView {
   final Object Function(T value, LogTheme theme, int depth) converter;
   final String? units;
 
-  String? _result;
+  _LoggableViewConvert(this.converter, this.units);
 
-  _LoggableViewConvert(this.converter, [this.units]);
+  @override
+  Object? toJson(Object? value) {
+    switch (value) {
+      case null:
+        return 'null';
+
+      case T():
+        final v = converter(value, LogTheme.noColors, 0);
+
+        return switch (v) {
+          bool() || num() => switch (units) {
+              null => v,
+              final units => {
+                  Loggable._valueKey: v,
+                  Loggable._unitsKey: units,
+                },
+            },
+          final _ => {
+              Loggable._viewKey: v.toString(),
+              if (units case final units?) Loggable._unitsKey: units,
+            },
+        };
+
+      default:
+        throw ArgumentError.value(value, 'value');
+    }
+  }
 
   @override
   String toLogString(
@@ -1179,7 +1289,7 @@ final class _LoggableViewConvert<T extends Object> implements LoggableView {
   }) =>
       switch (value) {
         null => 'null',
-        T() => _result ??= '${converter(value, theme, depth)}'
+        T() => '${converter(value, theme, depth)}'
             '${Loggable.unitsToString(units, theme)}',
         _ => throw ArgumentError.value(value, 'value'),
       };
@@ -1189,7 +1299,11 @@ final class LoggableMultiView implements LoggableView {
   final List<LoggableView> views;
   final String separator;
 
-  const LoggableMultiView(this.views, {this.separator = ' or '});
+  const LoggableMultiView(this.views, {this.separator = '/'});
+
+  @override
+  Object? toJson(Object? value) =>
+      views.map((e) => e.toJson(value)).join(separator);
 
   @override
   String toLogString(

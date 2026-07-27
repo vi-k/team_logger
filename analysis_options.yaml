@@ -106,7 +106,7 @@ linter:
     # avoid_null_checks_in_equality_operators: true # [recommended]
     # avoid_positional_boolean_parameters: true
     # avoid_private_typedef_functions: true
-    avoid_redundant_argument_values: true # DON'T pass an argument that matches the corresponding parameter's default value.
+    # avoid_redundant_argument_values: true # DON'T pass an argument that matches the corresponding parameter's default value.
     # avoid_renaming_method_parameters: true # [recommended]
     # avoid_return_types_on_setters: true # [recommended]
     # avoid_returning_null_for_void: true # [recommended]

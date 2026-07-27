@@ -8,7 +8,7 @@ final log = Logger('app')
       LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),

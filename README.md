@@ -75,7 +75,7 @@ final log = Logger('app')
       LogRow(
         maxLength: 120,
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),
@@ -168,7 +168,7 @@ final log = Logger('app')
       LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),
@@ -202,7 +202,7 @@ log.d(
 
 The `LogElement` class has several subclasses that can be used to represent
 different log elements:
-- `LogSequenceNum()`: Sequence number of the log message.
+- `LogNum()`: Sequence number of the log message.
 - `LogLevelName.full()`: Full name of the log level.
 - `LogLevelName.short()`: Short name of the log level.
 - `LogTime.dateTime()`: Date and time of the log message.
@@ -312,7 +312,7 @@ final log = Logger('app')
       const LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),
@@ -328,7 +328,7 @@ final log = Logger('app')
           // We remove any unnecessary information, keeping only the sequence
           // number, but visually hiding it (by default, the first line is
           // visible).
-          LogSequenceNum(hidden: true),
+          LogNum(hidden: true),
           LogStackTrace(),
         ],
         // We'll keep the tags, but hide them.
@@ -352,7 +352,7 @@ final log = Logger('app')
       LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(
+          LogNum(
             // Reserving space for numbering
             constraints: Constraints(min: 7),
             // Align to the right
@@ -521,7 +521,7 @@ final log = Logger('app')
       LogRow(
         maxLength: 100,
         children: [
-          LogSequenceNum(),
+          LogNum(),
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(),
@@ -1100,8 +1100,8 @@ final class Point with Loggable {
   @override
   void collectLoggableData(LoggableData data) {
     data
-      ..fixed('lat', lat, 5)
-      ..fixed('lon', lon, 5);
+      ..round('lat', lat, precision: 5)
+      ..round('lon', lon, precision: 5);
   }
 }
 
@@ -1134,8 +1134,8 @@ final class Point with Loggable {
   void collectLoggableData(LoggableData data) {
     data
       ..showName = false
-      ..fixed('lat', lat, 5, showName: false, units: '°')
-      ..fixed('lon', lon, 5, showName: false, units: '°');
+      ..round('lat', lat, precision: 5, showName: false, units: '°')
+      ..round('lon', lon, precision: 5, showName: false, units: '°');
   }
 }
 
@@ -1184,15 +1184,15 @@ final class RouteInfo with Loggable {
         duration,
         view: LoggableMultiView([
           LoggableView(duration),
-          LoggableView(duration.inMinutes, 'min'),
+          LoggableView(duration.inMinutes, units: 'min'),
         ]),
       )
       ..prop(
         'distance',
         distance,
         view: LoggableMultiView([
-          LoggableView(distance.toStringAsFixed(1), 'km'),
-          LoggableView((distance / 1.852).toStringAsFixed(1), 'NM'),
+          LoggableView(distance.toStringAsFixed(1), units: 'km'),
+          LoggableView((distance / 1.852).toStringAsFixed(1), units: 'NM'),
         ]),
       );
   }

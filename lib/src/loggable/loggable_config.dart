@@ -1,5 +1,6 @@
 import '../theme/log_main_theme.dart';
 import 'loggable.dart';
+import 'loggable_json_config.dart';
 
 /// Конфигурация для [objectToString].
 ///
@@ -92,6 +93,12 @@ final class LoggableConfig with Loggable {
         doubleFormat: doubleFormat,
         intFormat: intFormat,
         stringInQuotes: stringInQuotes ?? theme.stringInQuotes,
+      );
+
+  LoggableJsonConfig mergeWithJsonConfig(LoggableJsonConfig config) =>
+      LoggableJsonConfig(
+        collectionMaxCount: collectionMaxCount ?? config.collectionMaxCount,
+        units: units ?? config.units,
       );
 
   @override

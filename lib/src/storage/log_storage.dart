@@ -39,7 +39,7 @@ abstract interface class LogStorage implements CustomLogPublisher<Log> {
 
   int indexOf(Log log);
 
-  int indexBySequenceNum(int sequenceNum);
+  int indexByNum(int logNum);
 
   Future<void> dispose();
 
@@ -129,8 +129,8 @@ final class _LogStorageImpl implements LogStorage {
   int indexOf(Log log) => _indexByEffectiveIndex(_logs.indexOf(log));
 
   @override
-  int indexBySequenceNum(int sequenceNum) => _indexByEffectiveIndex(
-        _logs.indexWhere((log) => log?.sequenceNum == sequenceNum),
+  int indexByNum(int logNum) => _indexByEffectiveIndex(
+        _logs.indexWhere((log) => log?.num == logNum),
       );
 
   @override
@@ -253,8 +253,8 @@ final class _ReversedLogStorageImpl implements LogStorage {
   int indexOf(Log log) => _indexByEffectiveIndex(_storage._logs.indexOf(log));
 
   @override
-  int indexBySequenceNum(int sequenceNum) => _indexByEffectiveIndex(
-        _storage._logs.indexWhere((log) => log?.sequenceNum == sequenceNum),
+  int indexByNum(int logNum) => _indexByEffectiveIndex(
+        _storage._logs.indexWhere((log) => log?.num == logNum),
       );
 
   @override
