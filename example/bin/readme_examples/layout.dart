@@ -94,7 +94,7 @@ Future<void> main() async {
   );
   someOperation();
 
-  print('----- Constraints -----');
+  print('----- LogConstraints -----');
   initLog(
     level: LogLevels.debug,
     theme: LogMainTheme.defaultActiveTheme.copyWith(padding: '.'),
@@ -104,7 +104,7 @@ Future<void> main() async {
         children: [
           LogNum(
             // Reserving space for numbering
-            constraints: Constraints(min: 7),
+            constraints: LogConstraints(min: 7),
             // Align to the right
             textAlign: LogTextAlign.right,
           ),
@@ -113,7 +113,7 @@ Future<void> main() async {
           LogPath(
             // We make the space for the namespace path expand as new data is
             // added, but we do not limit its growth
-            constraints: Constraints.growable(max: 20),
+            constraints: LogConstraints.growable(max: 20),
           ),
           LogTraceId(),
           LogMessage(),

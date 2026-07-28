@@ -27,7 +27,7 @@ final class LogBox with Loggable {
     Log log,
     LogTheme theme,
     List<String> lines, {
-    Constraints constraints = const Constraints.unlimited(),
+    LogConstraints constraints = const LogConstraints.unlimited(),
     LogTextAlign textAlign = LogTextAlign.left,
     LogVerticalAlign verticalAlign = LogVerticalAlign.top,
     String? verticalFiller,
@@ -49,7 +49,7 @@ final class LogBox with Loggable {
           (parser) => parser.applyConstraints(
             log,
             theme,
-            Constraints.exact(width),
+            LogConstraints.exact(width),
             textAlign: textAlign,
             showEllipsis: showEllipsis,
           ),
@@ -62,7 +62,7 @@ final class LogBox with Loggable {
       boxVerticalFiller = parser.applyConstraints(
         log,
         theme,
-        Constraints.exact(width),
+        LogConstraints.exact(width),
         textAlign: textAlign,
         // Многоточие обрезки на филлерах не показывается: на скрытых
         // строках-продолжениях оно оставалось бы видимым.
@@ -99,7 +99,7 @@ final class LogBox with Loggable {
     String text, {
     required int? maxLines,
     String? verticalFiller,
-    Constraints constraints = const Constraints.unlimited(),
+    LogConstraints constraints = const LogConstraints.unlimited(),
     LogTextAlign textAlign = LogTextAlign.left,
     LogVerticalAlign verticalAlign = LogVerticalAlign.top,
     String? debugName,
@@ -132,7 +132,7 @@ final class LogBox with Loggable {
           parser.applyConstraints(
             log,
             theme,
-            Constraints.exact(boxWidth),
+            LogConstraints.exact(boxWidth),
             textAlign: textAlign,
           ),
         );
@@ -148,7 +148,7 @@ final class LogBox with Loggable {
             '${fixDanglingSurrogates(parser.substring(start)).applyConstraints(
               log,
               theme,
-              Constraints.exact(textWidth),
+              LogConstraints.exact(textWidth),
               textAlign: textAlign,
             )}${' ' * theme.main.lineBreak.length}',
           );
@@ -160,15 +160,17 @@ final class LogBox with Loggable {
           );
           start += textWidth;
         } else {
+          // Последняя (обрезанная) строка не содержит символа переноса и
+          // занимает полную ширину бокса — иначе была бы на колонку уже.
           boxLines.add(
             parser.terminatedSubstring(
               theme.main.ellipsis,
               theme.data.ellipsisStyle,
               start,
-              maxLength: textWidth,
+              maxLength: boxWidth,
             ),
           );
-          start += textWidth;
+          start += boxWidth;
           break;
         }
       }
@@ -180,7 +182,7 @@ final class LogBox with Loggable {
       boxVerticalFiller = parser.applyConstraints(
         log,
         theme,
-        Constraints.exact(boxWidth),
+        LogConstraints.exact(boxWidth),
         textAlign: textAlign,
         // См. комментарий в фабрике LogBox: без многоточия на филлерах.
         showEllipsis: false,

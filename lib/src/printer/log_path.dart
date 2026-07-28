@@ -8,7 +8,7 @@ import 'log_vertical_align.dart';
 
 final class LogPath implements LogBlock {
   final LogStyles? styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String open;
@@ -18,7 +18,7 @@ final class LogPath implements LogBlock {
 
   const LogPath({
     this.styles,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.open = '[',

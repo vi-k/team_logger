@@ -9,7 +9,7 @@ import 'log_vertical_align.dart';
 abstract interface class LogLevelName implements LogBlock {
   const factory LogLevelName.full({
     LogStyles? styles,
-    Constraints constraints,
+    LogConstraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
     String open,
@@ -21,7 +21,7 @@ abstract interface class LogLevelName implements LogBlock {
 
   const factory LogLevelName.short({
     LogStyles? styles,
-    Constraints constraints,
+    LogConstraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
     String open,
@@ -34,7 +34,7 @@ abstract interface class LogLevelName implements LogBlock {
 
 final class _FullLevelName implements LogLevelName {
   final LogStyles? styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String open;
@@ -45,7 +45,7 @@ final class _FullLevelName implements LogLevelName {
 
   const _FullLevelName({
     this.styles,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.open = '[',
@@ -78,7 +78,7 @@ final class _FullLevelName implements LogLevelName {
 
 final class _ShortLevelName implements LogLevelName {
   final LogStyles? styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String open;
@@ -89,7 +89,7 @@ final class _ShortLevelName implements LogLevelName {
 
   const _ShortLevelName({
     this.styles,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.open = '[',

@@ -12,7 +12,7 @@ import 'log_vertical_align.dart';
 final class LogMessage implements LogBlock {
   static final _stackTracerExpando = Expando<LogStackTrace>();
 
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final bool showStackTrace;
@@ -21,7 +21,7 @@ final class LogMessage implements LogBlock {
   final Set<String> controlledPackages;
 
   const LogMessage({
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.showStackTrace = true,

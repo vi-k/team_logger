@@ -1441,14 +1441,10 @@ final class LogThemeData with Loggable {
     Map<String, LogStyle>? messageStyles,
     ansi.Style? controlCodesStyle,
     ansi.Style? punctuation,
-    String? colon,
     ansi.Style? quotesStyle,
     ansi.Style? colonStyle,
-    String? ellipsis,
     ansi.Style? ellipsisStyle,
-    String? lineBreak,
     ansi.Style? lineBreakStyle,
-    String? padding,
     ansi.Style? paddingStyle,
     ansi.Style? sectionStyle,
     ansi.Style? nameStyle,
@@ -1460,8 +1456,6 @@ final class LogThemeData with Loggable {
     ansi.Style? stackTraceInactiveStyle,
     Set<String>? tags,
   }) {
-    assert(padding == null || padding.length == 1);
-
     return LogThemeData(
       normal: normal ?? this.normal,
       inverse: inverse ?? this.inverse,

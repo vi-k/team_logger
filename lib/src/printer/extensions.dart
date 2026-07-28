@@ -10,7 +10,7 @@ extension AnsiStringExtensions on String {
   String applyConstraints(
     Log log,
     LogTheme theme,
-    Constraints constraints, {
+    LogConstraints constraints, {
     LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,
   }) =>
@@ -27,7 +27,7 @@ extension AnsiParserExtensions on ansi.Parser {
   String applyConstraints(
     Log log,
     LogTheme theme,
-    Constraints constraints, {
+    LogConstraints constraints, {
     LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,
   }) {

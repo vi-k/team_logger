@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:clock/clock.dart';
 import 'package:logger_builder/logger_builder.dart';
@@ -204,7 +205,9 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
 
   static List<TraceId> zonedTraceIds([Zone? zone]) =>
       switch ((zone ?? Zone.current)[TraceId]) {
-        final List<TraceId> list => list,
+        // Отдаём view, а не сам список зоны: мутация снаружи ломала бы
+        // трассировку всех логов этой зоны.
+        final List<TraceId> list => UnmodifiableListView(list),
         _ => const <TraceId>[],
       };
 

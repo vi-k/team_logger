@@ -341,7 +341,7 @@ final log = Logger('app')
 
 ![Separate stack trace](screenshots/layout_5.png)
 
-#### Constraints
+#### LogConstraints
 
 Size constraints can be set for all elements:
 
@@ -355,7 +355,7 @@ final log = Logger('app')
         children: [
           LogNum(
             // Reserving space for numbering
-            constraints: Constraints(min: 7),
+            constraints: LogConstraints(min: 7),
             // Align to the right
             textAlign: LogTextAlign.right,
           ),
@@ -364,7 +364,7 @@ final log = Logger('app')
           LogPath(
             // We make the space for the namespace path expand as new data is
             // added, but we do not limit its growth
-            constraints: Constraints.growable(max: 20),
+            constraints: LogConstraints.growable(max: 20),
           ),
           LogTraceId(),
           LogMessage(),
@@ -375,7 +375,7 @@ final log = Logger('app')
   );
 ```
 
-![Constraints](screenshots/layout_6.png)
+![LogConstraints](screenshots/layout_6.png)
 
 ### 2. Colors & Dynamic Themes
 

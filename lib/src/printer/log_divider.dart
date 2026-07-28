@@ -8,7 +8,7 @@ import 'log_vertical_align.dart';
 
 final class LogDivider implements LogBlock {
   final LogStyles styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String divider;
@@ -17,7 +17,7 @@ final class LogDivider implements LogBlock {
   const LogDivider(
     this.divider, {
     this.styles = LogStyles.noColors,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.stretch = true,

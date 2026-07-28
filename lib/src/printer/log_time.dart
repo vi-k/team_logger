@@ -10,7 +10,7 @@ abstract interface class LogTime implements LogBlock {
   const factory LogTime.dateTime({
     DateTime Function(Log log)? getTime,
     LogStyles? styles,
-    Constraints constraints,
+    LogConstraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
     String open,
@@ -24,7 +24,7 @@ abstract interface class LogTime implements LogBlock {
   const factory LogTime.iso8601({
     DateTime Function(Log log)? getTime,
     LogStyles? styles,
-    Constraints constraints,
+    LogConstraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
     String open,
@@ -37,7 +37,7 @@ abstract interface class LogTime implements LogBlock {
   const factory LogTime.onlyTime({
     DateTime Function(Log log)? getTime,
     LogStyles? styles,
-    Constraints constraints,
+    LogConstraints constraints,
     LogTextAlign textAlign,
     LogVerticalAlign verticalAlign,
     String open,
@@ -68,7 +68,7 @@ abstract interface class LogTime implements LogBlock {
 final class _DateTime implements LogTime {
   final DateTime Function(Log log)? getTime;
   final LogStyles? styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String open;
@@ -81,7 +81,7 @@ final class _DateTime implements LogTime {
   const _DateTime({
     this.getTime,
     this.styles,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.open = '',
@@ -101,12 +101,12 @@ final class _DateTime implements LogTime {
     if (utc) {
       time = time.toUtc();
     }
-    final timeStr = microseconds
-        ? '$open$time$close'
-        : '$open'
-            '${LogTime.dateToString(time)}'
-            ' ${LogTime.timeToString(time, microseconds: microseconds)}'
-            '$close';
+    // DateTime.toString() опускает нулевые микросекунды — ширина колонки
+    // дрожала бы; собираем строку через dateToString/timeToString всегда.
+    final timeStr = '$open'
+        '${LogTime.dateToString(time)}'
+        ' ${LogTime.timeToString(time, microseconds: microseconds)}'
+        '$close';
 
     return LogBox(
       log,
@@ -123,7 +123,7 @@ final class _DateTime implements LogTime {
 final class _Iso8601 implements LogTime {
   final DateTime Function(Log log)? getTime;
   final LogStyles? styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String open;
@@ -135,7 +135,7 @@ final class _Iso8601 implements LogTime {
   const _Iso8601({
     this.getTime,
     this.styles,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.open = '',
@@ -171,7 +171,7 @@ final class _Iso8601 implements LogTime {
 final class _OnlyTime implements LogTime {
   final DateTime Function(Log log)? getTime;
   final LogStyles? styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String open;
@@ -184,7 +184,7 @@ final class _OnlyTime implements LogTime {
   const _OnlyTime({
     this.getTime,
     this.styles,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.open = '',

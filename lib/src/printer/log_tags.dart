@@ -8,7 +8,7 @@ import 'log_vertical_align.dart';
 
 final class LogTags implements LogBlock {
   final LogStyles? styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String open;
@@ -19,7 +19,7 @@ final class LogTags implements LogBlock {
 
   const LogTags({
     this.styles,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.open = '',
@@ -34,6 +34,10 @@ final class LogTags implements LogBlock {
     final tags = theme.allTags(log);
     if (this.tags.isNotEmpty) {
       tags.addAll(this.tags);
+    }
+    // Без тегов не печатаем и пустые скобки.
+    if (tags.isEmpty) {
+      return LogBox.empty(debugName: 'tags');
     }
     final tagsStr = '$open${tags.map((tag) => '#$tag').join(' ')}$close';
     final style = hidden

@@ -124,6 +124,8 @@ abstract mixin class Loggable {
     _converters[T] = converter as LoggableTypeConverter<Object?>;
   }
 
+  /// Снимает конвертер по целевому типу [T] (тому же, что и при
+  /// регистрации), а не по типу конвертера. Неверный [T] — тихий no-op.
   static void unregisterTypeConverter<T>() {
     _converters.remove(T);
   }
@@ -168,6 +170,11 @@ abstract mixin class Loggable {
   }
 
   static void _endVisit() => _visiting.removeLast();
+
+  /// Пользовательские ключи, начинающиеся с ':', экранируются дополнительным
+  /// ':' — иначе они были бы неотличимы от служебных (':k', ':v', ...).
+  static String _escapeServiceKey(String key) =>
+      key.startsWith(':') ? ':$key' : key;
 
   /// Преобразует объект в строку, используя тему [theme] и конфигурацию
   /// [config].
@@ -245,12 +252,14 @@ abstract mixin class Loggable {
       LoggableWrapper() => Loggable.objectToString(
           obj.data,
           theme: theme,
+          depth: depth,
           config: obj.config.merge(config),
         ),
       LoggableMultiData() => obj.data.entries.map((e) {
           final value = Loggable.objectToString(
             e.value,
             theme: theme,
+            depth: depth,
             config: obj.config.merge(config),
           );
 
@@ -307,15 +316,17 @@ abstract mixin class Loggable {
           config: obj.config.mergeWithJsonConfig(config),
         ),
       LoggableMultiData() => {
-          _kindKey: 'multi',
+          // Данные спредятся до маркера: пользовательский ключ ':k' не
+          // может затереть тип, а сам экранируется дополнительным ':'.
           ...obj.data.map((k, v) {
             final value = Loggable.objectToJson(
               v,
               config: obj.config.mergeWithJsonConfig(config),
             );
 
-            return MapEntry(k, value);
+            return MapEntry(_escapeServiceKey(k), value);
           }),
+          _kindKey: 'multi',
         },
       _ => {_viewKey: obj.toString()}
     };
@@ -1093,10 +1104,12 @@ abstract mixin class Loggable {
     late final itemConfig = config.copyWith(units: null);
 
     final result = map.map((k, v) {
-      final key = switch (k) {
-        String() => k,
-        _ => k.toString(),
-      };
+      final key = _escapeServiceKey(
+        switch (k) {
+          String() => k,
+          _ => k.toString(),
+        },
+      );
 
       return MapEntry(key, objectToJson(v, config: itemConfig));
     });
@@ -1165,11 +1178,8 @@ abstract mixin class Loggable {
           '${unitsToString(config.units, theme)}';
     }
 
-    return obj.isNaN
-        ? 'nan'
-        : obj.isNegative
-            ? '-inf'
-            : 'inf';
+    return '${obj.isNaN ? 'nan' : obj.isNegative ? '-inf' : 'inf'}'
+        '${unitsToString(config.units, theme)}';
   }
 
   static Object _intToJson(
@@ -1294,7 +1304,7 @@ final class _LoggableView implements LoggableView {
     final v = value;
 
     return switch (v) {
-      null => 'null',
+      null => null,
       bool() || num() => switch (units) {
           null => v,
           final units => {
@@ -1332,7 +1342,7 @@ final class _LoggableViewConvert<T extends Object> implements LoggableView {
   Object? toJson(Object? value) {
     switch (value) {
       case null:
-        return 'null';
+        return null;
 
       case T():
         final v = converter(value, LogTheme.noColors, 0);

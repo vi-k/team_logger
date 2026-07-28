@@ -8,7 +8,7 @@ import 'log_vertical_align.dart';
 
 final class LogCustomText implements LogBlock {
   final LogStyles styles;
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final String text;
@@ -16,7 +16,7 @@ final class LogCustomText implements LogBlock {
   const LogCustomText(
     this.text, {
     this.styles = LogStyles.noColors,
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
   });

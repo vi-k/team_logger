@@ -9,7 +9,7 @@ import 'log_text_align.dart';
 import 'log_vertical_align.dart';
 
 final class LogStackTrace implements LogBlock {
-  final Constraints constraints;
+  final LogConstraints constraints;
   final LogTextAlign textAlign;
   final LogVerticalAlign verticalAlign;
   final bool terse;
@@ -17,7 +17,7 @@ final class LogStackTrace implements LogBlock {
   final Set<String> controlledPackages;
 
   const LogStackTrace({
-    this.constraints = const Constraints.unlimited(),
+    this.constraints = const LogConstraints.unlimited(),
     this.textAlign = LogTextAlign.left,
     this.verticalAlign = LogVerticalAlign.top,
     this.terse = true,

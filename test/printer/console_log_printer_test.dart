@@ -183,7 +183,7 @@ void main() {
           LogRow(
             maxLength: 24,
             children: [
-              LogTime.onlyTime(constraints: Constraints.exact(8)),
+              LogTime.onlyTime(constraints: LogConstraints.exact(8)),
               LogMessage(),
             ],
           ),

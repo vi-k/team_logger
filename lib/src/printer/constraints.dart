@@ -1,15 +1,16 @@
 import 'dart:math' as math;
 
-sealed class Constraints {
-  const factory Constraints({int min, int? max}) = _ConstConstraints;
+sealed class LogConstraints {
+  const factory LogConstraints({int min, int? max}) = _ConstConstraints;
 
-  const factory Constraints.unlimited() = _ConstConstraints.unlimited;
+  const factory LogConstraints.unlimited() = _ConstConstraints.unlimited;
 
-  const factory Constraints.exact(int size) = _ConstConstraints.exact;
+  const factory LogConstraints.exact(int size) = _ConstConstraints.exact;
 
-  factory Constraints.growable({int initial, int? max}) = _GrowableConstraints;
+  factory LogConstraints.growable({int initial, int? max}) =
+      _GrowableConstraints;
 
-  const Constraints._();
+  const LogConstraints._();
 
   int get _min;
 
@@ -23,7 +24,7 @@ sealed class Constraints {
         final max => math.min(value, max),
       };
 
-  Constraints restrict(int? max);
+  LogConstraints restrict(int? max);
 
   int _restrict(int max) => switch (_max) {
         null => max,
@@ -32,10 +33,10 @@ sealed class Constraints {
 
   @override
   String toString() =>
-      '$Constraints(min: $_min, max: $_max, isGrowable: $isGrowable)';
+      '$LogConstraints(min: $_min, max: $_max, isGrowable: $isGrowable)';
 }
 
-final class _ConstConstraints extends Constraints {
+final class _ConstConstraints extends LogConstraints {
   @override
   final int _min;
 
@@ -61,11 +62,11 @@ final class _ConstConstraints extends Constraints {
   bool get isGrowable => false;
 
   @override
-  Constraints restrict(int? max) =>
+  LogConstraints restrict(int? max) =>
       max == null ? this : _ConstConstraints(min: _min, max: _restrict(max));
 }
 
-final class _GrowableConstraints extends Constraints {
+final class _GrowableConstraints extends LogConstraints {
   @override
   int _min;
 
@@ -84,11 +85,11 @@ final class _GrowableConstraints extends Constraints {
   int apply(int value) => _min = super.apply(value);
 
   @override
-  Constraints restrict(int? max) =>
+  LogConstraints restrict(int? max) =>
       max == null ? this : _GrowableWrapper(this, _restrict(max));
 }
 
-final class _GrowableWrapper extends Constraints {
+final class _GrowableWrapper extends LogConstraints {
   final _GrowableConstraints _constraints;
 
   @override
@@ -106,21 +107,21 @@ final class _GrowableWrapper extends Constraints {
   int apply(int value) => _constraints.apply(math.min(value, _max));
 
   @override
-  Constraints restrict(int? max) => max == null || max >= _max
+  LogConstraints restrict(int? max) => max == null || max >= _max
       ? this
       : _GrowableWrapper(_constraints, _restrict(max));
 }
 
 final class GrowableConstraintsValues {
-  final List<Constraints> values = [];
+  final List<LogConstraints> values = [];
   final int initial;
   final int? max;
 
   GrowableConstraintsValues({this.initial = 0, this.max});
 
-  Constraints operator [](int index) {
+  LogConstraints operator [](int index) {
     while (index >= values.length) {
-      values.add(Constraints.growable(initial: initial, max: max));
+      values.add(LogConstraints.growable(initial: initial, max: max));
     }
 
     return values[index];

@@ -58,6 +58,69 @@ void main() {
     });
   });
 
+  group('minor consistency fixes', () {
+    test('nested wrapper keeps collection depth colors', () {
+      final theme = LogMainTheme.defaultActiveTheme.info;
+
+      expect(
+        Loggable.objectToString([
+          1,
+          Loggable.from([2, 3])
+        ], theme: theme),
+        Loggable.objectToString([
+          1,
+          [2, 3]
+        ], theme: theme),
+      );
+    });
+
+    test('LoggableView(null) encodes to JSON null', () {
+      expect(const LoggableView(null).toJson(null), isNull);
+    });
+
+    test('user keys starting with ":" are escaped in JSON', () {
+      final json = jsonEncode(Loggable.objectToJson({':k': 1, 'a': 2}));
+
+      expect(json, contains('"::k"'));
+      expect(json, contains('"a"'));
+    });
+
+    test('non-finite double keeps units in string output', () {
+      expect(
+        Loggable.objectToString(
+          double.infinity,
+          config: const LoggableConfig(units: 'm'),
+        ),
+        contains('inf'),
+      );
+      expect(
+        Loggable.objectToString(
+          double.infinity,
+          config: const LoggableConfig(units: 'm'),
+        ),
+        contains('m'),
+      );
+    });
+
+    test('duplicate prop names: the last one wins in both outputs', () {
+      final data = Loggable.builder(null, name: 'D')
+        ..prop('x', 1)
+        ..prop('x', 2);
+
+      expect(data.toLogString(), isNot(contains('1')));
+      expect(data.toLogString(), contains('2'));
+      expect(jsonEncode(data.toJson()), contains('2'));
+    });
+
+    test('fixed() keeps the numeric value in JSON', () {
+      final data = Loggable.builder(null, name: 'D')..fixed('pi', 3.14159, 2);
+      final json = jsonEncode(data.toJson());
+
+      expect(json, contains('3.14159'));
+      expect(json, contains('"3.14"'));
+    });
+  });
+
   group('collectionMaxCount + collectionMaxStringLength', () {
     test('list stays within the length budget', () {
       final result = Loggable.listToString(

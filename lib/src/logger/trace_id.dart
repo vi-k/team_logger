@@ -30,7 +30,7 @@ sealed class TraceId {
 
   String? get suffix;
 
-  // Добавление суффикса к идентификатору в виде: {group-123.suffix}.
+  // Добавление суффикса к идентификатору в виде: group-123.suffix
   TraceId withSuffix(String suffix);
 
   void resolve();

@@ -22,6 +22,17 @@ final class LoggableData {
   /// отображения в UI.
   final List<Prop<Object?>> props = [];
 
+  /// Повторное имя заменяет предыдущее свойство: строковый и JSON-вывод
+  /// ведут себя одинаково (в JSON-Map последний ключ побеждал и раньше).
+  void _addProp(Prop<Object?> prop) {
+    final existing = props.indexWhere((p) => p.name == prop.name);
+    if (existing != -1) {
+      props[existing] = prop;
+    } else {
+      props.add(prop);
+    }
+  }
+
   LoggableData._(this._type);
 
   String get name => _type.name;
@@ -71,7 +82,7 @@ final class LoggableData {
       'Use either `LoggableConfig` or individual parameters',
     );
 
-    props.add(
+    _addProp(
       Prop<T>._(
         name,
         value,
@@ -371,6 +382,9 @@ final class Prop<T extends Object?> {
       final LoggableView view => view.toJson(value),
       bool() || num() => Loggable.objectToJson(view, config: effectiveConfig),
       final view => {
+          // Числовое значение сохраняется рядом с текстовым представлением
+          // (например, fixed()): потребитель JSON получает и число.
+          if (value case final num numValue?) Loggable._valueKey: numValue,
           Loggable._viewKey: view.toString(),
           if (effectiveConfig.units case final units?)
             Loggable._unitsKey: units,

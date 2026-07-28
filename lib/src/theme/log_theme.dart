@@ -45,9 +45,11 @@ final class LogTheme with Loggable {
 
   String formatCount(int count) => main.countFormatter(this, count);
 
+  // Пустой depthThemes деградирует в бесстилевой вариант, а не роняет
+  // форматирование первого же объекта.
   LogDepthTheme depthTheme(int depth) => data.depthThemes.isNotEmpty
       ? data.depthThemes[depth % data.depthThemes.length]
-      : throw StateError('No depthThemes defined for this level');
+      : const LogDepthTheme.noStyle();
 
   Set<String> allTags(Log log) => {...log.tags, ...main.tags, ...data.tags};
 
