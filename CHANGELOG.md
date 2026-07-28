@@ -44,9 +44,8 @@
   publish after dispose, reversed.reversed, growable snapshot); tags
   accept any iterable; collection length budgets include the ellipsis;
   [ControlCodeFormatter] no longer leaks a bare ANSI reset; [LogTime]
-  column width no longer jitters with microseconds; [LoggableView] (null),
-  [fixed] and duplicate props are consistent between string and JSON
-  output; non-finite doubles (nan/inf) omit units in both outputs; user map keys starting with ':' are escaped; [LogTags] prints
+  column width no longer jitters with microseconds; [LoggableView] (null) and
+  duplicate props are consistent between string and JSON output; non-finite doubles (nan/inf) omit units in both outputs; user map keys starting with ':' are escaped; [LogTags] prints
   nothing when there are no tags.
 - [breaking changes] Rename [collectionMaxLength] to [collectionMaxCount].
 - [Loggable.efficientLengthIterableToString] and [Loggable.iterableToString]

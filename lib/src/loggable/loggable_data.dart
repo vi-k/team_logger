@@ -382,9 +382,6 @@ final class Prop<T extends Object?> {
       final LoggableView view => view.toJson(value),
       bool() || num() => Loggable.objectToJson(view, config: effectiveConfig),
       final view => {
-          // Числовое значение сохраняется рядом с текстовым представлением
-          // (например, fixed()): потребитель JSON получает и число.
-          if (value case final num numValue?) Loggable._valueKey: numValue,
           Loggable._viewKey: view.toString(),
           if (effectiveConfig.units case final units?)
             Loggable._unitsKey: units,

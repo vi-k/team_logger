@@ -114,12 +114,12 @@ void main() {
       expect(jsonEncode(data.toJson()), contains('2'));
     });
 
-    test('fixed() keeps the numeric value in JSON', () {
+    test('fixed() renders only the view string in JSON', () {
       final data = Loggable.builder(null, name: 'D')..fixed('pi', 3.14159, 2);
       final json = jsonEncode(data.toJson());
 
-      expect(json, contains('3.14159'));
       expect(json, contains('"3.14"'));
+      expect(json, isNot(contains('3.14159')));
     });
   });
 
