@@ -22,7 +22,7 @@ void main() {
       list.add(list);
       final theme = LogMainTheme(cycleMarker: '<loop>').info;
 
-      expect(Loggable.objectToString(list, theme: theme), contains('<loop>1'));
+      expect(Loggable.objectToString(list, theme: theme), contains('<loop>₁'));
     });
   });
 
@@ -33,7 +33,7 @@ void main() {
 
       final result = Loggable.objectToString(list);
 
-      expect(result, contains('↺1'));
+      expect(result, contains('↺₁'));
       expect(result, contains('1'));
     });
 
@@ -43,7 +43,7 @@ void main() {
 
       final result = Loggable.objectToString(map);
 
-      expect(result, contains('↺1'));
+      expect(result, contains('↺₁'));
     });
 
     test('indirect cycle through list and map', () {
@@ -52,7 +52,7 @@ void main() {
       list.add(map);
 
       // Цикл через два уровня: list -> map -> list.
-      expect(Loggable.objectToString(list), contains('↺2'));
+      expect(Loggable.objectToString(list), contains('↺₂'));
     });
 
     test('self-referencing Loggable', () {
@@ -61,7 +61,7 @@ void main() {
 
       final result = Loggable.objectToString(node);
 
-      expect(result, contains('↺1'));
+      expect(result, contains('↺₁'));
       expect(result, contains('a'));
     });
 
