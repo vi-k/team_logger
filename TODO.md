@@ -18,3 +18,4 @@ README:
 - [ ] lazy messages
 - [ ] output: print/log
 - [ ] zones
+- Переснять скриншот flutter_team_logger с синтетическими данными (старый удалён: содержал реальные данные).

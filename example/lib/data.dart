@@ -2,22 +2,23 @@ import 'package:team_logger/team_logger.dart';
 
 // ignore: avoid_classes_with_only_static_members
 abstract final class Data {
+  // Все данные ниже — синтетические (демо).
   static const postUrl =
-      '[b]POST[/b] https://test-api.tezapp.org/[b]clients/addresses[/b]';
+      '[b]POST[/b] https://api.example.com/[b]clients/addresses[/b]';
 
   static const postHeaders = {
     'content-type': 'application/json',
     'accept': 'application/json',
-    'the-timezone-iana': 'Asia/Almaty',
+    'the-timezone-iana': 'Europe/London',
     'connection-type': 'wifi',
     'platform': 'android',
-    'device-id': 'ef211e2c-29b8-4119-a4dd-d8c8b0c36324',
-    'Device-Type': 'Samsung SM-A556E',
+    'device-id': '00000000-1111-2222-3333-444444444444',
+    'Device-Type': 'Demo Phone X',
     'Device-OS-Version': '16',
     'App-Version': '1.8.25',
     'App-Build': '164',
     'authorization':
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxODc0MiwidXNlcl90eXBlIjoiY2xpZW50Iiwic2Vzc2lvbl9pZCI6MzUzNzN9.LWgB2NPJKf6rQ5nhxtq3Eecc2o5I5Es-9kfLLjdxIUQ',
+        'Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyX2lkIjo0MiwidXNlcl90eXBlIjoiZGVtbyIsInNlc3Npb25faWQiOjF9.fake-signature-for-docs',
     'accept-language': 'ru',
     'null': null,
     'false': false,
@@ -32,44 +33,44 @@ abstract final class Data {
   };
 
   static const postBody = {
-    'point': {'lon': '76.9456697', 'lat': '43.2308028'},
+    'point': {'lon': '23.4567890', 'lat': '12.3456780'},
     'allow_outside_area': false,
   };
 
   static const succesResponse = [
     {
       'id': 1704,
-      'name': 'Sweet sisters.kz, кондитерская',
+      'name': 'Cake Lab, кондитерская',
       'type': 'work',
-      'address': 'ул. Кабанбай батыра, 91',
-      'address_ru': 'ул. Кабанбай батыра, 91',
+      'address': 'ул. Вымышленная, 91',
+      'address_ru': 'ул. Вымышленная, 91',
       'address_kk': '',
       'points': [
-        {'lat': '43.249473', 'lon': '76.939319'},
+        {'lat': '12.349473', 'lon': '23.439319'},
       ],
       'client_name': 'Кондитер',
     },
     {
       'id': 1706,
-      'name': 'Continental, бассейн',
+      'name': 'Aqua Club, бассейн',
       'type': 'other',
-      'address': 'пр. Сейфуллина, 404',
-      'address_ru': 'пр. Сейфуллина, 404',
+      'address': 'пр. Демонстрационный, 404',
+      'address_ru': 'пр. Демонстрационный, 404',
       'address_kk': '',
       'points': [
-        {'lat': '43.267741', 'lon': '76.932179'},
+        {'lat': '12.367741', 'lon': '23.432179'},
       ],
-      'client_name': 'Бассейн треня',
+      'client_name': 'Бассейн',
     },
     {
       'id': 1844,
       'name': '',
       'type': 'other',
-      'address': 'улица Байтурсынова, 147а',
-      'address_ru': 'улица Байтурсынова, 147а',
-      'address_kk': 'Байтұрсынов көшесі, 147а',
+      'address': 'улица Примерная, 147а',
+      'address_ru': 'улица Примерная, 147а',
+      'address_kk': 'Мысал көшесі, 147а',
       'points': [
-        {'lat': '43.23288724409935', 'lon': '76.93205011077225'},
+        {'lat': '12.33288724409935', 'lon': '23.43205011077225'},
       ],
       'client_name': 'Salon',
     },
@@ -83,22 +84,22 @@ abstract final class Data {
     bearing: 90,
     speed: 10,
     distance: 100,
-    point: Point(43.250229, 76.926352),
+    point: Point(12.345678, 23.456789),
     points: [
-      Point(43.250229, 76.926352),
-      Point(43.233664, 76.911589),
-      Point(43.196249, 76.984717),
+      Point(12.345678, 23.456789),
+      Point(12.333664, 23.411589),
+      Point(12.196249, 23.484717),
     ],
     destinations: {
       'a': [
-        Point(43.250229, 76.926352),
-        Point(43.233664, 76.911589),
-        Point(43.196249, 76.984717),
+        Point(12.345678, 23.456789),
+        Point(12.333664, 23.411589),
+        Point(12.196249, 23.484717),
       ],
       'b': [
-        Point(43.250229, 76.926352),
-        Point(43.233664, 76.911589),
-        Point(43.196249, 76.984717),
+        Point(12.345678, 23.456789),
+        Point(12.333664, 23.411589),
+        Point(12.196249, 23.484717),
       ],
     },
   );

@@ -1,5 +1,17 @@
 ## 0.4.0
 
+- [breaking changes] Rename [Log.sequenceNum] to [Log.num]
+  ([lastSequenceNum] to [lastNum]).
+- [breaking changes] Rename [LogSequenceNum] to [LogNum].
+- [breaking changes] Rename [LogThemeData.sequenceNumStyle] to [numStyle].
+- [breaking changes] Rename [LogStorage.indexBySequenceNum] to [indexByNum].
+- [breaking changes] Rename [collectionShowLength] to [collectionShowCount]
+  (in [LoggableConfig] and [LogMainTheme]).
+- [breaking changes] Rename [LoggableResolvedConfig] to
+  [LoggableEffectiveConfig], [LoggableConfig.resolved] to
+  [toEffectiveConfig].
+- [breaking changes] The [TypeProp] constructor is now private.
+- Export [LoggableJsonConfig]; add [Prop.toMapEntry] and [Prop.toJson].
 - [breaking changes] Rename [collectionMaxLength] to [collectionMaxCount].
 - [Loggable.efficientLengthIterableToString] and [Loggable.iterableToString]
   now accept the parameter [collectionMaxCount] = 0.
