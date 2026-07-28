@@ -7,6 +7,13 @@ import '../logger/logger.dart';
 
 part 'log_storage_events.dart';
 
+/// An in-memory circular buffer of the last [maxCount] logs.
+///
+/// Designed for in-app log inspection and diagnostics export. [onChanged]
+/// emits [LogStorageAdd] for every accepted log and, when an old log is
+/// evicted, a following [LogStorageRemove] (add first, then remove —
+/// a mirroring subscriber transiently holds `maxCount + 1` entries).
+/// After [dispose] the storage ignores [publish] and [clear].
 abstract interface class LogStorage implements CustomLogPublisher<Log> {
   factory LogStorage({
     required int maxCount,

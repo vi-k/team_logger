@@ -24,6 +24,10 @@ typedef LogFn = bool Function(
   Zone? zone,
 });
 
+/// A single level of a [Logger] (verbose/debug/info/warning/error/critical).
+///
+/// The call always returns `true`, whether the log was published or
+/// filtered out.
 final class LevelLogger
     extends CustomLevelLogger<Logger, LevelLogger, LogFn, Log> {
   LevelLogger({required super.level, required super.name, super.shortName})
@@ -87,6 +91,21 @@ final class LevelLogger
       };
 }
 
+/// A namespace logger.
+///
+/// Use [createChild] to build path hierarchies (`app/network`), [copyWith]
+/// to clone the logger without extending the path. Each level is exposed as
+/// a call: [v]/[d]/[i]/[w]/[e]/[critical]. Sub-loggers stay linked to the
+/// parent: changing the parent's `level` or `publisher` affects children
+/// until they override it; the [tags] set is shared by reference.
+///
+/// [trace] runs a callback inside a Dart [Zone] whose values accumulate
+/// trace ids and tags — any log emitted in that async scope picks them up.
+///
+/// Contract notes: message/data/tags closures are resolved lazily and only
+/// for enabled levels; an exception thrown by such a closure propagates to
+/// the log call site. Every constructed log consumes a global [Log.num]
+/// (isolates have independent counters).
 final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   static const _tagsKey = #team_logger_tags;
 

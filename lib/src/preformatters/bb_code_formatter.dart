@@ -2,6 +2,11 @@ import '../loggable/loggable.dart';
 import '../theme/log_main_theme.dart';
 import 'log_pre_formatter.dart';
 
+/// Compiles inline BBCode (`[b]...[/b]`, `[success]...[/success]`) into
+/// ANSI escape codes using the theme's message styles.
+///
+/// Unknown tags are left as-is. Nested *identical* tags are not supported
+/// (`[b]a [b]x[/b] c[/b]` matches the first closing tag).
 final class BbCodeFormatter with Loggable implements LogPreFormatter {
   static final _reExpando = Expando<RegExp>();
 

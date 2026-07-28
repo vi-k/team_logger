@@ -11,15 +11,17 @@ import 'loggable_multi_data.dart';
 
 part 'loggable_data.dart';
 
-/// Вспомогательный класс, помогающий получить описание класса для логирования.
+/// A mixin describing how a class should look in logs.
 ///
-/// Позволяет:
+/// Implement [collectLoggableData] to declare properties. Then:
 ///
-/// - получить описание класса в виде строки, используя
-///   [Loggable.objectToString] или [toString].
-/// - получить описание класса в виде Json, используя [Loggable.objectToJson].
-/// - получить с помощью [logClassInfo] описание класса в виде списка
-///   параметров, которые можно потом наглядно показать в UI.
+/// - [Loggable.objectToString] (or [toString]) renders the object as
+///   a themed string;
+/// - [Loggable.objectToJson] renders it as a JSON-compatible structure;
+/// - [logClassInfo] returns the property list for in-app UIs.
+///
+/// Cyclic structures are rendered as [cycleMarker] instead of recursing
+/// forever.
 abstract mixin class Loggable {
   static const _kindKey = ':k';
   static const _classKey = ':c';

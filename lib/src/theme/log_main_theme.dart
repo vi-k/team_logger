@@ -18,6 +18,16 @@ typedef LogThemeFormatter<T extends Object?> = String Function(
   T,
 );
 
+/// The root theme: six per-level [LogThemeData]s plus shared styling
+/// (quotes, ellipsis, message/value formatters, trace id and tag styles).
+///
+/// Ready-made themes: [defaultActiveTheme], [defaultInactiveTheme],
+/// [noColors], [noColorsNoTags]. For custom colorless themes pass
+/// `ansiCodesEnabled: false`.
+///
+/// In colorless themes [hiddenStyle] is a no-op, so "hidden" stretch
+/// fillers (time/path/num repeated on continuation lines) show as plain
+/// text — this is expected behavior.
 final class LogMainTheme with Loggable {
   static const String defaultQuote = '"';
   static const String defaultColon = ':';

@@ -6,6 +6,12 @@ import 'logger.dart';
 /// можно задать только группу с автоматической нумерацией внутри неё:
 /// Trace.auto(group). Или выбрать глобальную автоматическую нумерацию:
 /// `Trace.global()`.
+/// A trace identifier: `123`, `group-123` or `group-123.suffix`.
+///
+/// [TraceId.auto] numbering is lazy: the number is consumed on first use
+/// (a disabled log does not consume one), so numbers follow resolve order,
+/// and `initial` only takes effect for the first resolve in a group.
+/// Group counters live for the whole isolate.
 sealed class TraceId {
   const TraceId();
 

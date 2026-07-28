@@ -10,6 +10,21 @@ import 'log_block.dart';
 import 'log_divider.dart';
 import 'log_row.dart';
 
+/// The main console publisher: prints logs using a data-driven row layout.
+///
+/// Pass `rows: [LogRow(children: [...], tail: [...])]` where each child is
+/// a [LogBlock] element (`LogNum`, `LogLevelName`, `LogTime`, `LogPath`,
+/// `LogTraceId`, `LogMessage`, `LogTags`, ...).
+///
+/// Active vs. inactive styling: pass [inactiveTheme] plus filters
+/// ([activeLevels]/`activeMinLevel`, [activeNamespaces] — prefix matching
+/// by [pathSeparator], [activeTraceGroups], [activeTags] or [isLogActive],
+/// combined with OR) to dim background logs while emphasizing matching
+/// ones. [output] defaults to `print` and is injectable.
+///
+/// Note: a `\n` inside a message is escaped by the theme's value
+/// formatter; multi-line output comes from data, wrapping and stack
+/// traces, not from raw newlines.
 final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final LogMainTheme theme;
   final LogMainTheme? inactiveTheme;

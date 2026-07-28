@@ -4,6 +4,11 @@ import '../loggable/loggable.dart';
 import '../theme/log_main_theme.dart';
 import 'log_pre_formatter.dart';
 
+/// Escapes C0 control characters into visible symbols.
+///
+/// With [excludeEscCode] (default) ESC is passed through, so ANSI codes
+/// survive; note this also lets user data inject its own ANSI sequences
+/// into the output.
 final class ControlCodeFormatter with Loggable implements LogPreFormatter {
   final bool excludeEscCode;
 

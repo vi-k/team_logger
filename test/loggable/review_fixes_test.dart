@@ -66,14 +66,14 @@ void main() {
         Loggable.objectToString(
           [
             1,
-            Loggable.from([2, 3])
+            Loggable.from([2, 3]),
           ],
           theme: theme,
         ),
         Loggable.objectToString(
           [
             1,
-            [2, 3]
+            [2, 3],
           ],
           theme: theme,
         ),

@@ -2,6 +2,10 @@ import '../logger/logger.dart';
 import 'log_block.dart';
 import 'log_divider.dart';
 
+/// One output row of `ConsoleLogPrinter`: [children] form the body,
+/// [tail] is right-aligned (typically tags). [maxLength] limits the width
+/// (long content wraps or truncates), [maxLines] limits the height,
+/// [when] makes the row conditional.
 final class LogRow {
   final int? maxLength;
   final int? maxLines;

@@ -7,6 +7,12 @@ final class LogNoData {
   String toString() => '<no data>';
 }
 
+/// An immutable record of a single log call: sequence number, timestamp,
+/// namespace path, message, resolved data, tags, trace ids, error and
+/// stack trace.
+///
+/// [num] grows monotonically per isolate; logs filtered out by publishers
+/// still consume numbers, so gaps are normal.
 final class Log extends CustomLog with Loggable {
   @visibleForTesting
   static int lastNum = 0;
