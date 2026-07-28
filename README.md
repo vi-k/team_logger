@@ -1365,6 +1365,8 @@ List<Log> history = logStorage.snapshot();
 See also [flutter_team_logger](https://pub.dev/packages/flutter_team_logger),
 which uses `LogStorage`.
 
+![flutter_team_logger](screenshots/flutter_team_logger.png)
+
 ---
 
 ### 9. Saving Logs to Files (`FileLogStorage`)
