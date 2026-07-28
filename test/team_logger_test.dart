@@ -871,21 +871,22 @@ void main() {
             Loggable.objectToJson(12345678.9, config: config),
             {':v': 12345678.9, ':u': 'm'},
           );
+          // Units — визуальная сущность: для nan/inf не показываются.
           expect(
             Loggable.objectToJson(double.nan, config: config),
-            {':k': 'double', ':v': 'nan', ':u': 'm'},
+            {':k': 'double', ':v': 'nan'},
           );
           expect(
             Loggable.objectToJson(double.infinity, config: config),
-            {':k': 'double', ':v': 'inf', ':u': 'm'},
+            {':k': 'double', ':v': 'inf'},
           );
           expect(
             Loggable.objectToJson(-double.infinity, config: config),
-            {':k': 'double', ':v': '-inf', ':u': 'm'},
+            {':k': 'double', ':v': '-inf'},
           );
           expect(
             Loggable.objectToJson(double.negativeInfinity, config: config),
-            {':k': 'double', ':v': '-inf', ':u': 'm'},
+            {':k': 'double', ':v': '-inf'},
           );
         });
       });

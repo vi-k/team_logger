@@ -91,21 +91,17 @@ void main() {
       expect(json, contains('"a"'));
     });
 
-    test('non-finite double keeps units in string output', () {
-      expect(
-        Loggable.objectToString(
-          double.infinity,
-          config: const LoggableConfig(units: 'm'),
-        ),
-        contains('inf'),
-      );
-      expect(
-        Loggable.objectToString(
-          double.infinity,
-          config: const LoggableConfig(units: 'm'),
-        ),
-        contains('m'),
-      );
+    test('non-finite double omits units in both outputs', () {
+      const config = LoggableConfig(units: 'm');
+      const jsonConfig = LoggableJsonConfig(units: 'm');
+
+      expect(Loggable.objectToString(double.infinity, config: config), 'inf');
+      expect(Loggable.objectToString(double.nan, config: config), 'nan');
+
+      final json = Loggable.objectToJson(double.infinity, config: jsonConfig)!
+          as Map<String, Object?>;
+      expect(json[':v'], 'inf');
+      expect(json.containsKey(':u'), isFalse);
     });
 
     test('duplicate prop names: the last one wins in both outputs', () {

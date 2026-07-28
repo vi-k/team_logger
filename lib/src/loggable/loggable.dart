@@ -1197,8 +1197,12 @@ abstract mixin class Loggable {
           '${unitsToString(config.units, theme)}';
     }
 
-    return '${obj.isNaN ? 'nan' : obj.isNegative ? '-inf' : 'inf'}'
-        '${unitsToString(config.units, theme)}';
+    // См. комментарий в [_doubleToJson]: для nan/inf units не показываются.
+    return obj.isNaN
+        ? 'nan'
+        : obj.isNegative
+            ? '-inf'
+            : 'inf';
   }
 
   static Object _intToJson(
@@ -1225,6 +1229,8 @@ abstract mixin class Loggable {
       return obj;
     }
 
+    // Units — чисто визуальная сущность: для nan/inf не показываются
+    // ни в строке, ни в JSON.
     return {
       _kindKey: 'double',
       _valueKey: obj.isNaN
@@ -1232,7 +1238,6 @@ abstract mixin class Loggable {
           : obj.isNegative
               ? '-inf'
               : 'inf',
-      if (config.units case final units?) _unitsKey: units,
     };
   }
 
