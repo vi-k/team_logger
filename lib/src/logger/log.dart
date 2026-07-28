@@ -74,7 +74,13 @@ final class LazyTags extends TypedLazy<Set<String>> {
   Set<String> convert(Object? resolved) => switch (resolved) {
         null => const {},
         String() => {resolved},
-        Iterable<String>() => resolved.toSet(),
+        // Тип элементов проверяется поэлементно: Iterable<String>() матчит
+        // только коллекции, типизированные строкой, и List<Object> со
+        // строками ронял бы вызов логирования.
+        Iterable<Object?>() => {
+            for (final tag in resolved)
+              if (tag != null) tag.toString(),
+          },
         _ => throw Exception('Invalid tags: $resolved'),
       };
 }

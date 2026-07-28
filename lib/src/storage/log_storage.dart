@@ -64,7 +64,8 @@ final class _LogStorageImpl implements LogStorage {
   _LogStorageImpl({
     required this.maxCount,
     this.minLevel = LogLevels.all,
-  })  : _logs = List<Log?>.filled(maxCount, null),
+  })  : assert(maxCount > 0, 'maxCount must be positive'),
+        _logs = List<Log?>.filled(maxCount, null),
         _currentIndex = 0,
         _count = 0;
 
@@ -139,7 +140,7 @@ final class _LogStorageImpl implements LogStorage {
   @override
   List<Log> snapshot() {
     final count = _count;
-    if (count == 0) return List.empty();
+    if (count == 0) return <Log>[];
 
     final currentIndex = _currentIndex;
     var startIndex = currentIndex - _count;
@@ -158,6 +159,9 @@ final class _LogStorageImpl implements LogStorage {
 
   @override
   void clear() {
+    // После dispose хранилище не используется.
+    if (_onChangedController.isClosed) return;
+
     _logs.fillRange(0, maxCount, null);
     _currentIndex = 0;
     _count = 0;
@@ -167,6 +171,10 @@ final class _LogStorageImpl implements LogStorage {
 
   @override
   void publish(Log log) {
+    // После dispose публикация — no-op: иначе StateError вылетал бы
+    // прямо из вызова логирования.
+    if (_onChangedController.isClosed) return;
+
     if (log.level < minLevel) {
       return;
     }
@@ -191,7 +199,7 @@ final class _ReversedLogStorageImpl implements LogStorage {
   _ReversedLogStorageImpl(this._storage);
 
   @override
-  LogStorage get reversed => this;
+  LogStorage get reversed => _storage;
 
   @override
   int get maxCount => _storage.maxCount;
