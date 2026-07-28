@@ -8,7 +8,7 @@ import 'log_pre_formatter.dart';
 /// Unknown tags are left as-is. Nested *identical* tags are not supported
 /// (`[b]a [b]x[/b] c[/b]` matches the first closing tag).
 final class BbCodeFormatter with Loggable implements LogPreFormatter {
-  static final _reExpando = Expando<RegExp>();
+  static final _tagRegExpCache = Expando<RegExp>();
 
   const BbCodeFormatter();
 
@@ -25,7 +25,7 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
     final buf = StringBuffer();
     var last = 0;
 
-    final re = _reExpando[theme] ??= RegExp(
+    final re = _tagRegExpCache[theme] ??= RegExp(
       r'(?<prefix>(?:.)*?)\[(?<tag>'
       '${tags.map(RegExp.escape).join('|')}'
       r')\](?<content>(?:.)*?)\[\/\k<tag>\]',
