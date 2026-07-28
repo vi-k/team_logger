@@ -34,8 +34,8 @@
   without a direct dependency.
 - Fix a batch of review findings: cyclic structures no longer crash
   formatting ([StackOverflowError]) — a cycle is rendered as `↺ₙ`
-  (N = levels up, marker/style configurable via
-  [LogMainTheme.cycleMarker]/[cycleStyle]) and as
+  (N = levels up, configurable via
+  [LogMainTheme.cycleFormatter]/[cycleStyle]) and as
   `{":k": "cycle", ":up": N}` in JSON; [BbCodeFormatter] no longer truncates
   messages; single-character messages are printed; a tail wider than
   [maxLength] no longer drops the log line; truncation/wrapping is

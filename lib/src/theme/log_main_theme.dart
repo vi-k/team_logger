@@ -36,7 +36,6 @@ final class LogMainTheme with Loggable {
   static const String defaultPadding = ' ';
   static const String defaultErrorTitle = 'ERROR';
   static const String defaultStackTraceTitle = 'STACKTRACE';
-  static const String defaultCycleMarker = '↺';
 
   final LogThemeData _verbose;
   final LogThemeData _debug;
@@ -73,9 +72,9 @@ final class LogMainTheme with Loggable {
   /// `false`, чтобы принтер не добавлял служебные escape-коды.
   final bool ansiCodesEnabled;
 
-  /// Маркер циклической ссылки; за ним печатается количество уровней
-  /// вверх до объекта, на который указывает цикл: `↺₂`.
-  final String cycleMarker;
+  /// Форматтер маркера циклической ссылки; получает количество уровней
+  /// вверх до объекта, на который указывает цикл. По умолчанию — `↺₂`.
+  final LogThemeFormatter<int> cycleFormatter;
 
   /// Стиль маркера циклической ссылки.
   final ansi.Style cycleStyle;
@@ -111,7 +110,7 @@ final class LogMainTheme with Loggable {
     this.stackTraceTitle = defaultStackTraceTitle,
     this.stringInQuotes = true,
     this.ansiCodesEnabled = true,
-    this.cycleMarker = defaultCycleMarker,
+    this.cycleFormatter = _defaultCycleFormatter,
     this.cycleStyle = const ansi.NoStyle(),
   })  : _verbose = verbose,
         _debug = debug,
@@ -125,7 +124,6 @@ final class LogMainTheme with Loggable {
         assert(!ellipsis.ansiHasEscapeCodes),
         assert(!lineBreak.ansiHasEscapeCodes),
         assert(!padding.ansiHasEscapeCodes),
-        assert(!cycleMarker.ansiHasEscapeCodes),
         assert(padding.length == 1);
 
   const LogMainTheme._({
@@ -147,7 +145,7 @@ final class LogMainTheme with Loggable {
         _warning = warning,
         _error = error,
         _critical = critical,
-        cycleMarker = defaultCycleMarker,
+        cycleFormatter = _defaultCycleFormatter,
         minLevel = LogLevels.all,
         openingQuote = defaultQuote,
         closingQuote = defaultQuote,
@@ -296,6 +294,9 @@ final class LogMainTheme with Loggable {
   static String _defaultCountFormatter(LogTheme theme, int count) =>
       '₌${subscript(count)}';
 
+  static String _defaultCycleFormatter(LogTheme theme, int levelsUp) =>
+      '↺${subscript(levelsUp)}';
+
   static String _defaultIndexFormatter(LogTheme theme, int index) =>
       '${subscript(index)}${theme.main.colon}';
 
@@ -340,7 +341,7 @@ final class LogMainTheme with Loggable {
     String? stackTraceTitle,
     bool? stringInQuotes,
     bool? ansiCodesEnabled,
-    String? cycleMarker,
+    LogThemeFormatter<int>? cycleFormatter,
     ansi.Style? cycleStyle,
   }) =>
       LogMainTheme(
@@ -375,7 +376,7 @@ final class LogMainTheme with Loggable {
         stackTraceTitle: stackTraceTitle ?? this.stackTraceTitle,
         stringInQuotes: stringInQuotes ?? this.stringInQuotes,
         ansiCodesEnabled: ansiCodesEnabled ?? this.ansiCodesEnabled,
-        cycleMarker: cycleMarker ?? this.cycleMarker,
+        cycleFormatter: cycleFormatter ?? this.cycleFormatter,
         cycleStyle: cycleStyle ?? this.cycleStyle,
       );
 

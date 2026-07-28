@@ -17,12 +17,14 @@ final class _Node with Loggable {
 
 void main() {
   group('cycle marker theming', () {
-    test('marker and style are configurable via the theme', () {
+    test('the formatter is configurable via the theme', () {
       final list = <Object?>[];
       list.add(list);
-      final theme = LogMainTheme(cycleMarker: '<loop>').info;
+      final theme = LogMainTheme(
+        cycleFormatter: (theme, levelsUp) => '<loop $levelsUp>',
+      ).info;
 
-      expect(Loggable.objectToString(list, theme: theme), contains('<loop>₁'));
+      expect(Loggable.objectToString(list, theme: theme), contains('<loop 1>'));
     });
   });
 
