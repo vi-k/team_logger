@@ -334,8 +334,10 @@ abstract mixin class Loggable {
           config: obj.config.mergeWithJsonConfig(config),
         ),
       LoggableMultiData() => {
-          // Данные спредятся до маркера: пользовательский ключ ':k' не
-          // может затереть тип, а сам экранируется дополнительным ':'.
+          // Маркер типа — первым, как и в остальных служебных структурах.
+          // Затереть его пользовательский ключ не может: ключи, начинающиеся
+          // с ':', экранируются.
+          _kindKey: 'multi',
           ...obj.data.map((k, v) {
             final value = Loggable.objectToJson(
               v,
@@ -344,7 +346,6 @@ abstract mixin class Loggable {
 
             return MapEntry(_escapeServiceKey(k), value);
           }),
-          _kindKey: 'multi',
         },
       _ => {_viewKey: obj.toString()}
     };
