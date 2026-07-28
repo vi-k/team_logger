@@ -1455,38 +1455,37 @@ final class LogThemeData with Loggable {
     ansi.Style? stackTraceActiveStyle,
     ansi.Style? stackTraceInactiveStyle,
     Set<String>? tags,
-  }) {
-    return LogThemeData(
-      normal: normal ?? this.normal,
-      inverse: inverse ?? this.inverse,
-      bold: bold ?? this.bold,
-      emphasis: emphasis ?? this.emphasis,
-      dim: dim ?? this.dim,
-      numStyle: numStyle ?? this.numStyle,
-      levelNameStyle: levelNameStyle ?? this.levelNameStyle,
-      timeStyle: timeStyle ?? this.timeStyle,
-      pathStyle: pathStyle ?? this.pathStyle,
-      messageStyles: messageStyles ?? this.messageStyles,
-      controlCodesStyle: controlCodesStyle ?? this.controlCodesStyle,
-      punctuation: punctuation ?? this.punctuation,
-      quotesStyle: quotesStyle ?? this.quotesStyle,
-      colonStyle: colonStyle ?? this.colonStyle,
-      ellipsisStyle: ellipsisStyle ?? this.ellipsisStyle,
-      lineBreakStyle: lineBreakStyle ?? this.lineBreakStyle,
-      paddingStyle: paddingStyle ?? this.paddingStyle,
-      sectionStyle: sectionStyle ?? this.sectionStyle,
-      nameStyle: nameStyle ?? this.nameStyle,
-      keyStyle: keyStyle ?? this.keyStyle,
-      valueStyle: valueStyle ?? this.valueStyle,
-      unitsStyle: unitsStyle ?? this.unitsStyle,
-      depthThemes: depthThemes ?? this.depthThemes,
-      stackTraceActiveStyle:
-          stackTraceActiveStyle ?? this.stackTraceActiveStyle,
-      stackTraceInactiveStyle:
-          stackTraceInactiveStyle ?? this.stackTraceInactiveStyle,
-      tags: tags ?? this.tags,
-    );
-  }
+  }) =>
+      LogThemeData(
+        normal: normal ?? this.normal,
+        inverse: inverse ?? this.inverse,
+        bold: bold ?? this.bold,
+        emphasis: emphasis ?? this.emphasis,
+        dim: dim ?? this.dim,
+        numStyle: numStyle ?? this.numStyle,
+        levelNameStyle: levelNameStyle ?? this.levelNameStyle,
+        timeStyle: timeStyle ?? this.timeStyle,
+        pathStyle: pathStyle ?? this.pathStyle,
+        messageStyles: messageStyles ?? this.messageStyles,
+        controlCodesStyle: controlCodesStyle ?? this.controlCodesStyle,
+        punctuation: punctuation ?? this.punctuation,
+        quotesStyle: quotesStyle ?? this.quotesStyle,
+        colonStyle: colonStyle ?? this.colonStyle,
+        ellipsisStyle: ellipsisStyle ?? this.ellipsisStyle,
+        lineBreakStyle: lineBreakStyle ?? this.lineBreakStyle,
+        paddingStyle: paddingStyle ?? this.paddingStyle,
+        sectionStyle: sectionStyle ?? this.sectionStyle,
+        nameStyle: nameStyle ?? this.nameStyle,
+        keyStyle: keyStyle ?? this.keyStyle,
+        valueStyle: valueStyle ?? this.valueStyle,
+        unitsStyle: unitsStyle ?? this.unitsStyle,
+        depthThemes: depthThemes ?? this.depthThemes,
+        stackTraceActiveStyle:
+            stackTraceActiveStyle ?? this.stackTraceActiveStyle,
+        stackTraceInactiveStyle:
+            stackTraceInactiveStyle ?? this.stackTraceInactiveStyle,
+        tags: tags ?? this.tags,
+      );
 
   LogThemeData copyWithMainStyles({
     required ansi.Style normal,

@@ -63,14 +63,20 @@ void main() {
       final theme = LogMainTheme.defaultActiveTheme.info;
 
       expect(
-        Loggable.objectToString([
-          1,
-          Loggable.from([2, 3])
-        ], theme: theme),
-        Loggable.objectToString([
-          1,
-          [2, 3]
-        ], theme: theme),
+        Loggable.objectToString(
+          [
+            1,
+            Loggable.from([2, 3])
+          ],
+          theme: theme,
+        ),
+        Loggable.objectToString(
+          [
+            1,
+            [2, 3]
+          ],
+          theme: theme,
+        ),
       );
     });
 
