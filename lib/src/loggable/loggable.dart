@@ -20,7 +20,7 @@ part 'loggable_data.dart';
 /// - [Loggable.objectToJson] renders it as a JSON-compatible structure;
 /// - [logClassInfo] returns the property list for in-app UIs.
 ///
-/// Cyclic structures are rendered as a cycle marker (`\u21ba\u2082` — the
+/// Cyclic structures are rendered as a cycle marker (`↺₂` — the
 /// number is how many levels up the cycle points; configurable via
 /// `LogMainTheme.cycleMarker`/`cycleStyle`) instead of recursing forever.
 /// In JSON a cycle becomes `{":k": "cycle", ":up": 2}`.

@@ -36,7 +36,7 @@ final class LogMainTheme with Loggable {
   static const String defaultPadding = ' ';
   static const String defaultErrorTitle = 'ERROR';
   static const String defaultStackTraceTitle = 'STACKTRACE';
-  static const String defaultCycleMarker = '\u21ba'; // ↺
+  static const String defaultCycleMarker = '↺';
 
   final LogThemeData _verbose;
   final LogThemeData _debug;
