@@ -108,10 +108,21 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     LogBlock? lastBlock;
 
     for (final block in row.tail) {
-      final box = block(log, theme, row, null);
+      final needDivider = (lastBlock == null || lastBlock is! LogDivider) &&
+          block is! LogDivider;
+      final dividerWidth = needDivider ? defaultDividerBox.width : 0;
+      // Tail ограничен maxLength: иначе при широком tail все children
+      // получили бы отрицательный лимит и строка лога молча пропадала бы.
+      final available = switch (row.maxLength) {
+        null => null,
+        final maxLength => maxLength - tailLength - dividerWidth,
+      };
+      if (available != null && available <= 0) break;
+
+      final box = block(log, theme, row, available);
       if (box.width > 0) {
-        if ((lastBlock == null || lastBlock is! LogDivider) &&
-            block is! LogDivider) {
+        if (available != null && box.width > available) break;
+        if (needDivider) {
           tailBoxes.add(defaultDividerBox);
           tailLength += defaultDividerBox.width;
         }
@@ -128,7 +139,12 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       null => null,
       final maxLength => maxLength - tailLength,
     };
-    var linesCount = 0;
+    // Высота строки учитывает и tail: если все children пусты, строка
+    // всё равно печатается.
+    var linesCount = tailBoxes.fold(
+      0,
+      (count, box) => math.max(count, box.lines.length),
+    );
     lastBlock = null;
 
     for (final block in row.children) {

@@ -134,7 +134,7 @@ final class LogMainTheme with Loggable {
         messageFormatter = const BbCodeFormatter(),
         countFormatter = _defaultCountFormatter,
         indexFormatter = _defaultIndexFormatter,
-        tags = const {'log'},
+        tags = const {},
         errorTitle = defaultErrorTitle,
         stackTraceTitle = defaultStackTraceTitle,
         stringInQuotes = true;

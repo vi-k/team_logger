@@ -110,8 +110,11 @@ final class LogBox with Loggable {
       return LogBox.empty(debugName: debugName);
     }
 
+    // Место под символ переноса нужно только строкам, которые реально
+    // переносятся, — иначе односимвольное сообщение выродилось бы в пробел.
+    final needsWrap = parsers.any((parser) => parser.length > boxWidth);
     final textWidth = boxWidth - theme.main.lineBreak.length;
-    if (textWidth <= 0) {
+    if (needsWrap && textWidth <= 0) {
       return LogBox.raw(
         boxWidth,
         [' ' * boxWidth],
