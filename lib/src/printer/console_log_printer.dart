@@ -18,6 +18,11 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final Set<String> activeNamespaces;
   final Set<String> activeTraceGroups;
   final Set<String> activeTags;
+
+  /// Разделитель пути неймспейсов для префикс-матчинга [activeNamespaces]
+  /// (см. `Logger.pathSeparator`).
+  final String pathSeparator;
+
   final List<LogRow> rows;
   void Function(String) output;
 
@@ -32,6 +37,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     Set<String>? activeTraceGroups,
     Set<String>? activeTags,
     this.isLogActive,
+    this.pathSeparator = '/',
     required this.rows,
     this.output = print,
   })  : assert(
@@ -54,7 +60,11 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       inactiveTheme == null ||
       (isLogActive?.call(log) ?? false) ||
       activeLevels.contains(log.level) ||
-      activeNamespaces.contains(log.path) ||
+      // Неймспейс активирует и себя, и дочерние: 'app' матчит 'app'
+      // и 'app/...', но не 'application'.
+      activeNamespaces.any(
+        (ns) => log.path == ns || log.path.startsWith('$ns$pathSeparator'),
+      ) ||
       log.traceIds.any((e) => activeTraceGroups.contains(e.group)) ||
       log.tags.any(activeTags.contains);
 
@@ -80,7 +90,13 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   void publish(Log log) {
     final isActive = _isLogActive(log);
     final theme = (isActive ? this.theme : inactiveTheme ?? this.theme);
-    if (log.level < theme.minLevel) {
+    // Порог — минимум из двух тем: активный лог не должен подавляться
+    // сильнее фонового того же уровня.
+    final minLevel = switch (inactiveTheme) {
+      null => theme.minLevel,
+      final inactive => math.min(this.theme.minLevel, inactive.minLevel),
+    };
+    if (log.level < minLevel) {
       return;
     }
 
@@ -95,7 +111,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     final theme = main[log.level];
     final printer = _printers[(isActive, log.level)] ??= ansi.StackedPrinter(
       defaultStyle: theme.data.normal,
-      ansiCodesEnabled: main != LogMainTheme.noColors,
+      ansiCodesEnabled: main.ansiCodesEnabled,
       output: output,
     );
 

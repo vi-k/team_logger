@@ -58,6 +58,10 @@ final class LogMainTheme with Loggable {
   final String stackTraceTitle;
   final bool stringInQuotes;
 
+  /// Излучает ли тема ANSI-коды. Для собственных «бесцветных» тем передайте
+  /// `false`, чтобы принтер не добавлял служебные escape-коды.
+  final bool ansiCodesEnabled;
+
   LogMainTheme({
     LogThemeData verbose = LogThemeData.noColors,
     LogThemeData debug = LogThemeData.noColors,
@@ -88,6 +92,7 @@ final class LogMainTheme with Loggable {
     this.errorTitle = defaultErrorTitle,
     this.stackTraceTitle = defaultStackTraceTitle,
     this.stringInQuotes = true,
+    this.ansiCodesEnabled = true,
   })  : _verbose = verbose,
         _debug = debug,
         _info = info,
@@ -113,6 +118,7 @@ final class LogMainTheme with Loggable {
     this.traceIdStyle = const ansi.NoStyle(),
     this.tagsStyle = const ansi.NoStyle(),
     this.hiddenStyle = const ansi.NoStyle(),
+    this.ansiCodesEnabled = true,
   })  : _verbose = verbose,
         _debug = debug,
         _info = info,
@@ -141,33 +147,45 @@ final class LogMainTheme with Loggable {
 
   static const LogMainTheme noColors = LogMainTheme._(
     messageStyles: defaultNoColorsMessageStyles,
+    ansiCodesEnabled: false,
   );
 
   static const LogMainTheme noColorsNoTags = LogMainTheme._(
     messageStyles: defaultNoColorsNoBbCodesMessageStyles,
+    ansiCodesEnabled: false,
   );
 
-  LogTheme get verbose => LogTheme._(this, LogLevels.verbose);
+  /// Кэш уровневых [LogTheme]: темы иммутабельны, а новый экземпляр на
+  /// каждый лог ломал бы кэши, ключуемые по [LogTheme] (например, регулярку
+  /// BbCodeFormatter), заставляя пересоздавать их на каждое сообщение.
+  static final Expando<Map<int, LogTheme>> _levelThemeCache = Expando();
 
-  LogTheme get debug => LogTheme._(this, LogLevels.debug);
+  LogTheme get verbose => this[LogLevels.verbose];
 
-  LogTheme get info => LogTheme._(this, LogLevels.info);
+  LogTheme get debug => this[LogLevels.debug];
 
-  LogTheme get warning => LogTheme._(this, LogLevels.warning);
+  LogTheme get info => this[LogLevels.info];
 
-  LogTheme get error => LogTheme._(this, LogLevels.error);
+  LogTheme get warning => this[LogLevels.warning];
 
-  LogTheme get critical => LogTheme._(this, LogLevels.critical);
+  LogTheme get error => this[LogLevels.error];
 
-  LogTheme operator [](int level) => switch (level) {
-        LogLevels.verbose => verbose,
-        LogLevels.debug => debug,
-        LogLevels.info => info,
-        LogLevels.warning => warning,
-        LogLevels.error => error,
-        LogLevels.critical => critical,
-        _ => throw Exception('Unknown log level: $level'),
-      };
+  LogTheme get critical => this[LogLevels.critical];
+
+  LogTheme operator [](int level) {
+    final cache = _levelThemeCache[this] ??= {};
+
+    return cache[level] ??= switch (level) {
+      LogLevels.verbose ||
+      LogLevels.debug ||
+      LogLevels.info ||
+      LogLevels.warning ||
+      LogLevels.error ||
+      LogLevels.critical =>
+        LogTheme._(this, level),
+      _ => throw Exception('Unknown log level: $level'),
+    };
+  }
 
   LogThemeData _dataByLevel(int level) => switch (level) {
         LogLevels.verbose => _verbose,
@@ -297,6 +315,7 @@ final class LogMainTheme with Loggable {
     String? errorTitle,
     String? stackTraceTitle,
     bool? stringInQuotes,
+    bool? ansiCodesEnabled,
   }) =>
       LogMainTheme(
         minLevel: minLevel ?? this.minLevel,
@@ -329,6 +348,7 @@ final class LogMainTheme with Loggable {
         errorTitle: errorTitle ?? this.errorTitle,
         stackTraceTitle: stackTraceTitle ?? this.stackTraceTitle,
         stringInQuotes: stringInQuotes ?? this.stringInQuotes,
+        ansiCodesEnabled: ansiCodesEnabled ?? this.ansiCodesEnabled,
       );
 
   @override
