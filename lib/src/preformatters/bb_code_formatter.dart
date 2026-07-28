@@ -9,15 +9,20 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
 
   @override
   String call(LogTheme theme, String text) {
+    final tags = {
+      ...theme.data.messageStyles.keys,
+      ...theme.main.messageStyles.keys,
+    };
+    // Без стилей нет и тегов: пустая альтернатива в регулярке матчила бы
+    // `[]…[/]` и искажала текст.
+    if (tags.isEmpty) return text;
+
     final buf = StringBuffer();
     var last = 0;
 
     final re = _reExpando[theme] ??= RegExp(
       r'(?<prefix>(?:.)*?)\[(?<tag>'
-      '${{
-        ...theme.data.messageStyles.keys,
-        ...theme.main.messageStyles.keys,
-      }.join('|')}'
+      '${tags.map(RegExp.escape).join('|')}'
       r')\](?<content>(?:.)*?)\[\/\k<tag>\]',
       dotAll: true,
     );
@@ -27,7 +32,10 @@ final class BbCodeFormatter with Loggable implements LogPreFormatter {
       final tag = m.namedGroup('tag')!;
       final style = theme.messageStyle(tag);
       if (style == null) {
-        return m[0]!;
+        // Тег без стиля оставляем как есть, не теряя остаток текста.
+        buf.write(m[0]);
+        last = m.end;
+        continue;
       }
 
       final prefix = m.namedGroup('prefix')!;
