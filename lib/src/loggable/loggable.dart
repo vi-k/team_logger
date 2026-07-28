@@ -138,6 +138,37 @@ abstract mixin class Loggable {
   @override
   String toString() => logClassInfo().toLogString();
 
+  /// Объекты, находящиеся в процессе форматирования в текущей цепочке
+  /// рекурсии, — защита от циклических структур (по аналогии с
+  /// `_toStringVisiting` в SDK).
+  static final List<Object> _visiting = <Object>[];
+
+  /// Маркер циклической ссылки.
+  static const cycleMarker = '...';
+
+  /// Примитивы не могут содержать ссылок и не требуют защиты от циклов.
+  static bool _canContainCycle(Object obj) => switch (obj) {
+        bool() ||
+        num() ||
+        String() ||
+        Enum() ||
+        DateTime() ||
+        Duration() =>
+          false,
+        _ => true,
+      };
+
+  static bool _startVisit(Object obj) {
+    for (final visited in _visiting) {
+      if (identical(visited, obj)) return false;
+    }
+    _visiting.add(obj);
+
+    return true;
+  }
+
+  static void _endVisit() => _visiting.removeLast();
+
   /// Преобразует объект в строку, используя тему [theme] и конфигурацию
   /// [config].
   static String objectToString(
@@ -145,6 +176,29 @@ abstract mixin class Loggable {
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
     LoggableConfig config = const LoggableConfig(),
+  }) {
+    if (obj != null && _canContainCycle(obj)) {
+      if (!_startVisit(obj)) return theme.formatValue(cycleMarker);
+      try {
+        return _objectToString(
+          obj,
+          theme: theme,
+          depth: depth,
+          config: config,
+        );
+      } finally {
+        _endVisit();
+      }
+    }
+
+    return _objectToString(obj, theme: theme, depth: depth, config: config);
+  }
+
+  static String _objectToString(
+    Object? obj, {
+    required LogTheme theme,
+    required int depth,
+    required LoggableConfig config,
   }) {
     final depthTheme = theme.depthTheme(depth);
 
@@ -213,6 +267,22 @@ abstract mixin class Loggable {
   static Object? objectToJson(
     Object? obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) {
+    if (obj != null && _canContainCycle(obj)) {
+      if (!_startVisit(obj)) return const {_kindKey: 'cycle'};
+      try {
+        return _objectToJson(obj, config: config);
+      } finally {
+        _endVisit();
+      }
+    }
+
+    return _objectToJson(obj, config: config);
+  }
+
+  static Object? _objectToJson(
+    Object? obj, {
+    required LoggableJsonConfig config,
   }) {
     final converter = _converters[obj.runtimeType];
     if (converter != null) {
