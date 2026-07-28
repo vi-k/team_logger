@@ -10,6 +10,7 @@ import 'extensions.dart';
 import 'log_row.dart';
 import 'log_text_align.dart';
 import 'log_vertical_align.dart';
+import 'surrogates.dart';
 
 abstract interface class LogBlock {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength);
@@ -63,7 +64,9 @@ final class LogBox with Loggable {
         theme,
         Constraints.exact(width),
         textAlign: textAlign,
-        showEllipsis: showEllipsis,
+        // Многоточие обрезки на филлерах не показывается: на скрытых
+        // строках-продолжениях оно оставалось бы видимым.
+        showEllipsis: false,
       );
     }
 
@@ -142,17 +145,17 @@ final class LogBox with Loggable {
         final remaining = end - start;
         if (remaining <= textWidth) {
           boxLines.add(
-            '${parser.substring(start).applyConstraints(
-                  log,
-                  theme,
-                  Constraints.exact(textWidth),
-                  textAlign: textAlign,
-                )}${' ' * theme.main.lineBreak.length}',
+            '${fixDanglingSurrogates(parser.substring(start)).applyConstraints(
+              log,
+              theme,
+              Constraints.exact(textWidth),
+              textAlign: textAlign,
+            )}${' ' * theme.main.lineBreak.length}',
           );
           start = end;
         } else if (maxLines == null || maxLines > boxLines.length + 1) {
           boxLines.add(
-            '${parser.substring(start, maxLength: textWidth)}'
+            '${fixDanglingSurrogates(parser.substring(start, maxLength: textWidth))}'
             '${theme.styledLineBreak}',
           );
           start += textWidth;
@@ -179,6 +182,8 @@ final class LogBox with Loggable {
         theme,
         Constraints.exact(boxWidth),
         textAlign: textAlign,
+        // См. комментарий в фабрике LogBox: без многоточия на филлерах.
+        showEllipsis: false,
       );
     }
 

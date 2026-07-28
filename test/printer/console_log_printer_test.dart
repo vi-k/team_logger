@@ -1,6 +1,25 @@
 import 'package:team_logger/team_logger.dart';
 import 'package:test/test.dart';
 
+bool _wellFormedUtf16(String s) {
+  final units = s.codeUnits;
+  for (var i = 0; i < units.length; i++) {
+    final u = units[i];
+    if (u >= 0xD800 && u <= 0xDBFF) {
+      if (i + 1 >= units.length ||
+          units[i + 1] < 0xDC00 ||
+          units[i + 1] > 0xDFFF) {
+        return false;
+      }
+      i++;
+    } else if (u >= 0xDC00 && u <= 0xDFFF) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 (Logger, List<String>) _setup({
   LogMainTheme? theme,
   required List<LogRow> rows,
@@ -126,6 +145,80 @@ void main() {
         isNot(contains('\x1B')),
         reason: 'application must stay inactive',
       );
+    });
+
+    test('truncation never leaves a dangling surrogate half', () {
+      final (log, out) = _setup(
+        rows: const [
+          LogRow(maxLength: 8, children: [LogMessage()]),
+        ],
+      );
+
+      log.i('😀😀😀😀😀');
+
+      expect(out, isNotEmpty);
+      for (final line in out) {
+        expect(_wellFormedUtf16(line), isTrue, reason: 'broken: $line');
+      }
+    });
+
+    test('wrapping never leaves a dangling surrogate half', () {
+      final (log, out) = _setup(
+        rows: const [
+          LogRow(maxLength: 6, children: [LogMessage()]),
+        ],
+      );
+
+      log.i('😀😀😀😀😀');
+
+      expect(out.length, greaterThan(1));
+      for (final line in out) {
+        expect(_wellFormedUtf16(line), isTrue, reason: 'broken: $line');
+      }
+    });
+
+    test('vertical filler has no ellipsis on continuation lines', () {
+      final (log, out) = _setup(
+        rows: const [
+          LogRow(
+            maxLength: 24,
+            children: [
+              LogTime.onlyTime(constraints: Constraints.exact(8)),
+              LogMessage(),
+            ],
+          ),
+        ],
+      );
+
+      log.i('a long message that wraps over lines');
+
+      expect(out.length, greaterThan(1));
+      // Первая строка может содержать многоточие усечения времени,
+      // невидимые филлеры продолжений — не должны.
+      for (final line in out.skip(1)) {
+        expect(line, isNot(contains('…')), reason: 'line: $line');
+      }
+    });
+
+    test('long stack trace frame wraps instead of dropping the file', () {
+      final (log, out) = _setup(
+        rows: const [
+          LogRow(maxLength: 40, children: [LogStackTrace()]),
+        ],
+      );
+
+      log.e(
+        'boom',
+        stackTrace: StackTrace.fromString(
+          '#0 VeryLongClassName.someExtremelyLongMethodNameThatDoesNotFit '
+          '(package:demo/src/deep/path/file_name.dart:12:34)',
+        ),
+      );
+
+      // Фрейм переносится с маркером переноса '-'; после склейки строк и
+      // удаления маркеров/пробелов имя файла должно сохраниться целиком.
+      final glued = out.join().replaceAll('-', '').replaceAll(' ', '');
+      expect(glued, contains('file_name.dart'));
     });
 
     test('log line is not dropped when the tail is wider than maxLength', () {

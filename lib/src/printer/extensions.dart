@@ -4,6 +4,7 @@ import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
 import 'constraints.dart';
 import 'log_text_align.dart';
+import 'surrogates.dart';
 
 extension AnsiStringExtensions on String {
   String applyConstraints(
@@ -66,7 +67,7 @@ extension AnsiParserExtensions on ansi.Parser {
             0,
             maxLength: newLength,
           )
-        : substring(0, maxLength: newLength);
+        : fixDanglingSurrogates(substring(0, maxLength: newLength));
   }
 
   String terminatedSubstring(
@@ -78,10 +79,12 @@ extension AnsiParserExtensions on ansi.Parser {
     if (terminator.isEmpty ||
         maxLength < terminator.length ||
         length - start <= maxLength) {
-      return substring(start, maxLength: maxLength);
+      return fixDanglingSurrogates(substring(start, maxLength: maxLength));
     }
 
-    return '${substring(start, maxLength: maxLength - terminator.length)}'
+    return '${fixDanglingSurrogates(
+      substring(start, maxLength: maxLength - terminator.length),
+    )}'
         '${terminatorStyle(terminator)}';
   }
 }
