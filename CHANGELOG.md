@@ -1,3 +1,11 @@
+## 0.4.1
+
+- [breaking changes] The `ansi_escape_codes` re-export is narrowed to
+  `Style`, `NoStyle`, `Color16`, `Color256`: the full barrel leaked names
+  clashing with Flutter (`Color`, `Colors`, `Stack`, `State`, `Text`).
+  For the predefined style shortcuts (`rgb431`, ...) depend on
+  `ansi_escape_codes` directly (ideally with an import prefix).
+
 ## 0.4.0
 
 - [breaking changes] Rename [Log.sequenceNum] to [Log.num]
