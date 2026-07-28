@@ -237,7 +237,7 @@ final class LogMainTheme with Loggable {
     traceIdStyle: _activeTraceIdStyle,
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,
-    cycleStyle: _activeTraceIdStyle,
+    cycleStyle: ansi.rgb431,
   );
 
   static final LogMainTheme defaultInactiveTheme = LogMainTheme._(
