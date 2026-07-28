@@ -44,16 +44,19 @@
   publish after dispose, reversed.reversed, growable snapshot); tags
   accept any iterable; collection length budgets include the ellipsis;
   [ControlCodeFormatter] no longer leaks a bare ANSI reset; [LogTime]
-  column width no longer jitters with microseconds; [LoggableView] (null) and
-  duplicate props are consistent between string and JSON output; non-finite doubles (nan/inf) omit units in both outputs; user map keys starting with ':' are escaped; [LogTags] prints
-  nothing when there are no tags.
+  column width no longer jitters with microseconds; [LoggableView] (null)
+  and duplicate props are consistent between string and JSON output;
+  non-finite doubles (nan/inf) omit units in both outputs; user map keys
+  starting with ':' are escaped; [LogTags] prints nothing when there are
+  no tags.
 - [breaking changes] Rename [collectionMaxLength] to [collectionMaxCount].
 - [Loggable.efficientLengthIterableToString] and [Loggable.iterableToString]
   now accept the parameter [collectionMaxCount] = 0.
 - Add [Loggable.objectToJson].
 - Add [LoggableData.round].
-- Add file-based session log storage (`package:team_logger/team_logger_io.dart`):
-  [FileLogStorage] writes logs to per-session JSON Lines files with chunk
+- Add file-based session log storage
+  (`package:team_logger/team_logger_io.dart`): [FileLogStorage] writes
+  logs to per-session JSON Lines files with chunk
   rotation ([maxSessionSize]/[maxChunkSize]), startup cleanup ([maxAge],
   [maxTotalSize]) and a metadata line; [FileLogSessions]/[FileLogSession]
   list, read, delete, export sessions and pack them into a single ZIP
