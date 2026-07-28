@@ -10,32 +10,6 @@ final class NotLoggableObject {
 
 class MyConverter implements LoggableTypeConverter<NotLoggableObject> {
   @override
-  Object? toJson(
-    NotLoggableObject obj,
-    LoggableJsonConfig config,
-  ) {
-    final loggable = Loggable.builder(obj)
-      ..prop('weight', obj.weight, units: 'kg')
-      ..prop('height', obj.height, units: 'm');
-
-    return loggable.toJson(config: config);
-  }
-
-  @override
-  String toLogString(
-    NotLoggableObject obj,
-    LogTheme theme,
-    int depth,
-    LoggableEffectiveConfig config,
-  ) {
-    final loggable = Loggable.builder(obj)
-      ..prop('weight', obj.weight, units: 'kg')
-      ..prop('height', obj.height, units: 'm');
-
-    return loggable.toLogString(theme: theme, depth: depth, config: config);
-  }
-
-  @override
   LoggableData convertToData(NotLoggableObject obj) => Loggable.builder(obj)
     ..prop('weight', obj.weight, units: 'kg')
     ..prop('height', obj.height, units: 'm');
@@ -50,5 +24,6 @@ void run() {
 
   log.d('NotLoggableObject (myConverter)', data: notLoggableObject);
 
-  Loggable.unregisterTypeConverter<MyConverter>();
+  // Конвертер снимается по целевому типу, а не по типу конвертера.
+  Loggable.unregisterTypeConverter<NotLoggableObject>();
 }

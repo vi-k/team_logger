@@ -249,26 +249,4 @@ final class NotLoggableObjectConverter
   LoggableData convertToData(NotLoggableObject obj) => Loggable.builder(obj)
     ..prop('name', obj.name)
     ..prop('list', obj.list);
-
-  @override
-  Object? toJson(
-    NotLoggableObject obj,
-    LoggableJsonConfig config,
-  ) =>
-      (Loggable.builder(obj)
-            ..prop('name', obj.name)
-            ..prop('list', obj.list))
-          .toJson(config: config);
-
-  @override
-  String toLogString(
-    NotLoggableObject obj,
-    LogTheme theme,
-    int depth,
-    LoggableEffectiveConfig config,
-  ) =>
-      (Loggable.builder(obj)
-            ..prop('name', obj.name)
-            ..prop('list', obj.list))
-          .toLogString(theme: theme, depth: depth, config: config);
 }

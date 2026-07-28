@@ -613,8 +613,14 @@ abstract mixin class Loggable {
       return;
     }
 
-    // Бронируем место для разделителя и последнего элемента.
+    final displayedCount = math.min(maxCount ?? count, count);
+
+    // Бронируем место для разделителя и последнего элемента, а при обрезке
+    // по количеству — ещё и для многоточия, которое будет выведено в конце.
     var usedSize = firstSize + delimiterSize + lastSize;
+    if (displayedCount < count) {
+      usedSize += delimiterSize + ellipsisSize;
+    }
 
     // Если последний элемент не помещается в строку, выводим вместо него
     // многоточие: (₌ₙ ₀:a, …)
@@ -632,8 +638,6 @@ abstract mixin class Loggable {
           ..write(item);
       }
     }
-
-    final displayedCount = math.min(maxCount ?? count, count);
 
     for (var i = 1; i < displayedCount - 1; i++) {
       iterator.moveNext();
@@ -911,6 +915,14 @@ abstract mixin class Loggable {
     var l = 0;
     for (final e in iterable) {
       if (maxCount != null && maxCount <= i) {
+        // Многоточие обрезки по количеству тоже должно влезать в бюджет
+        // длины — при необходимости изымаем последние элементы.
+        while (!hasSpaceFor(l + delimiterSize + ellipsisSize) &&
+            bufferedItems.isNotEmpty) {
+          final lastItem = bufferedItems.removeLast();
+          l -= lastItem.$2;
+        }
+
         writeBufferedItems();
         buf.write(isFirst ? ellipsis : delimiterAndEllipsis);
         break;
@@ -1243,20 +1255,13 @@ final class LoggableWrapper {
   String toString() => Loggable.objectToString(data, config: config);
 }
 
+/// Конвертер стороннего типа [T] в [LoggableData].
+///
+/// Библиотека вызывает только [convertToData]; полученный [LoggableData]
+/// сам умеет и в строку, и в JSON. Конвертер подбирается строго по
+/// `runtimeType` — для наследников [T] он не применяется.
 abstract interface class LoggableTypeConverter<T extends Object?> {
   LoggableData convertToData(T obj);
-
-  Object? toJson(
-    T obj,
-    LoggableJsonConfig config,
-  );
-
-  String toLogString(
-    T obj,
-    LogTheme theme,
-    int depth,
-    LoggableEffectiveConfig config,
-  );
 }
 
 abstract interface class LoggableView {
@@ -1372,8 +1377,10 @@ final class LoggableMultiView implements LoggableView {
   const LoggableMultiView(this.views, {this.separator = '/'});
 
   @override
-  Object? toJson(Object? value) =>
-      views.map((e) => e.toJson(value)).join(separator);
+  Object? toJson(Object? value) => {
+        Loggable._kindKey: 'multi-view',
+        Loggable._valueKey: [for (final view in views) view.toJson(value)],
+      };
 
   @override
   String toLogString(

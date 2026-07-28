@@ -12,6 +12,10 @@
   [toEffectiveConfig].
 - [breaking changes] The [TypeProp] constructor is now private.
 - Export [LoggableJsonConfig]; add [Prop.toMapEntry] and [Prop.toJson].
+- [breaking changes] [LoggableTypeConverter] is reduced to [convertToData]:
+  the [toJson]/[toLogString] members were never called by the library.
+- [LoggableMultiView.toJson] now returns a structured object
+  (`{":k": "multi-view", ":v": [...]}`) instead of a joined string.
 - [breaking changes] Rename [collectionMaxLength] to [collectionMaxCount].
 - [Loggable.efficientLengthIterableToString] and [Loggable.iterableToString]
   now accept the parameter [collectionMaxCount] = 0.

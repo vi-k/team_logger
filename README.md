@@ -1251,18 +1251,9 @@ directly, register a `LoggableTypeConverter`:
 ```dart
 class MyConverter implements LoggableTypeConverter<NotLoggableObject> {
   @override
-  String call(
-    NotLoggableObject obj,
-    LogTheme theme,
-    int depth,
-    LoggableResolvedConfig config,
-  ) {
-    final loggable = Loggable.builder(obj)
-      ..prop('weight', obj.weight, units: 'kg')
-      ..prop('height', obj.height, units: 'm');
-
-    return loggable.toLogString(theme: theme, depth: depth, config: config);
-  }
+  LoggableData convertToData(NotLoggableObject obj) => Loggable.builder(obj)
+    ..prop('weight', obj.weight, units: 'kg')
+    ..prop('height', obj.height, units: 'm');
 }
 
 final notLoggableObject = NotLoggableObject(85.5, 1.80);
@@ -1271,6 +1262,9 @@ log.d('NotLoggableObject (toString)', data: notLoggableObject);
 Loggable.registerTypeConverter(MyConverter());
 log.d('NotLoggableObject (MyConverter)', data: notLoggableObject);
 ```
+
+The converter is looked up strictly by the object's `runtimeType`:
+subclasses of the registered type are not converted.
 
 ![Custom type converters](screenshots/loggable_5.png)
 

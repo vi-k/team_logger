@@ -12,8 +12,9 @@ final class ControlCodeFormatter with Loggable implements LogPreFormatter {
   @override
   String call(LogTheme theme, String text) {
     final buf = StringBuffer();
-    final open = theme.data.paddingStyle.open;
-    final close = theme.data.paddingStyle.close;
+    // Стиль применяется вызовом, а не парой open/close: `Style.close` — это
+    // безусловный reset, который просачивался бы даже в noColors-вывод.
+    final style = theme.data.paddingStyle;
 
     for (final charCode in text.codeUnits) {
       final controlCode = ansi.ControlFunctionsC0.byIndex(charCode);
@@ -23,16 +24,13 @@ final class ControlCodeFormatter with Loggable implements LogPreFormatter {
         buf.writeCharCode(charCode);
       } else {
         if (controlCode.escapeSymbol case final escapeSymbol?) {
-          buf
-            ..write(open)
-            ..write(escapeSymbol)
-            ..write(close);
+          buf.write(style(escapeSymbol));
         } else {
-          buf
-            ..write(open)
-            ..write(r'\x')
-            ..write(charCode.toRadixString(16).toUpperCase().padLeft(2, '0'))
-            ..write(close);
+          buf.write(
+            style(
+              '\\x${charCode.toRadixString(16).toUpperCase().padLeft(2, '0')}',
+            ),
+          );
         }
       }
     }
