@@ -36,6 +36,7 @@ final class LogMainTheme with Loggable {
   static const String defaultPadding = ' ';
   static const String defaultErrorTitle = 'ERROR';
   static const String defaultStackTraceTitle = 'STACKTRACE';
+  static const String defaultCycleMarker = '\u21ba'; // ↺
 
   final LogThemeData _verbose;
   final LogThemeData _debug;
@@ -72,6 +73,13 @@ final class LogMainTheme with Loggable {
   /// `false`, чтобы принтер не добавлял служебные escape-коды.
   final bool ansiCodesEnabled;
 
+  /// Маркер циклической ссылки; за ним печатается количество уровней
+  /// вверх до объекта, на который указывает цикл: `↺2`.
+  final String cycleMarker;
+
+  /// Стиль маркера циклической ссылки.
+  final ansi.Style cycleStyle;
+
   LogMainTheme({
     LogThemeData verbose = LogThemeData.noColors,
     LogThemeData debug = LogThemeData.noColors,
@@ -103,6 +111,8 @@ final class LogMainTheme with Loggable {
     this.stackTraceTitle = defaultStackTraceTitle,
     this.stringInQuotes = true,
     this.ansiCodesEnabled = true,
+    this.cycleMarker = defaultCycleMarker,
+    this.cycleStyle = const ansi.NoStyle(),
   })  : _verbose = verbose,
         _debug = debug,
         _info = info,
@@ -115,6 +125,7 @@ final class LogMainTheme with Loggable {
         assert(!ellipsis.ansiHasEscapeCodes),
         assert(!lineBreak.ansiHasEscapeCodes),
         assert(!padding.ansiHasEscapeCodes),
+        assert(!cycleMarker.ansiHasEscapeCodes),
         assert(padding.length == 1);
 
   const LogMainTheme._({
@@ -129,12 +140,14 @@ final class LogMainTheme with Loggable {
     this.tagsStyle = const ansi.NoStyle(),
     this.hiddenStyle = const ansi.NoStyle(),
     this.ansiCodesEnabled = true,
+    this.cycleStyle = const ansi.NoStyle(),
   })  : _verbose = verbose,
         _debug = debug,
         _info = info,
         _warning = warning,
         _error = error,
         _critical = critical,
+        cycleMarker = defaultCycleMarker,
         minLevel = LogLevels.all,
         openingQuote = defaultQuote,
         closingQuote = defaultQuote,
@@ -224,6 +237,7 @@ final class LogMainTheme with Loggable {
     traceIdStyle: _activeTraceIdStyle,
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,
+    cycleStyle: _activeTraceIdStyle,
   );
 
   static final LogMainTheme defaultInactiveTheme = LogMainTheme._(
@@ -326,6 +340,8 @@ final class LogMainTheme with Loggable {
     String? stackTraceTitle,
     bool? stringInQuotes,
     bool? ansiCodesEnabled,
+    String? cycleMarker,
+    ansi.Style? cycleStyle,
   }) =>
       LogMainTheme(
         minLevel: minLevel ?? this.minLevel,
@@ -359,6 +375,8 @@ final class LogMainTheme with Loggable {
         stackTraceTitle: stackTraceTitle ?? this.stackTraceTitle,
         stringInQuotes: stringInQuotes ?? this.stringInQuotes,
         ansiCodesEnabled: ansiCodesEnabled ?? this.ansiCodesEnabled,
+        cycleMarker: cycleMarker ?? this.cycleMarker,
+        cycleStyle: cycleStyle ?? this.cycleStyle,
       );
 
   @override

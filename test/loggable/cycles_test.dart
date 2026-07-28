@@ -16,14 +16,24 @@ final class _Node with Loggable {
 }
 
 void main() {
+  group('cycle marker theming', () {
+    test('marker and style are configurable via the theme', () {
+      final list = <Object?>[];
+      list.add(list);
+      final theme = LogMainTheme(cycleMarker: '<loop>').info;
+
+      expect(Loggable.objectToString(list, theme: theme), contains('<loop>1'));
+    });
+  });
+
   group('cycle protection in objectToString', () {
-    test('self-referencing list', () {
+    test('self-referencing list marks the cycle with levels up', () {
       final list = <Object?>[1];
       list.add(list);
 
       final result = Loggable.objectToString(list);
 
-      expect(result, contains('...'));
+      expect(result, contains('↺1'));
       expect(result, contains('1'));
     });
 
@@ -33,7 +43,7 @@ void main() {
 
       final result = Loggable.objectToString(map);
 
-      expect(result, contains('...'));
+      expect(result, contains('↺1'));
     });
 
     test('indirect cycle through list and map', () {
@@ -41,7 +51,8 @@ void main() {
       final map = <String, Object?>{'list': list};
       list.add(map);
 
-      expect(() => Loggable.objectToString(list), returnsNormally);
+      // Цикл через два уровня: list -> map -> list.
+      expect(Loggable.objectToString(list), contains('↺2'));
     });
 
     test('self-referencing Loggable', () {
@@ -50,7 +61,7 @@ void main() {
 
       final result = Loggable.objectToString(node);
 
-      expect(result, contains('...'));
+      expect(result, contains('↺1'));
       expect(result, contains('a'));
     });
 
@@ -60,8 +71,7 @@ void main() {
 
       final result = Loggable.objectToString(root);
 
-      expect(result, isNot(contains('...')));
-      expect('...'.allMatches(result), isEmpty);
+      expect(result, isNot(contains('↺')));
     });
   });
 
@@ -74,6 +84,7 @@ void main() {
       final encoded = jsonEncode(json);
 
       expect(encoded, contains('"cycle"'));
+      expect(encoded, contains('":up":1'));
     });
 
     test('self-referencing map encodes to valid JSON', () {
@@ -90,6 +101,7 @@ void main() {
       final encoded = jsonEncode(Loggable.objectToJson(node));
 
       expect(encoded, contains('"cycle"'));
+      expect(encoded, contains('":up":1'));
     });
 
     test('shared non-cyclic references are not marked as cycles', () {

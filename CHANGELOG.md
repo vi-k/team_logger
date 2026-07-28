@@ -33,7 +33,10 @@
 - Re-export the `ansi_escape_codes` styles, so themes can be configured
   without a direct dependency.
 - Fix a batch of review findings: cyclic structures no longer crash
-  formatting ([StackOverflowError]); [BbCodeFormatter] no longer truncates
+  formatting ([StackOverflowError]) — a cycle is rendered as `↺N`
+  (N = levels up, marker/style configurable via
+  [LogMainTheme.cycleMarker]/[cycleStyle]) and as
+  `{":k": "cycle", ":up": N}` in JSON; [BbCodeFormatter] no longer truncates
   messages; single-character messages are printed; a tail wider than
   [maxLength] no longer drops the log line; truncation/wrapping is
   surrogate-safe; fillers show no ellipsis; stack trace frames wrap

@@ -20,8 +20,10 @@ part 'loggable_data.dart';
 /// - [Loggable.objectToJson] renders it as a JSON-compatible structure;
 /// - [logClassInfo] returns the property list for in-app UIs.
 ///
-/// Cyclic structures are rendered as [cycleMarker] instead of recursing
-/// forever.
+/// Cyclic structures are rendered as a cycle marker (`\u21ba2` — the
+/// number is how many levels up the cycle points; configurable via
+/// `LogMainTheme.cycleMarker`/`cycleStyle`) instead of recursing forever.
+/// In JSON a cycle becomes `{":k": "cycle", ":up": 2}`.
 abstract mixin class Loggable {
   static const _kindKey = ':k';
   static const _classKey = ':c';
@@ -32,6 +34,7 @@ abstract mixin class Loggable {
   static const _propsKey = ':p';
   static const _bracketsKey = ':brackets';
   static const _trimKey = ':trim';
+  static const _upKey = ':up';
 
   static final Map<Type, LoggableTypeConverter<Object?>> _converters = {};
 
@@ -147,9 +150,6 @@ abstract mixin class Loggable {
   /// `_toStringVisiting` в SDK).
   static final List<Object> _visiting = <Object>[];
 
-  /// Маркер циклической ссылки.
-  static const cycleMarker = '...';
-
   /// Примитивы не могут содержать ссылок и не требуют защиты от циклов.
   static bool _canContainCycle(Object obj) => switch (obj) {
         bool() ||
@@ -162,16 +162,18 @@ abstract mixin class Loggable {
         _ => true,
       };
 
-  static bool _startVisit(Object obj) {
-    for (final visited in _visiting) {
-      if (identical(visited, obj)) return false;
+  /// Индекс объекта в стеке форматирования или -1, если объект не в стеке.
+  static int _visitingIndexOf(Object obj) {
+    for (var i = 0; i < _visiting.length; i++) {
+      if (identical(_visiting[i], obj)) return i;
     }
-    _visiting.add(obj);
 
-    return true;
+    return -1;
   }
 
-  static void _endVisit() => _visiting.removeLast();
+  /// Количество уровней вверх до предка [ancestorIndex] в стеке.
+  static int _cycleLevelsUp(int ancestorIndex) =>
+      _visiting.length - ancestorIndex;
 
   /// Пользовательские ключи, начинающиеся с ':', экранируются дополнительным
   /// ':' — иначе они были бы неотличимы от служебных (':k', ':v', ...).
@@ -187,7 +189,14 @@ abstract mixin class Loggable {
     LoggableConfig config = const LoggableConfig(),
   }) {
     if (obj != null && _canContainCycle(obj)) {
-      if (!_startVisit(obj)) return theme.formatValue(cycleMarker);
+      final ancestorIndex = _visitingIndexOf(obj);
+      if (ancestorIndex != -1) {
+        return theme.main.cycleStyle(
+          '${theme.main.cycleMarker}${_cycleLevelsUp(ancestorIndex)}',
+        );
+      }
+
+      _visiting.add(obj);
       try {
         return _objectToString(
           obj,
@@ -196,7 +205,7 @@ abstract mixin class Loggable {
           config: config,
         );
       } finally {
-        _endVisit();
+        _visiting.removeLast();
       }
     }
 
@@ -280,11 +289,16 @@ abstract mixin class Loggable {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
     if (obj != null && _canContainCycle(obj)) {
-      if (!_startVisit(obj)) return const {_kindKey: 'cycle'};
+      final ancestorIndex = _visitingIndexOf(obj);
+      if (ancestorIndex != -1) {
+        return {_kindKey: 'cycle', _upKey: _cycleLevelsUp(ancestorIndex)};
+      }
+
+      _visiting.add(obj);
       try {
         return _objectToJson(obj, config: config);
       } finally {
-        _endVisit();
+        _visiting.removeLast();
       }
     }
 
