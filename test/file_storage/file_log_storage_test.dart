@@ -167,6 +167,17 @@ void main() {
       final storage = FileLogStorage(directory: tmp.path);
 
       await storage.flush().timeout(_timeout);
+
+      // flush also guarantees initialization: the first chunk with the
+      // meta line is already on disk.
+      final chunks = Directory(tmp.path)
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.1.jsonl'))
+          .toList();
+      expect(chunks, hasLength(1));
+      expect(_lines(chunks.single), hasLength(1));
+
       await storage.close();
     });
 

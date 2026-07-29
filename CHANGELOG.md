@@ -1,3 +1,11 @@
+## 0.5.1
+
+- Internal: [FileLogStorage] drops its pending-log counter and the
+  `flush()` fast path — workarounds for the `flush()` hang of
+  logger_builder <= 0.3.2. `flush()` now awaits initialization and relies
+  on the drain semantics of the base class; the guarantees are unchanged
+  (initialization completed, everything published is on disk).
+
 ## 0.5.0
 
 - [breaking changes] Require `logger_builder` ^0.4.0 (the changes flow

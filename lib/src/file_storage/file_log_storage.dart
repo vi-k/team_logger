@@ -66,7 +66,6 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   late final List<int> _metaLineBytes;
   var _disabled = false;
   var _closed = false;
-  var _pending = 0;
   var _chunkIndex = 1;
   var _chunkSize = 0;
 
@@ -126,22 +125,16 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     // в точку логирования, а буфер никогда не был бы обработан.
     if (_closed) return;
 
-    _pending++;
-    try {
-      super.publish(log);
-    } on Object {
-      _pending--;
-      rethrow;
-    }
+    super.publish(log);
   }
 
   @override
-  Future<void> flush() {
-    // Базовый flush() зависает, если буфер пуст: его completer завершается
-    // только после обработки очередного батча.
-    if (_pending == 0) return ready;
-
-    return super.flush();
+  Future<void> flush() async {
+    // flush гарантирует не только запись опубликованного (drain-семантика
+    // базового flush), но и завершение инициализации: первый чанк с
+    // meta-строкой уже на диске.
+    await ready;
+    await super.flush();
   }
 
   @override
@@ -182,8 +175,6 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
       }
     } on Object catch (error, stackTrace) {
       _report(error, stackTrace);
-    } finally {
-      _pending -= logs.length;
     }
   }
 
