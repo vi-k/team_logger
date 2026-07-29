@@ -1,3 +1,13 @@
+## 0.4.2
+
+- Require `logger_builder` ^0.3.2: an exception thrown by one publisher in
+  [MultiPublisher] no longer interrupts publishing to the remaining
+  publishers and no longer propagates to the logging call site. The new
+  [MultiPublisher.onError] callback receives the failing publisher along
+  with the error; without it, the error is reported to the current zone as
+  an uncaught asynchronous error. [MultiPublisher.flush] now starts
+  flushing all publishers even if one of them throws synchronously.
+
 ## 0.4.1
 
 - [breaking changes] The `ansi_escape_codes` re-export is narrowed to
