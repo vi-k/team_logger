@@ -1,3 +1,18 @@
+## 0.5.0
+
+- [breaking changes] Require `logger_builder` ^0.4.0 (the changes flow
+  through the re-export): `HasFlush` is renamed to [Flushable] (the old
+  name remains as a deprecated alias), the new [Closable] interface
+  exposes `close()`, [MultiPublisher] gains a closed state and copies the
+  publisher list at construction, [CustomLevelLogger] can no longer be
+  implemented outside logger_builder, async publishers get `onError`,
+  `isClosed` and non-hanging drain-semantics `flush()`. See the
+  logger_builder 0.3.3/0.4.0 changelog for the full list.
+- [FileLogStorage.onError] is now the inherited base-class callback: it
+  additionally receives the write-pipeline errors of
+  [AsyncPublisherWithBufferBase] (previously they were reported to the
+  current zone).
+
 ## 0.4.2
 
 - Require `logger_builder` ^0.3.2: an exception thrown by one publisher in

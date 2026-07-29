@@ -27,6 +27,9 @@ import 'file_log_sessions.dart';
 /// Logs are written in batches in the background; `await flush()` guarantees
 /// everything published so far is on disk. After [close] publications are
 /// silently ignored.
+///
+/// [onError] is called on initialization, encoding and write errors. Errors
+/// are never thrown; exceptions thrown by the callback itself are ignored.
 final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   /// The directory the session files are stored in (created recursively).
   final String directory;
@@ -49,10 +52,6 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
 
   /// Sessions older than this are deleted on startup. `null` — keep forever.
   final Duration? maxAge;
-
-  /// Called on initialization, encoding and write errors. Errors are never
-  /// thrown; exceptions thrown by the callback itself are ignored.
-  final void Function(Object error, StackTrace stackTrace)? onError;
 
   /// Completes when the storage is initialized: the directory is created,
   /// old sessions are cleaned up, the session id is resolved and the first
@@ -87,7 +86,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     LogMainTheme? theme,
     LoggableConfig config = const LoggableConfig(),
     LoggableJsonConfig jsonConfig = const LoggableJsonConfig(),
-    this.onError,
+    super.onError,
   })  : assert(maxChunkSize > 0, 'maxChunkSize must be positive'),
         assert(
           maxSessionSize >= 2 * maxChunkSize,
