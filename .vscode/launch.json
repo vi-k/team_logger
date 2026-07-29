@@ -12,6 +12,13 @@
             "program": "bin/example.dart",
         },
         {
+            "name": "file_storage_example",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "example",
+            "program": "bin/file_storage_example.dart",
+        },
+        {
             "name": "README: quick start",
             "request": "launch",
             "type": "dart",

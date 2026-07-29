@@ -5,9 +5,9 @@ import 'package:team_logger/team_logger_io.dart';
 final storage = FileLogStorage(
   directory: '${Directory.systemTemp.path}/team_logger_example',
   meta: {'appVersion': '1.2.3', 'device': 'example'},
+  maxTotalSize: 10 * 1024 * 1024,
   maxSessionSize: 1024 * 1024,
   maxChunkSize: 128 * 1024,
-  maxTotalSize: 10 * 1024 * 1024,
   maxAge: const Duration(days: 7),
 );
 
