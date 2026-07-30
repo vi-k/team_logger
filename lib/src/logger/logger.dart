@@ -69,7 +69,7 @@ final class LevelLogger
           resolvedData = Loggable.from(resolvedData, config: config);
         }
 
-        publisher.publish(
+        publishLog(
           Log(
             this,
             path: overridePath ?? logger._lazyPath.value,
@@ -106,6 +106,11 @@ final class LevelLogger
 /// for enabled levels; an exception thrown by such a closure propagates to
 /// the log call site. Every constructed log consumes a global [Log.num]
 /// (isolates have independent counters).
+/// [transformer] is applied to every log right before publishing —
+/// mask secrets/PII or drop logs entirely (see [LogTransformer]); it is
+/// inherited by subloggers the same way as `level` and `publisher`.
+/// Write transformers with [Log.copyWith] — it preserves the log's
+/// number and time.
 final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   static const _tagsKey = #team_logger_tags;
 
