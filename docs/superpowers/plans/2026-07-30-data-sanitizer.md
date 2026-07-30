@@ -1,59 +1,66 @@
-# Санитайзация значений data — Implementation Plan
+# Санитайзация значений data при выводе — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Рекурсивный санитайзер значений внутри `data`, применяемый до
-публикации лога: маскирование секретов/PII во вложенных структурах и
-удаление полей целиком.
+**Goal:** Глобальный санитайзер, который получает каждое выводимое
+значение внутри `data` (имя, путь, глубина) и может его заменить или
+убрать из вывода.
 
-**Architecture:** Обход живёт в библиотеке `loggable.dart` (part-файл, ему
-нужны приватные `_converters`, `Prop._`, `LoggableData._`) и строит НОВУЮ
-структуру. Склейка `sanitizeData(...)` возвращает `LogTransformer<Log>` и
-подключается через готовые хуки 0.5.2 (`logger.transformer` /
-`TransformPublisher`), откуда fail-closed достаётся бесплатно.
+**Architecture:** Хук встраивается в существующие обходчики
+`objectToString`/`objectToJson` — новой структуры не строится, поэтому
+лень, защита от циклов и лимиты коллекций работают как раньше.
+Санитайзер применяется ровно один раз на значение — тем местом, которое
+знает его позицию (свойство, ключ `Map`, индекс элемента, запись
+multi-data), плюс точками входа для корня. Регистрация глобальная:
+`Loggable.sanitizer`.
 
 **Tech Stack:** Pure Dart, пакет team_logger
 (/Users/user/development/my/team_logger). Релиз 0.6.0. `logger_builder`
 не трогаем.
 
-**Спека:** `docs/superpowers/specs/2026-07-30-data-sanitizer-design.md`.
-При расхождении плана и спеки — спека главнее.
+**Спека:** `docs/superpowers/specs/2026-07-30-data-sanitizer-design.md`
+(редакция v2). При расхождении плана и спеки — спека главнее. Обрати
+внимание на раздел «История решения»: вариант с пересборкой структуры
+при создании лога рассмотрен и отклонён, возвращаться к нему не надо.
 
 ## Global Constraints
 
 - Строгий анализ: `dart analyze` чист, `dart format --set-exit-if-changed .`
   без изменений. Одинарные кавычки, trailing commas, 80 колонок,
   `omit_local_variable_types`, `cascade_invocations`,
-  `require_trailing_commas`, `prefer_const_constructors`.
-- TDD: тест → RED → реализация → GREEN → полный `dart test` (228
-  существующих тестов должны остаться зелёными) → analyze → format.
-- Fail-closed: сырое (несанитайзнутое) значение не должно попадать ни в
-  один publisher. Обход обязан покрывать те же типы, что и type-switch
-  форматтера, иначе непокрытый тип — дыра.
-- Санитайзер вызывается для каждого узла ДО обхода внутрь; результат,
-  **не идентичный** входному значению, подставляется как есть и обход
-  внутрь не идёт.
-- Комментарии в подсистеме `src/loggable/` — на русском (правило
-  подкаталога).
-- Ожидаемые строки рендеринга в тестах (`'_User(name: "ann")'` и т.п.)
-  выверены по документации пакета, но при расхождении с фактическим
-  выводом правится ОЖИДАНИЕ, а не проверяемое поведение: утверждения
-  «секрета нет в выводе» и «поле исчезло» ослаблять нельзя.
-- Коммиты: conventional commits (`feat:`, `test:`, `docs:`) + трейлер
+  `require_trailing_commas`.
+- TDD: тест → RED → реализация → GREEN → полный `dart test` → analyze →
+  format.
+- **Нулевой оверхед по умолчанию:** при `Loggable.sanitizer == null`
+  поведение вывода не меняется ни в одном сценарии. 228 существующих
+  тестов — главный страж этого; они должны оставаться зелёными без
+  правок. Если существующий тест пришлось поменять — это сигнал ошибки в
+  реализации, а не повод править тест.
+- Санитайзер вызывается **ровно один раз** на выводимое значение.
+  Двойной вызов — дефект: правило вида
+  `(ctx) => ctx.name == 'p' ? Sanitize.drop : ctx.value` при повторном
+  применении к уже подставленному значению сломается.
+- `Loggable.sanitizer` — глобальное изменяемое состояние; каждый тест,
+  который его ставит, обязан снимать его в `tearDown`, иначе поедут
+  соседние тесты.
+- Комментарии в подсистеме `src/loggable/` — на русском.
+- Коммиты: conventional commits + трейлер
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 - Работать только в /Users/user/development/my/team_logger. Абсолютные
   пути; macOS (нет `timeout`). `pubspec.lock` в .gitignore.
-- Публикация пакета — ТОЛЬКО после показа диффа пользователю и явного
-  одобрения.
+- Ожидаемые строки рендеринга в тестах выверены по докам пакета; при
+  расхождении с фактическим выводом правится ОЖИДАНИЕ, но утверждения
+  «секрета нет в выводе» и «ключ исчез» ослаблять нельзя.
+- Публикация — ТОЛЬКО после показа диффа пользователю и одобрения.
 
 ---
 
-### Task 1: Каркас обхода — контекст, drop, примитивы, Map/List/Set
+### Task 1: Ядро — типы, глобальный хук, стек пути, корень
 
 **Files:**
 - Create: `lib/src/loggable/log_value_sanitizer.dart`
-- Modify: `lib/src/loggable/loggable.dart` (директива `part`, статик
-  `Loggable.sanitize`)
+- Modify: `lib/src/loggable/loggable.dart` (директива `part`, поле
+  `sanitizer`, применение к корню)
 - Create: `test/loggable/sanitizer_test.dart`
 
 **Interfaces:**
@@ -61,9 +68,15 @@
   `typedef LogValueSanitizer = Object? Function(SanitizeContext ctx);`
   `final class SanitizeContext { String? name; Object? value; int depth; String get path; }`
   `abstract final class Sanitize { static const Object drop; }`
-  `static Object? Loggable.sanitize(Object? obj, LogValueSanitizer sanitizer, {String cycleMarker = '<cycle>', int maxIterableCount = 1000})`
-  Внутренний класс `_Sanitizer` с полями `_visiting`/`_segments` —
-  задачи 2–4 дописывают в него ветки type-switch.
+  `static LogValueSanitizer? Loggable.sanitizer;`
+  Пакет-приватные хелперы, которыми пользуются задачи 2–4:
+  `static Object? Loggable._sanitizeChild(Object segment, String? name, Object? value)` —
+  кладёт сегмент в стек, применяет санитайзер, снимает сегмент;
+  возвращает исходное значение, замену или `Sanitize.drop`;
+  `static T Loggable._withSegment<T>(Object segment, T Function() render)` —
+  выполняет рендеринг ребёнка с сегментом в стеке (чтобы путь у внуков
+  был полным);
+  `static bool get Loggable._sanitizing` — активен ли санитайзер.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -74,114 +87,55 @@ import 'package:team_logger/team_logger.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Loggable.sanitize', () {
-    test('identity sanitizer returns an equal structure', () {
-      final result = Loggable.sanitize(
-        {'a': 1, 'b': ['x', 'y']},
-        (ctx) => ctx.value,
-      );
+  group('Loggable.sanitizer — root', () {
+    tearDown(() => Loggable.sanitizer = null);
 
-      expect(result, {'a': 1, 'b': ['x', 'y']});
+    test('is not applied when null', () {
+      expect(Loggable.objectToString('secret'), '"secret"');
+      expect(Loggable.objectToJson('secret'), 'secret');
     });
 
-    test('replaces a value by name', () {
-      final result = Loggable.sanitize(
-        {'password': 'hunter2', 'user': 'ann'},
-        (ctx) => ctx.name == 'password' ? '***' : ctx.value,
-      );
+    test('replaces the root value in both outputs', () {
+      Loggable.sanitizer = (ctx) => '***';
 
-      expect(result, {'password': '***', 'user': 'ann'});
+      expect(Loggable.objectToString('secret'), '"***"');
+      expect(Loggable.objectToJson('secret'), '***');
     });
 
-    test('Sanitize.drop removes a map entry', () {
-      final result = Loggable.sanitize(
-        {'password': 'hunter2', 'user': 'ann'},
-        (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value,
-      );
+    test('sees the root as an unnamed value at depth 0', () {
+      final seen = <SanitizeContext>[];
+      Loggable.sanitizer = (ctx) {
+        seen.add(ctx);
 
-      expect(result, {'user': 'ann'});
+        return ctx.value;
+      };
+
+      Loggable.objectToString('secret');
+
+      expect(seen.single.name, isNull);
+      expect(seen.single.value, 'secret');
+      expect(seen.single.depth, 0);
+      expect(seen.single.path, isEmpty);
     });
 
-    test('Sanitize.drop removes a collection element', () {
-      final result = Loggable.sanitize(
-        ['keep', 'secret', 'keep2'],
-        (ctx) => ctx.value == 'secret' ? Sanitize.drop : ctx.value,
-      );
+    test('drop at the root renders empty', () {
+      Loggable.sanitizer = (ctx) => Sanitize.drop;
 
-      expect(result, ['keep', 'keep2']);
+      expect(Loggable.objectToString('secret'), isEmpty);
+      expect(Loggable.objectToJson('secret'), isNull);
     });
 
-    test('Sanitize.drop at the root is returned as the marker', () {
-      final result = Loggable.sanitize(
-        {'a': 1},
-        (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value,
-      );
+    test('is applied exactly once per rendered value', () {
+      var calls = 0;
+      Loggable.sanitizer = (ctx) {
+        calls++;
 
-      expect(result, same(Sanitize.drop));
-    });
+        return ctx.value;
+      };
 
-    test('sets are rebuilt as sets', () {
-      final result = Loggable.sanitize({1, 2, 3}, (ctx) => ctx.value);
+      Loggable.objectToString('secret');
 
-      expect(result, isA<Set<Object?>>());
-      expect(result, {1, 2, 3});
-    });
-
-    test('replacing a container stops the walk inside it', () {
-      final visited = <String?>[];
-      final result = Loggable.sanitize(
-        {
-          'card': {'pan': '4111111111111111', 'cvv': '123'},
-        },
-        (ctx) {
-          visited.add(ctx.name);
-
-          return ctx.name == 'card' ? '<redacted>' : ctx.value;
-        },
-      );
-
-      expect(result, {'card': '<redacted>'});
-      expect(visited, [null, 'card']);
-    });
-
-    test('root, name, depth and path describe the position', () {
-      final seen = <String, int>{};
-      Loggable.sanitize(
-        {
-          'user': {
-            'cards': [
-              {'pan': '4111'},
-            ],
-          },
-        },
-        (ctx) {
-          seen['${ctx.path}|${ctx.name}'] = ctx.depth;
-
-          return ctx.value;
-        },
-      );
-
-      expect(seen, {
-        '|null': 0,
-        'user|user': 1,
-        'user.cards|cards': 2,
-        'user.cards[0]|null': 3,
-        'user.cards[0].pan|pan': 4,
-      });
-    });
-
-    test('primitives are leaves: the sanitizer sees each of them once', () {
-      final values = <Object?>[];
-      Loggable.sanitize(
-        {'i': 1, 'd': 1.5, 's': 'a', 'b': true, 'n': null},
-        (ctx) {
-          if (ctx.depth > 0) values.add(ctx.value);
-
-          return ctx.value;
-        },
-      );
-
-      expect(values, [1, 1.5, 'a', true, null]);
+      expect(calls, 1);
     });
   });
 }
@@ -190,7 +144,7 @@ void main() {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart`
-Expected: COMPILE ERROR — `Loggable.sanitize`, `Sanitize`,
+Expected: COMPILE ERROR — `Loggable.sanitizer`, `Sanitize`,
 `SanitizeContext` не существуют.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -200,42 +154,49 @@ Expected: COMPILE ERROR — `Loggable.sanitize`, `Sanitize`,
 ```dart
 part of 'loggable.dart';
 
-/// Обрабатывает одно значение внутри `data` до публикации лога.
+/// Обрабатывает одно выводимое значение внутри `data`.
 ///
 /// Возврат значения, идентичного [SanitizeContext.value], означает «не
-/// трогал» — обход продолжается внутрь. Любое другое значение
-/// подставляется как есть, и внутрь него обход не идёт. Возврат
-/// [Sanitize.drop] убирает значение из вывода целиком.
+/// трогал». Любое другое значение выводится вместо исходного, и внутрь
+/// него обход не идёт. Возврат [Sanitize.drop] убирает значение из
+/// вывода (см. [Loggable.sanitizer]).
+///
+/// Правило обязано быть тотальным: исключение из него выходит в
+/// publisher (см. спеку, раздел «Ошибки»).
 typedef LogValueSanitizer = Object? Function(SanitizeContext ctx);
 
 final class _SanitizeDrop {
   const _SanitizeDrop._();
 
   @override
-  String toString() => '<drop>';
+  String toString() => '<dropped>';
 }
 
 /// Маркеры для [LogValueSanitizer].
 abstract final class Sanitize {
-  /// Убирает значение из вывода целиком: свойство/запись/элемент
-  /// исчезают, а не заменяются на заглушку.
+  /// Убирает значение из вывода.
+  ///
+  /// Свойство, запись [Map] или запись `LoggableMultiData` не выводятся
+  /// вовсе; в корне вывод пустой. В позиции элемента коллекции
+  /// работает как замена на `'<dropped>'`: длина коллекции печатается и
+  /// должна остаться честной.
   static const Object drop = _SanitizeDrop._();
 }
 
-/// Позиция значения при обходе `data`.
+/// Позиция значения при выводе.
 ///
 /// Контекст действителен только во время вызова санитайзера: [path]
-/// собирается по текущему состоянию обхода, сохранять объект наружу
-/// нельзя.
+/// собирается по текущему состоянию обхода.
 final class SanitizeContext {
-  /// Имя свойства или ключ [Map]; `null` для элементов коллекций и корня.
+  /// Имя свойства, ключ [Map] или записи `LoggableMultiData`; `null`
+  /// для элементов коллекций и для корневого значения.
   final String? name;
 
   /// Значение, которое реально попадёт в вывод (для свойства с `view` —
   /// сам `view`).
   final Object? value;
 
-  /// Глубина: 0 — корневой объект `data`.
+  /// Глубина: 0 — корневое значение.
   final int depth;
 
   final List<Object> _segments;
@@ -263,259 +224,706 @@ final class SanitizeContext {
   @override
   String toString() => 'SanitizeContext($path)';
 }
-
-final class _Sanitizer {
-  final LogValueSanitizer _sanitizer;
-  final String _cycleMarker;
-  final int _maxIterableCount;
-
-  /// Объекты в текущей цепочке рекурсии — защита от циклов.
-  final List<Object> _visiting = [];
-
-  /// Сегменты пути: [String] — имя свойства или ключ, [int] — индекс.
-  final List<Object> _segments = [];
-
-  _Sanitizer(this._sanitizer, this._cycleMarker, this._maxIterableCount);
-
-  Object? run(Object? obj) => visit(null, obj, 0);
-
-  Object? visit(String? name, Object? value, int depth) {
-    // Обёртка прозрачна: санитайзер должен видеть само значение, иначе
-    // Loggable.from(password) прошёл бы мимо правил.
-    if (value is LoggableWrapper) {
-      final inner = visit(name, value.data, depth);
-
-      return identical(inner, Sanitize.drop)
-          ? Sanitize.drop
-          : LoggableWrapper(inner, config: value.config);
-    }
-
-    final result = _sanitizer(
-      SanitizeContext._(name, value, depth, _segments),
-    );
-    if (!identical(result, value)) return result;
-
-    return _walk(value, depth);
-  }
-
-  Object? _child(Object segment, String? name, Object? value, int depth) {
-    _segments.add(segment);
-    try {
-      return visit(name, value, depth);
-    } finally {
-      _segments.removeLast();
-    }
-  }
-
-  Object? _walk(Object? value, int depth) {
-    if (value == null) return null;
-    // Примитивы не содержат ссылок: и лист, и защита от циклов не нужна.
-    if (!Loggable._canContainCycle(value)) return value;
-
-    return switch (value) {
-      Map<Object?, Object?>() => _walkMap(value, depth),
-      List<Object?>() => _walkList(value, depth),
-      Set<Object?>() => _walkSet(value, depth),
-      _ => value,
-    };
-  }
-
-  Map<Object?, Object?> _walkMap(Map<Object?, Object?> map, int depth) {
-    final result = <Object?, Object?>{};
-    for (final entry in map.entries) {
-      final name = entry.key?.toString();
-      final value = _child(name ?? 'null', name, entry.value, depth + 1);
-      if (identical(value, Sanitize.drop)) continue;
-      result[entry.key] = value;
-    }
-
-    return result;
-  }
-
-  List<Object?> _walkList(List<Object?> list, int depth) {
-    final result = <Object?>[];
-    for (var i = 0; i < list.length; i++) {
-      final value = _child(i, null, list[i], depth + 1);
-      if (identical(value, Sanitize.drop)) continue;
-      result.add(value);
-    }
-
-    return result;
-  }
-
-  Set<Object?> _walkSet(Set<Object?> set, int depth) {
-    final result = <Object?>{};
-    var i = 0;
-    for (final item in set) {
-      final value = _child(i, null, item, depth + 1);
-      i++;
-      if (identical(value, Sanitize.drop)) continue;
-      result.add(value);
-    }
-
-    return result;
-  }
-}
 ```
 
-В `lib/src/loggable/loggable.dart` добавить директиву part рядом с
-существующими (`part 'loggable_data.dart';`):
+В `lib/src/loggable/loggable.dart`:
+
+1. Добавить директиву рядом с `part 'loggable_data.dart';`:
 
 ```dart
 part 'log_value_sanitizer.dart';
 ```
 
-и статический метод в `Loggable` — рядом с `objectToJson`:
+2. В классе `Loggable` рядом с `_converters` добавить поле и стек:
 
 ```dart
-  /// Рекурсивно обходит [obj], предлагая [sanitizer] каждое значение, и
-  /// возвращает НОВУЮ структуру с результатами.
+  /// Глобальный санитайзер выводимых значений.
   ///
-  /// Предназначен для очистки `data` до публикации лога (см.
-  /// `sanitizeData`): результат кладётся в лог вместо оригинала, поэтому
-  /// сырое значение не достаётся ни одному publisher'у.
+  /// `null` (по умолчанию) — вывод без обработки и без накладных
+  /// расходов. Применяется в [objectToString] и [objectToJson], то есть
+  /// ко ВСЕМ выводам: publisher'ам, in-app просмотрщику логов, экспорту
+  /// сессий.
   ///
-  /// Обратная ссылка на предка заменяется на [cycleMarker]. Ленивые
-  /// [Iterable] материализуются не более чем на [maxIterableCount]
-  /// элементов.
-  static Object? sanitize(
-    Object? obj,
-    LogValueSanitizer sanitizer, {
-    String cycleMarker = '<cycle>',
-    int maxIterableCount = 1000,
-  }) =>
-      _Sanitizer(sanitizer, cycleMarker, maxIterableCount).run(obj);
+  /// Каждое значение обрабатывается ровно один раз, тем местом, которое
+  /// знает его позицию (свойство, ключ [Map], индекс элемента).
+  /// Правило получает [SanitizeContext] и возвращает исходное значение,
+  /// замену или [Sanitize.drop].
+  ///
+  /// ```dart
+  /// Loggable.sanitizer = (ctx) => switch (ctx.name) {
+  ///   'password' || 'token' => Sanitize.drop,
+  ///   _ => ctx.value,
+  /// };
+  /// ```
+  static LogValueSanitizer? sanitizer;
+
+  /// Сегменты пути к текущему значению: [String] — имя или ключ,
+  /// [int] — индекс. Статический стек, как и [_visiting], чтобы не
+  /// менять сигнатуры обходчиков.
+  static final List<Object> _sanitizeSegments = <Object>[];
+
+  static bool get _sanitizing => sanitizer != null;
+
+  /// Применяет санитайзер к ребёнку, зная его позицию.
+  ///
+  /// Возвращает исходное значение (не трогали), замену или
+  /// [Sanitize.drop]. Вызывать ровно один раз на значение: обходчики
+  /// для не-корневых значений санитайзер не применяют.
+  static Object? _sanitizeChild(Object segment, String? name, Object? value) {
+    final sanitizer = Loggable.sanitizer;
+    if (sanitizer == null) return value;
+
+    _sanitizeSegments.add(segment);
+    try {
+      return sanitizer(
+        SanitizeContext._(
+          name,
+          value,
+          _sanitizeSegments.length,
+          _sanitizeSegments,
+        ),
+      );
+    } finally {
+      _sanitizeSegments.removeLast();
+    }
+  }
+
+  /// Рендерит ребёнка, держа его сегмент в стеке пути, — чтобы у
+  /// вложенных значений путь был полным.
+  static T _withSegment<T>(Object segment, T Function() render) {
+    if (!_sanitizing) return render();
+
+    _sanitizeSegments.add(segment);
+    try {
+      return render();
+    } finally {
+      _sanitizeSegments.removeLast();
+    }
+  }
 ```
+
+3. Применение к корню. В `objectToString` в самое начало:
+
+```dart
+    if (_sanitizing && _sanitizeSegments.isEmpty) {
+      final sanitized = _sanitizeChild__root(obj);
+      if (identical(sanitized, Sanitize.drop)) return '';
+      if (!identical(sanitized, obj)) {
+        // Замена выводится как обычное значение; повторно санитайзер к
+        // ней не применяется — стек уже не пуст только у детей, поэтому
+        // защищаемся флагом.
+        return _renderRoot(
+          () => objectToString(
+            sanitized,
+            theme: theme,
+            depth: depth,
+            config: config,
+          ),
+        );
+      }
+    }
+```
+
+Чтобы не городить два механизма, реализовать это через один приватный
+помощник — окончательная форма (заменяет фрагмент выше):
+
+```dart
+  /// Санитайз корня: у корня нет ни имени, ни сегмента пути.
+  ///
+  /// Возвращает [Sanitize.drop], замену или исходный объект. Повторного
+  /// применения не происходит: рекурсивный вызов с заменой выполняется
+  /// внутри [_withSegment], поэтому стек уже не пуст.
+  static Object? _sanitizeRoot(Object? obj) {
+    final sanitizer = Loggable.sanitizer;
+    if (sanitizer == null) return obj;
+
+    return sanitizer(SanitizeContext._(null, obj, 0, _sanitizeSegments));
+  }
+```
+
+и в `objectToString`:
+
+```dart
+  static String objectToString(
+    Object? obj, {
+    LogTheme theme = LogTheme.noColors,
+    int depth = 0,
+    LoggableConfig config = const LoggableConfig(),
+  }) {
+    if (_sanitizing && _sanitizeSegments.isEmpty) {
+      final sanitized = _sanitizeRoot(obj);
+      if (identical(sanitized, Sanitize.drop)) return '';
+      if (!identical(sanitized, obj)) {
+        // Сегмент-заглушка держит стек непустым: к замене санитайзер
+        // повторно не применится.
+        return _withSegment(
+          '',
+          () => objectToString(
+            sanitized,
+            theme: theme,
+            depth: depth,
+            config: config,
+          ),
+        );
+      }
+    }
+
+    // ...существующее тело без изменений
+```
+
+Аналогично в `objectToJson` (drop → `null`, замена → рекурсивный вызов
+внутри `_withSegment('')`).
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart && dart test && dart analyze && dart format --set-exit-if-changed .`
-Expected: новые тесты PASS, 228 старых зелёные, analyze чист.
+Run: `cd /Users/user/development/my/team_logger && dart test && dart analyze && dart format --set-exit-if-changed .`
+Expected: новые тесты PASS, все 228 существующих зелёные без правок.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git -C /Users/user/development/my/team_logger add -A
-git -C /Users/user/development/my/team_logger commit -m "feat: data sanitizer core — context, drop marker, collections
+git -C /Users/user/development/my/team_logger commit -m "feat: global value sanitizer — types, hook and root handling
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 2: Свойства и LoggableData — правило view и пересборка
+### Task 2: Map и LoggableMultiData
 
 **Files:**
-- Modify: `lib/src/loggable/log_value_sanitizer.dart` (ветки `Loggable`,
-  `LoggableData`)
-- Modify: `lib/src/loggable/loggable_data.dart` (`copyWithProps` в
-  `LoggableData`, `_LoggableBuilder`, `_LoggableMapBuilder`)
+- Modify: `lib/src/loggable/loggable.dart` (`_mapEntryToString`,
+  `_mapToString`, `_mapToJson`, ветки `LoggableMultiData` в
+  `_objectToString`/`_objectToJson`)
 - Modify: `test/loggable/sanitizer_test.dart`
 
 **Interfaces:**
-- Consumes: `_Sanitizer.visit/_child/_walk` (Task 1).
-- Produces: `LoggableData.copyWithProps(List<Prop<Object?>> props)` с
-  переопределениями в builder-подклассах; ветки `Loggable()` и
-  `LoggableData()` в `_walk`.
+- Consumes: `_sanitizeChild`, `_withSegment`, `_sanitizing` (Task 1).
+- Produces: санитайз записей `Map` и `LoggableMultiData` в обоих
+  выводах, включая пропуск записи по `Sanitize.drop`.
 
 - [ ] **Step 1: Write the failing test**
 
-Добавить в `test/loggable/sanitizer_test.dart` новую группу (внутри
-`main()`, после существующей группы):
+Добавить группу в `test/loggable/sanitizer_test.dart`:
 
 ```dart
-  group('Loggable.sanitize — props', () {
-    test('sanitizes props of a Loggable object', () {
-      final result = Loggable.sanitize(
-        _User('ann', 'hunter2'),
-        (ctx) => ctx.name == 'password' ? '***' : ctx.value,
-      );
+  group('Loggable.sanitizer — maps', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('replaces a value by key in both outputs', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? '***' : ctx.value;
+
+      const data = {'user': 'ann', 'password': 'hunter2'};
+      expect(Loggable.objectToString(data), '{user: "ann", password: "***"}');
+      expect(Loggable.objectToJson(data), {'user': 'ann', 'password': '***'});
+    });
+
+    test('drop removes the entry with its separator', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      const data = {'a': 1, 'password': 'hunter2', 'c': 3};
+      expect(Loggable.objectToString(data), '{a: 1, c: 3}');
+      expect(Loggable.objectToJson(data), {'a': 1, 'c': 3});
+    });
+
+    test('reports name, depth and path for nested maps', () {
+      final seen = <String, int>{};
+      Loggable.sanitizer = (ctx) {
+        seen['${ctx.path}|${ctx.name}'] = ctx.depth;
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString({
+        'user': {'card': {'pan': '4111'}},
+      });
+
+      expect(seen, {
+        '|null': 0,
+        'user|user': 1,
+        'user.card|card': 2,
+        'user.card.pan|pan': 3,
+      });
+    });
+
+    test('replacing a map stops the walk inside it', () {
+      final names = <String?>[];
+      Loggable.sanitizer = (ctx) {
+        names.add(ctx.name);
+
+        return ctx.name == 'card' ? '<redacted>' : ctx.value;
+      };
 
       expect(
-        Loggable.objectToString(result),
-        '_User(name: "ann", password: "***")',
+        Loggable.objectToString({
+          'card': {'pan': '4111', 'cvv': '123'},
+        }),
+        '{card: "<redacted>"}',
+      );
+      expect(names, [null, 'card']);
+    });
+
+    test('LoggableMultiData entries are sanitized by key', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      final data = LoggableMultiData({'req': 'ok', 'password': 'hunter2'});
+      expect(Loggable.objectToString(data), 'req: "ok"');
+      expect(Loggable.objectToJson(data), {':k': 'multi', 'req': 'ok'});
+    });
+  });
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart -n maps`
+Expected: FAIL — значения внутри `Map` санитайзер не видит (корень уже
+обработан, дети — нет).
+
+- [ ] **Step 3: Write minimal implementation**
+
+`_mapEntryToString` — санитайз значения записи; при `drop` вернуть
+`null`, чтобы `_mapToString` пропустил запись:
+
+```dart
+  static String? _mapEntryToString(
+    MapEntry<Object?, Object?> entry, {
+    LogTheme theme = LogTheme.noColors,
+    int depth = 0,
+    LoggableConfig config = const LoggableConfig(),
+  }) {
+    final name = entry.key?.toString();
+    final segment = name ?? 'null';
+    final value = Loggable._sanitizeChild(segment, name, entry.value);
+    if (identical(value, Sanitize.drop)) return null;
+
+    String obj2str(Object? obj) => Loggable._withSegment(
+          segment,
+          () => objectToString(
+            obj,
+            depth: depth + 1,
+            theme: theme,
+            config: config,
+          ),
+        );
+
+    final depthTheme = theme.depthTheme(depth);
+
+    final key = switch (entry.key) {
+      final String key => theme.formatValue(key),
+      final key => obj2str(key),
+    };
+
+    return '${theme.data.keyStyle(key)}${depthTheme.punctuation(':')}'
+        ' ${theme.data.valueStyle(obj2str(value))}';
+  }
+```
+
+`_mapToString` — отфильтровать `null`:
+
+```dart
+    final body = map.entries
+        .map(
+          (e) => _mapEntryToString(
+            e,
+            theme: theme,
+            depth: depth,
+            config: config,
+          ),
+        )
+        .whereType<String>()
+        .join(depthTheme.punctuation(', '));
+```
+
+`_mapToJson` — то же для JSON (вместо `map.map` собрать вручную, чтобы
+уметь пропускать записи):
+
+```dart
+    final result = <String, Object?>{};
+    for (final entry in map.entries) {
+      final name = entry.key?.toString();
+      final segment = name ?? 'null';
+      final value = Loggable._sanitizeChild(segment, name, entry.value);
+      if (identical(value, Sanitize.drop)) continue;
+
+      final key = _escapeServiceKey(
+        switch (entry.key) {
+          String() => entry.key! as String,
+          _ => entry.key.toString(),
+        },
+      );
+      result[key] = _withSegment(
+        segment,
+        () => objectToJson(value, config: itemConfig),
+      );
+    }
+```
+
+Ветка `LoggableMultiData` в `_objectToString` — санитайз значения записи
+по ключу, пропуск при `drop`:
+
+```dart
+      LoggableMultiData() => obj.data.entries
+          .map((e) {
+            final sanitized = Loggable._sanitizeChild(e.key, e.key, e.value);
+            if (identical(sanitized, Sanitize.drop)) return null;
+
+            final value = Loggable._withSegment(
+              e.key,
+              () => Loggable.objectToString(
+                sanitized,
+                theme: theme,
+                depth: depth,
+                config: obj.config.merge(config),
+              ),
+            );
+
+            return switch (e.key) {
+              '' => value,
+              final key =>
+                '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
+            };
+          })
+          .whereType<String>()
+          .join(depthTheme.punctuation(', ')),
+```
+
+и симметрично в `_objectToJson` (собрать `Map` циклом, пропуская `drop`).
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `cd /Users/user/development/my/team_logger && dart test && dart analyze && dart format --set-exit-if-changed .`
+Expected: всё PASS, существующие тесты не правились.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git -C /Users/user/development/my/team_logger add -A
+git -C /Users/user/development/my/team_logger commit -m "feat: sanitize map and multi-data entries
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 3: Элементы коллекций
+
+**Files:**
+- Modify: `lib/src/loggable/loggable.dart` (замыкания `obj2str`/`obj2json`
+  в `_addEfficientLengthIterableItemsToBuf`, `_addAllIterableItemsToBuf`,
+  `_addIterableItemsToBuf`, `_efficientLengthIterableToJson`,
+  `iterableToJson`)
+- Modify: `test/loggable/sanitizer_test.dart`
+
+**Interfaces:**
+- Consumes: `_sanitizeChild`, `_withSegment` (Task 1).
+- Produces: санитайз элементов с индексом в пути; `Sanitize.drop` в этой
+  позиции = замена на `'<dropped>'` (длина коллекции остаётся честной).
+
+- [ ] **Step 1: Write the failing test**
+
+```dart
+  group('Loggable.sanitizer — collections', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('elements are unnamed and indexed in the path', () {
+      final paths = <String>[];
+      Loggable.sanitizer = (ctx) {
+        paths.add('${ctx.path}|${ctx.name}');
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString({
+        'items': [
+          {'pan': '4111'},
+        ],
+      });
+
+      expect(paths, [
+        '|null',
+        'items|items',
+        'items[0]|null',
+        'items[0].pan|pan',
+      ]);
+    });
+
+    test('replaces an element value', () {
+      Loggable.sanitizer = (ctx) => ctx.value == 'secret' ? '***' : ctx.value;
+
+      expect(
+        Loggable.objectToString(['a', 'secret']),
+        contains('"***"'),
+      );
+      expect(
+        Loggable.objectToString(['a', 'secret']),
+        isNot(contains('secret')),
       );
     });
 
-    test('identity sanitizer renders exactly like the original', () {
-      final user = _User('ann', 'hunter2');
-      final result = Loggable.sanitize(user, (ctx) => ctx.value);
+    test('drop in an element position becomes a marker, length is kept', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.value == 'secret' ? Sanitize.drop : ctx.value;
 
-      expect(Loggable.objectToString(result), Loggable.objectToString(user));
+      final out = Loggable.objectToString(['a', 'secret', 'c']);
+      expect(out, contains('<dropped>'));
+      expect(out, isNot(contains('secret')));
+      expect(Loggable.objectToJson(['a', 'secret', 'c']), isNotNull);
+    });
+
+    test('json output sanitizes elements too', () {
+      Loggable.sanitizer = (ctx) => ctx.value == 'secret' ? '***' : ctx.value;
+
+      expect(Loggable.objectToJson(['a', 'secret']).toString(),
+          isNot(contains('secret')));
+    });
+
+    test('collection limits still apply with a sanitizer', () {
+      var calls = 0;
+      Loggable.sanitizer = (ctx) {
+        calls++;
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString(
+        List<int>.generate(100, (i) => i),
+        config: const LoggableConfig(collectionMaxCount: 3),
+      );
+
+      // Санитайзер не вызывается для того, что лимит не вывел:
+      // корень + не больше выведенных элементов.
+      expect(calls, lessThan(10));
+    });
+
+    test('an infinite iterable still does not hang', () {
+      Loggable.sanitizer = (ctx) => ctx.value;
+
+      final out = Loggable.objectToString(
+        Iterable<int>.generate(1 << 30, (i) => i),
+        config: const LoggableConfig(collectionMaxCount: 3),
+      );
+
+      expect(out, isNotEmpty);
+    });
+
+    test('cycles still render as a cycle marker', () {
+      Loggable.sanitizer = (ctx) => ctx.value;
+
+      final list = <Object?>[];
+      list.add(list);
+
+      expect(Loggable.objectToString(list), isNotEmpty);
+      expect(Loggable.objectToJson(list).toString(), contains('cycle'));
+    });
+  });
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart -n collections`
+Expected: FAIL — элементы коллекций санитайзер не видит (пути `items[0]`
+не появляются).
+
+- [ ] **Step 3: Write minimal implementation**
+
+В каждом из пяти мест заменить замыкание рендеринга элемента на вариант
+с индексом. Общий шаблон для строкового вывода (`obj2str` вызывается там,
+где индекс уже известен — в `indexedObj2str` и в циклах):
+
+```dart
+    String obj2str(int index, Object? obj) {
+      final value = Loggable._sanitizeChild(index, null, obj);
+
+      return Loggable._withSegment(
+        index,
+        () => objectToString(
+          identical(value, Sanitize.drop) ? '<dropped>' : value,
+          theme: theme,
+          depth: depth + 1,
+          config: config,
+        ),
+      );
+    }
+```
+
+Так как существующие замыкания принимают только `obj`, в каждом месте
+нужно протащить индекс:
+
+- `_addEfficientLengthIterableItemsToBuf` — индекс уже есть
+  (`indexedObj2str(index, obj)`), передать его в `obj2str`.
+- `_addAllIterableItemsToBuf` и `_addIterableItemsToBuf` — итерируются с
+  счётчиком для `index2str`; использовать тот же счётчик.
+- `_efficientLengthIterableToJson` и `iterableToJson` — заменить
+  `values.map(obj2json)` на индексированный обход:
+
+```dart
+    final items = <Object?>[];
+    var index = 0;
+    for (final item in values) {
+      final value = _sanitizeChild(index, null, item);
+      items.add(
+        _withSegment(
+          index,
+          () => objectToJson(
+            identical(value, Sanitize.drop) ? '<dropped>' : value,
+            config: itemConfig,
+          ),
+        ),
+      );
+      index++;
+    }
+```
+
+**Важно:** индексы должны соответствовать позиции в исходной коллекции
+(в путях вида `items[4]`), а не порядковому номеру среди выведенных, —
+иначе после усечения путь врёт. Там, где вывод пропускает «хвост» через
+многоточие, индекс берётся из существующей логики нумерации.
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `cd /Users/user/development/my/team_logger && dart test && dart analyze && dart format --set-exit-if-changed .`
+Expected: всё PASS; существующие тесты коллекций (включая лимиты,
+усечение и циклы) не правились.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git -C /Users/user/development/my/team_logger add -A
+git -C /Users/user/development/my/team_logger commit -m "feat: sanitize collection elements with indexed paths
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 4: Свойства и правило view
+
+**Files:**
+- Modify: `lib/src/loggable/loggable_data.dart` (`Prop.toLogString`,
+  `Prop.toMapEntry`, фильтрация свойств в `LoggableData.toLogString`,
+  `LoggableData.toJson`, `_LoggableMapBuilder`)
+- Modify: `test/loggable/sanitizer_test.dart`
+
+**Interfaces:**
+- Consumes: `_sanitizeChild`, `_withSegment` (Task 1).
+- Produces: санитайз свойств `Loggable`-объектов и builder'ов; замена
+  отменяет логику `view`; `Sanitize.drop` убирает свойство из вывода.
+
+- [ ] **Step 1: Write the failing test**
+
+```dart
+  group('Loggable.sanitizer — props', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('sanitizes props of a Loggable object in both outputs', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? '***' : ctx.value;
+
+      final user = _User('ann', 'hunter2');
+      expect(Loggable.objectToString(user), contains('"***"'));
+      expect(Loggable.objectToString(user), isNot(contains('hunter2')));
+      expect(Loggable.objectToJson(user).toString(),
+          isNot(contains('hunter2')));
     });
 
     test('drop removes the prop entirely', () {
-      final result = Loggable.sanitize(
-        _User('ann', 'hunter2'),
-        (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value,
-      );
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
 
-      expect(Loggable.objectToString(result), '_User(name: "ann")');
+      final out = Loggable.objectToString(_User('ann', 'hunter2'));
+      expect(out, contains('ann'));
+      expect(out, isNot(contains('password')));
     });
 
     test('the sanitizer sees the view, not the raw value', () {
       final seen = <Object?>[];
-      Loggable.sanitize(
+      Loggable.sanitizer = (ctx) {
+        if (ctx.depth > 0) seen.add(ctx.value);
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString(
         Loggable.builder(const Object(), name: 'D')
           ..prop('card', 'raw-pan', view: 'view-pan'),
-        (ctx) {
-          if (ctx.depth > 0) seen.add(ctx.value);
-
-          return ctx.value;
-        },
       );
 
       expect(seen, ['view-pan']);
     });
 
-    test('replacing a prop clears both value and view', () {
-      final result = Loggable.sanitize(
-        Loggable.builder(const Object(), name: 'D')
-          ..prop('card', 'raw-pan', view: 'view-pan'),
-        (ctx) => ctx.name == 'card' ? '***' : ctx.value,
-      ) as LoggableData;
+    test('replacing a prop with a view leaks neither value nor view', () {
+      Loggable.sanitizer = (ctx) => ctx.name == 'card' ? '***' : ctx.value;
 
-      final prop = result.props.single;
-      expect(prop.value, '***');
-      expect(prop.view, isA<LoggableNoView>());
-      expect(Loggable.objectToString(result), 'D(card: "***")');
+      final data = Loggable.builder(const Object(), name: 'D')
+        ..prop('card', 'raw-pan', view: 'view-pan');
+
+      final out = Loggable.objectToString(data);
+      expect(out, contains('***'));
+      expect(out, isNot(contains('raw-pan')));
+      expect(out, isNot(contains('view-pan')));
+      expect(Loggable.objectToJson(data).toString(),
+          isNot(contains('raw-pan')));
     });
 
     test('computed props are visible through their view', () {
-      final result = Loggable.sanitize(
+      Loggable.sanitizer = (ctx) => ctx.name == 'total' ? '***' : ctx.value;
+
+      final out = Loggable.objectToString(
         Loggable.builder(const Object(), name: 'D')
           ..computed('total', 'secret-total'),
-        (ctx) => ctx.name == 'total' ? '***' : ctx.value,
       );
 
-      expect(Loggable.objectToString(result), 'D(total: "***")');
+      expect(out, contains('***'));
+      expect(out, isNot(contains('secret-total')));
     });
 
-    test('mapBuilder keeps its rendering after sanitizing', () {
-      final result = Loggable.sanitize(
+    test('LoggableView is replaced as a whole', () {
+      Loggable.sanitizer = (ctx) => ctx.name == 'x' ? '***' : ctx.value;
+
+      final out = Loggable.objectToString(
+        Loggable.builder(const Object(), name: 'D')
+          ..prop('x', 1, view: const LoggableView(42, units: 'kg')),
+      );
+
+      expect(out, contains('***'));
+      expect(out, isNot(contains('42')));
+    });
+
+    test('mapBuilder props are sanitized too', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      final out = Loggable.objectToString(
         Loggable.mapBuilder()
           ..prop('a', 1, units: 'kg')
           ..prop('password', 'hunter2'),
-        (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value,
       );
 
-      expect(Loggable.objectToString(result), '{a: 1kg}');
+      expect(out, '{a: 1kg}');
     });
 
-    test('hidden props keep their flag', () {
-      final result = Loggable.sanitize(
-        Loggable.builder(const Object(), name: 'D')
-          ..prop('visible', 1)
-          ..hidden('secret', 'x'),
-        (ctx) => ctx.value,
-      ) as LoggableData;
+    test('LoggableWrapper is transparent', () {
+      final seen = <Object?>[];
+      Loggable.sanitizer = (ctx) {
+        seen.add(ctx.value);
 
-      expect(result.props.map((p) => p.hidden), [false, true]);
+        return ctx.value;
+      };
+
+      Loggable.objectToString(
+        Loggable.from('hunter2', config: const LoggableConfig()),
+      );
+
+      expect(seen, ['hunter2']);
     });
   });
 ```
 
-и приватный класс-фикстуру в конец файла (вне `main()`):
+и фикстуру в конец файла:
 
 ```dart
 final class _User with Loggable {
@@ -535,430 +943,128 @@ final class _User with Loggable {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart`
-Expected: FAIL — `Loggable`-объект и `LoggableData` сейчас возвращаются
-как есть (ветка `_ => value`), санитайзер их свойства не видит.
+Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart -n props`
+Expected: FAIL — свойства санитайзер не видит; тесты про `view` падают
+особенно наглядно (`view` рендерится мимо обходчиков).
 
 - [ ] **Step 3: Write minimal implementation**
 
-В `lib/src/loggable/loggable_data.dart` добавить в `LoggableData` (после
-конструктора `LoggableData._`):
+В `Prop` добавить пакет-приватный метод, дающий санитайзнутое значение
+(единая точка для обоих выводов):
 
 ```dart
-  /// Создаёт объект того же вида с другим набором свойств.
-  ///
-  /// Нужен санитайзеру: пересобрать структуру, не меняя рендеринг —
-  /// builder-подклассы переопределяют вывод и должны сохранить свой тип.
-  LoggableData copyWithProps(List<Prop<Object?>> props) =>
-      LoggableData._(_type)..props.addAll(props);
+  /// Значение, которое реально рендерится: `view`, если он задан, иначе
+  /// `value`. Санитайзер видит именно его — иначе секрет во `view`
+  /// прошёл бы мимо: ни одна реализация [LoggableView] не проходит через
+  /// [Loggable.objectToString].
+  Object? get _renderedValue =>
+      view is LoggableNoView ? value : view;
+
+  /// Результат санитайза: исходное `_renderedValue`, замена или
+  /// [Sanitize.drop].
+  Object? _sanitized() => Loggable._sanitizeChild(name, name, _renderedValue);
 ```
 
-В `_LoggableBuilder` добавить конструктор и переопределение:
+`Prop.toLogString` — ветка замены обходит логику `view`:
 
 ```dart
-  _LoggableBuilder._withType(TypeProp type, {required this.config})
-      : super._(type);
+  String toLogString({
+    LogTheme theme = LogTheme.noColors,
+    int depth = 0,
+    LoggableConfig config = const LoggableConfig(),
+    Object? sanitized,
+  }) {
+    String name2str() => theme.data.keyStyle(theme.formatValue(name));
 
-  @override
-  LoggableData copyWithProps(List<Prop<Object?>> props) =>
-      _LoggableBuilder._withType(_type, config: config)..props.addAll(props);
+    final effectiveConfig = this.config.merge(config);
+    final depthTheme = theme.depthTheme(depth);
+    final prefix =
+        showName ? '${name2str()}${depthTheme.punctuation(':')} ' : '';
+
+    // Замена рендерится как обычное значение: units и LoggableView
+    // рассчитаны на оригинал и к подставленному значению не применяются.
+    if (sanitized != null && !identical(sanitized, _renderedValue)) {
+      return '$prefix'
+          '${theme.formatValue(Loggable._withSegment(
+        name,
+        () => Loggable.objectToString(
+          sanitized,
+          theme: theme,
+          depth: depth + 1,
+          config: effectiveConfig,
+        ),
+      ))}';
+    }
+
+    // ...существующее тело (view/value), обёрнутое в _withSegment(name, ...)
+    // для вложенных путей
+  }
 ```
 
-(поле `config` в `_LoggableBuilder` объявлено как `final LoggableConfig
-config;` — конструктор `_withType` его инициализирует именованным
-параметром; основной конструктор оставить без изменений.)
+`Prop.toMapEntry` — симметрично.
 
-В `_LoggableMapBuilder` — аналогично:
-
-```dart
-  _LoggableMapBuilder._withType(TypeProp type, {required this.config})
-      : super._(type);
-
-  @override
-  LoggableData copyWithProps(List<Prop<Object?>> props) =>
-      _LoggableMapBuilder._withType(_type, config: config)
-        ..props.addAll(props);
-```
-
-В `lib/src/loggable/log_value_sanitizer.dart` добавить ветки в `_walk`
-(перед `_ => value`):
+Фильтрация и передача результата санитайза — в
+`LoggableData.toLogString`/`toJson` и в `_LoggableMapBuilder`
+(там, где сейчас `props.where((p) => !p.hidden)`):
 
 ```dart
-      Loggable() => _walkData(value.logClassInfo(), depth),
-      LoggableData() => _walkData(value, depth),
-```
+    String? prop2str(Prop<Object?> p) {
+      final sanitized = p._sanitized();
+      if (identical(sanitized, Sanitize.drop)) return null;
 
-и сам метод в `_Sanitizer`:
-
-```dart
-  /// Санитайзеру предлагается то, что реально рендерится: `view`, если он
-  /// задан, иначе `value`. Иначе секрет остался бы в `view`, который
-  /// побеждает при выводе.
-  LoggableData _walkData(LoggableData data, int depth) {
-    final props = <Prop<Object?>>[];
-    for (final prop in data.props) {
-      final rendered = prop.view is LoggableNoView ? prop.value : prop.view;
-      final result = _child(prop.name, prop.name, rendered, depth + 1);
-      if (identical(result, Sanitize.drop)) continue;
-
-      props.add(
-        identical(result, rendered)
-            ? prop
-            // От оригинала не остаётся ни value, ни view.
-            : Prop<Object?>._(
-                prop.name,
-                result,
-                showName: prop.showName,
-                hidden: prop.hidden,
-                config: prop.config,
-              ),
+      return p.toLogString(
+        theme: theme,
+        depth: depth,
+        config: config,
+        sanitized: sanitized,
       );
     }
 
-    return data.copyWithProps(props);
-  }
+    buf.write(
+      props
+          .where((p) => !p.hidden)
+          .map(prop2str)
+          .whereType<String>()
+          .join(depthTheme.punctuation(', ')),
+    );
 ```
+
+Аналогично в JSON-ветках (`prop2entry`/`prop2json`): при `drop` запись
+не добавляется.
+
+**Важно:** `_sanitized()` вызывается ровно один раз на свойство, а
+результат передаётся в `toLogString`/`toMapEntry` параметром — иначе
+санитайзер сработает дважды.
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd /Users/user/development/my/team_logger && dart test && dart analyze && dart format --set-exit-if-changed .`
-Expected: всё PASS, analyze чист.
+Expected: всё PASS; существующие тесты `loggable`/`printer` не правились.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git -C /Users/user/development/my/team_logger add -A
-git -C /Users/user/development/my/team_logger commit -m "feat: sanitize Loggable props, closing the view leak
+git -C /Users/user/development/my/team_logger commit -m "feat: sanitize props, closing the view bypass
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 3: Конвертеры типов и LoggableMultiData
+### Task 5: e2e через publisher'ы
 
 **Files:**
-- Modify: `lib/src/loggable/log_value_sanitizer.dart`
-- Modify: `test/loggable/sanitizer_test.dart`
+- Create: `test/logger/sanitizer_e2e_test.dart`
 
 **Interfaces:**
-- Consumes: `_walkData` (Task 2), `Loggable._converters`.
-- Produces: ветка конвертеров в `_walk` и ветка `LoggableMultiData()`.
+- Consumes: всё из задач 1–4 через публичный API team_logger.
 
 - [ ] **Step 1: Write the failing test**
 
-Добавить группу в `test/loggable/sanitizer_test.dart`:
+Создать `test/logger/sanitizer_e2e_test.dart`:
 
 ```dart
-  group('Loggable.sanitize — converters and multi-data', () {
-    tearDown(Loggable.unregisterTypeConverter<_Card>);
-
-    test('a registered converter is applied before sanitizing', () {
-      Loggable.registerTypeConverter<_Card>(_CardConverter());
-
-      final result = Loggable.sanitize(
-        _Card('4111111111111111'),
-        (ctx) => ctx.name == 'pan' ? '***' : ctx.value,
-      );
-
-      expect(Loggable.objectToString(result), 'Card(pan: "***")');
-    });
-
-    test('LoggableMultiData values are sanitized, keys kept', () {
-      final result = Loggable.sanitize(
-        LoggableMultiData({'req': 'ok', 'password': 'hunter2'}),
-        (ctx) => ctx.name == 'password' ? '***' : ctx.value,
-      );
-
-      expect(Loggable.objectToString(result), 'req: "ok", password: "***"');
-    });
-
-    test('LoggableWrapper is transparent for the sanitizer', () {
-      final seen = <Object?>[];
-      final result = Loggable.sanitize(
-        Loggable.from('hunter2', config: const LoggableConfig(units: 'x')),
-        (ctx) {
-          seen.add(ctx.value);
-
-          return ctx.value == 'hunter2' ? '***' : ctx.value;
-        },
-      );
-
-      expect(seen, ['hunter2']);
-      expect(result, isA<LoggableWrapper>());
-      expect((result! as LoggableWrapper).data, '***');
-    });
-  });
-```
-
-и фикстуры в конец файла:
-
-```dart
-final class _Card {
-  final String pan;
-
-  _Card(this.pan);
-}
-
-final class _CardConverter implements LoggableTypeConverter<_Card> {
-  @override
-  LoggableData convertToData(_Card obj) =>
-      Loggable.builder(obj, name: 'Card')..prop('pan', obj.pan);
-}
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart -n 'converters and multi-data'`
-Expected: FAIL — конвертер не применяется (объект уходит в `_ => value`),
-`LoggableMultiData` не обходится.
-
-- [ ] **Step 3: Write minimal implementation**
-
-В `_Sanitizer._walk` — проверка конвертера ПЕРЕД switch (как в
-`_objectToString`), и новая ветка в switch:
-
-```dart
-  Object? _walk(Object? value, int depth) {
-    if (value == null) return null;
-    if (!Loggable._canContainCycle(value)) return value;
-
-    // Конвертер подбирается строго по runtimeType — так же, как в
-    // форматтере; иначе поля стороннего типа прошли бы мимо санитайзера.
-    final converter = Loggable._converters[value.runtimeType];
-    if (converter != null) {
-      return _walkData(converter.convertToData(value), depth);
-    }
-
-    return switch (value) {
-      Map<Object?, Object?>() => _walkMap(value, depth),
-      List<Object?>() => _walkList(value, depth),
-      Set<Object?>() => _walkSet(value, depth),
-      Loggable() => _walkData(value.logClassInfo(), depth),
-      LoggableData() => _walkData(value, depth),
-      LoggableMultiData() => _walkMultiData(value, depth),
-      _ => value,
-    };
-  }
-
-  LoggableMultiData _walkMultiData(LoggableMultiData data, int depth) {
-    final result = <String, Object?>{};
-    for (final entry in data.data.entries) {
-      final value = _child(entry.key, entry.key, entry.value, depth + 1);
-      if (identical(value, Sanitize.drop)) continue;
-      result[entry.key] = value;
-    }
-
-    return LoggableMultiData(result, config: data.config);
-  }
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `cd /Users/user/development/my/team_logger && dart test && dart analyze && dart format --set-exit-if-changed .`
-Expected: всё PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git -C /Users/user/development/my/team_logger add -A
-git -C /Users/user/development/my/team_logger commit -m "feat: sanitize converted types and multi-data
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
-```
-
----
-
-### Task 4: Циклы и ленивые Iterable
-
-**Files:**
-- Modify: `lib/src/loggable/log_value_sanitizer.dart`
-- Modify: `test/loggable/sanitizer_test.dart`
-
-**Interfaces:**
-- Consumes: `_visiting` (объявлено в Task 1, до сих пор не использовалось).
-- Produces: защита от циклов в `_walk`, ветка `Iterable()` с
-  ограничением `_maxIterableCount`.
-
-- [ ] **Step 1: Write the failing test**
-
-Добавить группу:
-
-```dart
-  group('Loggable.sanitize — cycles and lazy iterables', () {
-    test('a self-reference becomes the cycle marker', () {
-      final map = <String, Object?>{'a': 1};
-      map['self'] = map;
-
-      final result = Loggable.sanitize(map, (ctx) => ctx.value);
-
-      expect(result, {'a': 1, 'self': '<cycle>'});
-    });
-
-    test('mutual references do not hang the walk', () {
-      final a = <String, Object?>{};
-      final b = <String, Object?>{'a': a};
-      a['b'] = b;
-
-      final result = Loggable.sanitize(a, (ctx) => ctx.value);
-
-      expect(result, {
-        'b': {'a': '<cycle>'},
-      });
-    });
-
-    test('the cycle marker is configurable', () {
-      final list = <Object?>[];
-      list.add(list);
-
-      final result = Loggable.sanitize(
-        list,
-        (ctx) => ctx.value,
-        cycleMarker: '↺',
-      );
-
-      expect(result, ['↺']);
-    });
-
-    test('a sibling repeated twice is not a cycle', () {
-      final shared = {'x': 1};
-      final result = Loggable.sanitize(
-        {'a': shared, 'b': shared},
-        (ctx) => ctx.value,
-      );
-
-      expect(result, {
-        'a': {'x': 1},
-        'b': {'x': 1},
-      });
-    });
-
-    test('an infinite iterable is truncated instead of hanging', () {
-      final result = Loggable.sanitize(
-        {'items': Iterable<int>.generate(1 << 30, (i) => i)},
-        (ctx) => ctx.value,
-        maxIterableCount: 3,
-      ) as Map<Object?, Object?>;
-
-      expect(result['items'], [0, 1, 2, '…']);
-    });
-
-    test('a short lazy iterable is materialized as is', () {
-      final result = Loggable.sanitize(
-        {'items': [1, 2, 3].map((e) => e * 2)},
-        (ctx) => ctx.value,
-      ) as Map<Object?, Object?>;
-
-      expect(result['items'], [2, 4, 6]);
-    });
-  });
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd /Users/user/development/my/team_logger && dart test test/loggable/sanitizer_test.dart -n 'cycles and lazy iterables'`
-Expected: тесты циклов — зависание или `StackOverflowError`; тесты
-ленивых `Iterable` — FAIL (возвращается исходный `Iterable`).
-
-**Внимание:** запускать именно эту группу отдельно; зависший тест
-прервать вручную (в macOS нет `timeout`), затем реализовать.
-
-- [ ] **Step 3: Write minimal implementation**
-
-В `_Sanitizer` добавить поиск предка и обёртку обхода (в `_walk`, после
-проверки примитивов и ДО поиска конвертера):
-
-```dart
-    final ancestor = _visitingIndexOf(value);
-    if (ancestor != -1) return _cycleMarker;
-
-    _visiting.add(value);
-    try {
-      return _walkContainer(value, depth);
-    } finally {
-      _visiting.removeLast();
-    }
-```
-
-то есть `_walk` становится обёрткой, а весь конвертер+switch переезжает
-в `_walkContainer(Object value, int depth)` (тело — как в Task 3, без
-изменений). Плюс метод:
-
-```dart
-  int _visitingIndexOf(Object obj) {
-    for (var i = 0; i < _visiting.length; i++) {
-      if (identical(_visiting[i], obj)) return i;
-    }
-
-    return -1;
-  }
-```
-
-и ветка ленивых коллекций в switch `_walkContainer` — ПОСЛЕ `List`/`Set`
-(иначе перехватит их):
-
-```dart
-      Iterable<Object?>() => _walkIterable(value, depth),
-```
-
-```dart
-  /// Ленивые [Iterable] материализуются: после санитайза структура должна
-  /// быть готовой, а лимиты форматтера сюда не доходят. Ограничение
-  /// [_maxIterableCount] защищает от бесконечных последовательностей.
-  List<Object?> _walkIterable(Iterable<Object?> iterable, int depth) {
-    final result = <Object?>[];
-    var i = 0;
-    for (final item in iterable) {
-      if (i >= _maxIterableCount) {
-        result.add('…');
-        break;
-      }
-      final value = _child(i, null, item, depth + 1);
-      i++;
-      if (identical(value, Sanitize.drop)) continue;
-      result.add(value);
-    }
-
-    return result;
-  }
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `cd /Users/user/development/my/team_logger && dart test && dart analyze && dart format --set-exit-if-changed .`
-Expected: всё PASS без зависаний.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git -C /Users/user/development/my/team_logger add -A
-git -C /Users/user/development/my/team_logger commit -m "feat: cycle protection and bounded lazy iterables in the sanitizer
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
-```
-
----
-
-### Task 5: Склейка sanitizeData и e2e
-
-**Files:**
-- Create: `lib/src/logger/sanitize_data.dart`
-- Modify: `lib/team_logger.dart` (экспорт)
-- Create: `test/logger/sanitize_data_test.dart`
-
-**Interfaces:**
-- Consumes: `Loggable.sanitize`, `Sanitize.drop` (Tasks 1–4);
-  `Log.copyWith`, `Log.noData`, `Log.hasData` (0.5.2);
-  `LogTransformer<Log>` (logger_builder 0.5.0).
-- Produces:
-  `LogTransformer<Log> sanitizeData(LogValueSanitizer sanitizer, {String cycleMarker = '<cycle>', int maxIterableCount = 1000})`.
-
-- [ ] **Step 1: Write the failing test**
-
-Создать `test/logger/sanitize_data_test.dart`:
-
-```dart
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -966,10 +1072,15 @@ import 'package:team_logger/team_logger_io.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('sanitizeData', () {
-    (Logger, List<String>) setUpPrinter() {
+  group('sanitizer e2e', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('the secret never reaches the console printer', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
       final lines = <String>[];
-      final logger = Logger('app')
+      Logger('app')
         ..level = LogLevels.all
         ..publisher = ConsoleLogPrinter(
           theme: LogMainTheme.noColors,
@@ -977,105 +1088,30 @@ void main() {
             LogRow(maxLength: 200, children: [LogMessage()]),
           ],
           output: lines.add,
-        );
-
-      return (logger, lines);
-    }
-
-    test('masks a nested value before the printer', () {
-      final (logger, lines) = setUpPrinter();
-      logger
-        ..transformer = sanitizeData(
-          (ctx) => ctx.name == 'password' ? '***' : ctx.value,
         )
         ..i('login', data: {
           'user': {'name': 'ann', 'password': 'hunter2'},
         });
 
-      final output = lines.join('\n');
-      expect(output, contains('***'));
-      expect(output, isNot(contains('hunter2')));
+      final out = lines.join('\n');
+      expect(out, contains('ann'));
+      expect(out, isNot(contains('hunter2')));
+      expect(out, isNot(contains('password')));
     });
 
-    test('drop removes the field from the output', () {
-      final (logger, lines) = setUpPrinter();
-      logger
-        ..transformer = sanitizeData(
-          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value,
-        )
-        ..i('login', data: {'user': 'ann', 'password': 'hunter2'});
+    test('the secret never reaches the JSONL file', () async {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? '***' : ctx.value;
 
-      final output = lines.join('\n');
-      expect(output, contains('ann'));
-      expect(output, isNot(contains('password')));
-      expect(output, isNot(contains('hunter2')));
-    });
-
-    test('dropping the root clears the data', () {
-      final (logger, lines) = setUpPrinter();
-      logger
-        ..transformer = sanitizeData((ctx) => Sanitize.drop)
-        ..i('login', data: {'password': 'hunter2'});
-
-      final output = lines.join('\n');
-      expect(output, contains('login'));
-      expect(output, isNot(contains('hunter2')));
-    });
-
-    test('logs without data are passed through untouched', () {
-      final (logger, lines) = setUpPrinter();
-      logger
-        ..transformer = sanitizeData((ctx) => Sanitize.drop)
-        ..i('plain');
-
-      expect(lines.join('\n'), contains('plain'));
-    });
-
-    test('a throwing sanitizer publishes nothing (fail-closed)', () {
-      final (logger, lines) = setUpPrinter();
-      final errors = <Object>[];
-      runZonedGuarded(
-        () {
-          logger
-            ..transformer = sanitizeData((ctx) => throw StateError('bug'))
-            ..i('login', data: {'password': 'hunter2'});
-        },
-        (error, stackTrace) => errors.add(error),
-      );
-
-      expect(lines, isEmpty);
-      expect(errors.single, isA<StateError>());
-    });
-
-    test('the log keeps its number and time', () {
-      final logs = <Log>[];
-      final logger = Logger('app')
-        ..level = LogLevels.all
-        ..publisher = CustomLogPublisher(logs.add)
-        ..transformer = sanitizeData(
-          (ctx) => ctx.name == 'password' ? '***' : ctx.value,
-        );
-
-      final before = Log.lastNum;
-      logger.i('login', data: {'password': 'hunter2'});
-
-      expect(logs.single.num, before + 1);
-      expect(Log.lastNum, before + 1);
-    });
-
-    test('masked data reaches FileLogStorage as masked JSONL', () async {
-      final tmp = await Directory.systemTemp.createTemp('sanitize_test');
+      final tmp = await Directory.systemTemp.createTemp('sanitizer_e2e');
       addTearDown(() => tmp.delete(recursive: true));
 
       final storage = FileLogStorage(directory: tmp.path);
-      final logger = Logger('app')
+      Logger('app')
         ..level = LogLevels.all
         ..publisher = storage
-        ..transformer = sanitizeData(
-          (ctx) => ctx.name == 'password' ? '***' : ctx.value,
-        );
+        ..i('login', data: {'password': 'hunter2'});
 
-      logger.i('login', data: {'password': 'hunter2'});
       await storage.flush();
       await storage.close();
 
@@ -1088,112 +1124,60 @@ void main() {
       expect(content, isNot(contains('hunter2')));
     });
 
-    test('TransformPublisher sanitizes one destination only', () {
-      final console = <Log>[];
-      final file = <Log>[];
-      final logger = Logger('app')
+    test('an in-app viewer rendering log.data is sanitized too', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? '***' : ctx.value;
+
+      final storage = LogStorage();
+      Logger('app')
         ..level = LogLevels.all
-        ..publisher = MultiPublisher([
-          CustomLogPublisher(console.add),
-          TransformPublisher(
-            CustomLogPublisher(file.add),
-            transformer: sanitizeData(
-              (ctx) => ctx.name == 'password' ? '***' : ctx.value,
-            ),
-          ),
-        ]);
+        ..publisher = storage
+        ..i('login', data: {'password': 'hunter2'});
 
-      logger.i('login', data: {'password': 'hunter2'});
+      final rendered = Loggable.objectToString(storage.logs.single.data);
+      expect(rendered, contains('***'));
+      expect(rendered, isNot(contains('hunter2')));
+    });
 
-      expect(Loggable.objectToString(console.single.data), contains('hunter2'));
-      expect(Loggable.objectToString(file.single.data), isNot(contains('hunter2')));
+    test('without a sanitizer the output is unchanged', () {
+      final lines = <String>[];
+      Logger('app')
+        ..level = LogLevels.all
+        ..publisher = ConsoleLogPrinter(
+          theme: LogMainTheme.noColors,
+          rows: const [
+            LogRow(maxLength: 200, children: [LogMessage()]),
+          ],
+          output: lines.add,
+        )
+        ..i('login', data: {'password': 'hunter2'});
+
+      expect(lines.join('\n'), contains('hunter2'));
     });
   });
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+(проверить фактическое имя конструктора и геттера у `LogStorage` —
+`storage.logs` может называться иначе; поправить обращение, не ослабляя
+утверждения.)
 
-Run: `cd /Users/user/development/my/team_logger && dart test test/logger/sanitize_data_test.dart`
-Expected: COMPILE ERROR — `sanitizeData` не существует.
+- [ ] **Step 2: Run test to verify it fails or passes**
 
-- [ ] **Step 3: Write minimal implementation**
+Run: `cd /Users/user/development/my/team_logger && dart test test/logger/sanitizer_e2e_test.dart`
+Expected: PASS, если задачи 1–4 сделаны верно. Любой красный тест здесь —
+дырка в покрытии, а не повод править тест.
 
-Создать `lib/src/logger/sanitize_data.dart`:
+- [ ] **Step 3: Прогнать пример**
 
-```dart
-import 'package:logger_builder/logger_builder.dart';
+Run: `cd /Users/user/development/my/team_logger/example && dart pub get && dart run bin/example.dart`
+Expected: вывод не изменился (санитайзер не задан).
 
-import '../loggable/loggable.dart';
-import 'logger.dart';
-
-/// Строит трансформер, очищающий каждое значение внутри `data`.
-///
-/// Подключается как обычный трансформер — глобально на логгере (правило
-/// наследуется сублоггерами) или на одно назначение:
-///
-/// ```dart
-/// log.transformer = sanitizeData(
-///   (ctx) => switch (ctx.name) {
-///     'password' || 'token' => Sanitize.drop,
-///     _ => ctx.value,
-///   },
-/// );
-///
-/// log.publisher = MultiPublisher([
-///   consolePrinter,
-///   TransformPublisher(fileStorage, transformer: sanitizeData(rules)),
-/// ]);
-/// ```
-///
-/// Санитайзер получает каждое значение (включая контейнеры) до обхода
-/// внутрь; возврат [Sanitize.drop] убирает поле целиком, а в корне —
-/// очищает `data`. Логи без данных проходят без изменений; номер и время
-/// лога сохраняются ([Log.copyWith]).
-///
-/// Fail-closed: исключение из санитайзера выходит из трансформера, и лог
-/// не публикуется (см. [Logger.transformer] и [TransformPublisher]).
-LogTransformer<Log> sanitizeData(
-  LogValueSanitizer sanitizer, {
-  String cycleMarker = '<cycle>',
-  int maxIterableCount = 1000,
-}) =>
-    (log) {
-      if (!log.hasData) return log;
-
-      final sanitized = Loggable.sanitize(
-        log.data,
-        sanitizer,
-        cycleMarker: cycleMarker,
-        maxIterableCount: maxIterableCount,
-      );
-      if (identical(sanitized, log.data)) return log;
-
-      return log.copyWith(
-        data: identical(sanitized, Sanitize.drop) ? Log.noData : sanitized,
-      );
-    };
-```
-
-В `lib/team_logger.dart` добавить экспорт в алфавитном порядке (после
-`src/logger/logger.dart`):
-
-```dart
-export 'src/logger/sanitize_data.dart';
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `cd /Users/user/development/my/team_logger && dart test && dart analyze && dart format --set-exit-if-changed .`
-Expected: всё PASS. Дополнительно прогнать пример:
-`cd /Users/user/development/my/team_logger/example && dart pub get && dart run bin/example.dart`
-— вывод не изменился.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git -C /Users/user/development/my/team_logger add -A
-git -C /Users/user/development/my/team_logger commit -m "feat: sanitizeData transformer for per-value data sanitization
+git -C /Users/user/development/my/team_logger commit -m "test: e2e coverage for the value sanitizer
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
@@ -1207,51 +1191,52 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Bump + changelog + README**
 
-`pubspec.yaml`: `version: 0.6.0`. В начало `CHANGELOG.md` (стиль пакета —
-`-`-буллеты, `[имена]` в скобках, 80 колонок):
+`pubspec.yaml`: `version: 0.6.0`. В начало `CHANGELOG.md`:
 
 ```markdown
 ## 0.6.0
 
-- Per-value sanitization of `data`: [sanitizeData] builds a
-  [LogTransformer] that walks the data structure and offers every value
-  to a [LogValueSanitizer] before publishing. The callback receives a
+- Per-value sanitization of logged data: assign [Loggable.sanitizer] to
+  process every value on its way to the output. The callback receives a
   [SanitizeContext] (name, value, lazily built path such as
-  `user.card.number`, depth); returning a different value replaces it and
-  stops the walk inside it, returning [Sanitize.drop] removes the field
-  from the output entirely. The result replaces `data` in the log, so no
-  publisher — including the in-memory [LogStorage] — ever sees the raw
-  values.
-- Add [Loggable.sanitize] — the same walk as a standalone utility.
-  Registered [LoggableTypeConverter]s and [Loggable] objects are expanded
-  before sanitizing, a property's `view` is what the sanitizer sees (and
-  is replaced together with the value), reference cycles become a
-  configurable marker, and lazy iterables are materialized up to
-  `maxIterableCount`.
+  `user.card.number`, depth) and returns the value unchanged, a
+  replacement (the walk does not descend into it), or [Sanitize.drop] to
+  remove the property/entry from the output entirely. The hook is global,
+  so it cannot be forgotten on a publisher: it applies to the console
+  printer, the file storage, session export and any direct
+  [Loggable.objectToString]/[objectToJson] call — including an in-app log
+  viewer.
+- A property's `view` is what the sanitizer sees (no [LoggableView] goes
+  through the walkers, so a `view` would otherwise bypass the rules); a
+  replacement is rendered as a plain value, without the `view`/`units`
+  logic. In a collection-element position [Sanitize.drop] renders
+  `'<dropped>'` — the printed collection length stays honest.
+- Cycle protection, collection limits and lazy iterables are unaffected:
+  sanitization happens while rendering, so filtered-out logs still cost
+  nothing.
 ```
 
-README: добавить в секцию «10. Redacting Logs» короткий подраздел про
-пер-значение санитайз (после существующего примера с `TransformPublisher`),
-в том же тоне и с рабочим кодом:
+README: в секцию «10. Redacting Logs» добавить подраздел про
+пер-значение санитайз с рабочим примером:
 
 ```markdown
-To redact values **inside** `data` — including nested objects — use
-`sanitizeData`: it walks the structure and offers every value to your
-callback. Returning `Sanitize.drop` removes the field entirely.
+`Logger.transformer` replaces the log as a whole. To redact values
+**inside** `data` — including nested objects — register a global
+sanitizer: it is called for every value on its way to the output, so no
+publisher can miss it.
 
 ```dart
-log.transformer = sanitizeData(
-  (ctx) => switch (ctx.name) {
-    'password' || 'token' => Sanitize.drop,
-    'pan' => '**** **** **** ${(ctx.value! as String).substring(12)}',
-    _ => ctx.value,
-  },
-);
-```
+Loggable.sanitizer = (ctx) => switch (ctx.name) {
+  'password' || 'token' => Sanitize.drop,   // the field disappears
+  'email' => maskEmail(ctx.value),
+  _ => ctx.value,
+};
 ```
 
-(проверить, что пример компилируется against текущего API; при
-необходимости упростить.)
+`ctx` also carries `path` (`user.cards[0].pan`) and `depth`. Note that
+sanitizing happens while rendering: the raw value stays in `Log.data`, so
+use `Logger.transformer` when it must not exist in memory at all.
+```
 
 - [ ] **Step 2: Verify**
 
@@ -1261,14 +1246,13 @@ Expected: 0 issues (кроме предупреждения о незакомм�
 - [ ] **Step 3: ГЕЙТ — показать дифф пользователю**
 
 Показать `git -C /Users/user/development/my/team_logger diff v0.5.2..HEAD`
-плюс незакоммиченное и ДОЖДАТЬСЯ явного одобрения. Без одобрения к Step 4
-не переходить.
+плюс незакоммиченное и ДОЖДАТЬСЯ явного одобрения.
 
 - [ ] **Step 4: Commit, publish, tag, push**
 
 ```bash
 git -C /Users/user/development/my/team_logger add -A
-git -C /Users/user/development/my/team_logger commit -m "feat: per-value data sanitization (sanitizeData, Loggable.sanitize)
+git -C /Users/user/development/my/team_logger commit -m "feat: per-value data sanitization (Loggable.sanitizer)
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 cd /Users/user/development/my/team_logger && dart pub publish --force
@@ -1276,5 +1260,4 @@ git -C /Users/user/development/my/team_logger tag v0.6.0
 git -C /Users/user/development/my/team_logger push origin main --tags
 ```
 
-Дождаться доступности на pub.dev (цикл по
-`https://pub.dev/api/packages/team_logger`), отчитаться пользователю.
+Дождаться доступности на pub.dev, отчитаться пользователю.
