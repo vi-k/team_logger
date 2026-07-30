@@ -15,6 +15,9 @@
   точечный override уровня отвязывает ребёнка целиком.
 - Ширина wide-символов (CJK, эмодзи) считается в code units — колонки
   съезжают; нужен учёт восточноазиатской ширины.
+- Тест на copyWith(stackTrace: не-StackTrace): сейчас сырой runtime
+  TypeError (внутри transformer'а fail-closed, утечки нет); опционально —
+  ArgumentError с внятным сообщением (находка финального ревью 0.5.2).
 
 README:
 
