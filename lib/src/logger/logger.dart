@@ -106,11 +106,14 @@ final class LevelLogger
 /// for enabled levels; an exception thrown by such a closure propagates to
 /// the log call site. Every constructed log consumes a global [Log.num]
 /// (isolates have independent counters).
+///
 /// [transformer] is applied to every log right before publishing —
 /// mask secrets/PII or drop logs entirely (see [LogTransformer]); it is
 /// inherited by subloggers the same way as `level` and `publisher`.
 /// Write transformers with [Log.copyWith] — it preserves the log's
-/// number and time.
+/// number and time. Do not log through the same logger from inside a
+/// transformer: the call re-enters the transformer and recurses until
+/// [StackOverflowError].
 final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   static const _tagsKey = #team_logger_tags;
 
