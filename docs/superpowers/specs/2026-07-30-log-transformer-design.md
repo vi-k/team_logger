@@ -93,8 +93,9 @@ final class TransformPublisher<Log extends CustomLog>
 ```
 
 - `publish`: transformer → `null` = drop; исключение = drop + `onError`,
-  без него `Zone.current.handleUncaughtError`. Исключение из самого
-  `onError` не подавляется отдельно (симметрично `MultiPublisher.onError`).
+  без него `Zone.current.handleUncaughtError`. Бросающий `onError` не
+  прерывает работу: его собственная ошибка репортится в
+  `Zone.current.handleUncaughtError` (зеркально `MultiPublisher`).
 - `flush()`/`close()` делегируются inner'у, если тот реализует
   `Flushable`/`Closable`, иначе no-op (`Future.value`) — обёртка вокруг
   `FileLogStorage`/`MultiPublisher` не ломает жизненный цикл.
@@ -117,9 +118,14 @@ Log copyWith({
 });
 ```
 
-- Реализация — приватный копирующий конструктор. **Сохраняются `num`,
-  `time`, уровень (`levelLogger`) и `zone`** — новый номер НЕ потребляется,
-  это та же запись лога.
+- Реализация — приватный копирующий конструктор поверх нового защищённого
+  `CustomLog.copy(original, {required error, required stackTrace})` в
+  logger_builder: поля `level`/`levelName`/`shortLevelName`/`zone` в базовом
+  классе финальные и выводятся только из `levelLogger`, который лог не
+  хранит, — без базового копирующего конструктора копия невозможна.
+  `CustomLog.copy` присваивает `error`/`stackTrace` дословно (без
+  повторного `stackTraceFromError`). **Сохраняются `num`, `time`, уровень
+  и `zone`** — новый номер НЕ потребляется, это та же запись лога.
 - Sentinel-дефолты (приватная const-заглушка) отличают «не передан» от
   «очистить» там, где `null`/`noData` — валидное целевое значение
   (`data`, `error`, `stackTrace`): `copyWith(error: null)` реально убирает
@@ -190,8 +196,9 @@ team_logger:
 По установленному циклу (дифф пользователю перед publish):
 
 1. **logger_builder 0.5.0** — `LogTransformer`, `CustomLogger.transformer`,
-   `CustomLevelLogger.publishLog`, `TransformPublisher`; changelog отмечает
-   мягкое изменение контракта `processLog`.
+   `CustomLevelLogger.publishLog`, `TransformPublisher`, защищённый
+   `CustomLog.copy`; changelog отмечает мягкое изменение контракта
+   `processLog`.
 2. **team_logger 0.5.2** — `logger_builder: ^0.5.0`, `Log.copyWith`,
    переход `processLog` на `publishLog`. Изменения аддитивные — патч по
    прецеденту 0.4.2 (фича патчем). Альтернатива 0.6.0 — если пользователь
