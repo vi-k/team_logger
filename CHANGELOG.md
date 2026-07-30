@@ -1,3 +1,20 @@
+## 0.5.2
+
+- Pre-publication log processing (primarily for security — masking
+  secrets/PII, dropping forbidden logs): require `logger_builder` ^0.5.0,
+  whose new API flows through the re-export. Assign
+  [Logger.transformer] (`Log? Function(Log)`) to process every log right
+  before publishing — subloggers inherit it like `level`/`publisher`;
+  returning `null` drops the log. Wrap a single publisher in
+  [TransformPublisher] to transform for one destination only. Fail-closed:
+  a throwing transformer drops the log and reports the error to
+  `onError`/the current zone — the untransformed log is never published.
+- Add [Log.copyWith] — the building block for transformers: replaces
+  message/data/tags/error/stackTrace/path/traceIds while always preserving
+  the log's identity ([Log.num], [Log.time], the level and zone; no new
+  sequence number is consumed). `copyWith(error: null)` clears the error,
+  `data: Log.noData` clears the data.
+
 ## 0.5.1
 
 - Internal: [FileLogStorage] drops its pending-log counter and the

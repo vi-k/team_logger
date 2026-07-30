@@ -55,6 +55,7 @@ formatting, and customizable styling themes.
   - [7. Trace Propagation (`TraceId`)](#7-trace-propagation-traceid)
   - [8. Circular Buffer (`LogStorage`)](#8-circular-buffer-logstorage)
   - [9. Saving Logs to Files (`FileLogStorage`)](#9-saving-logs-to-files-filelogstorage)
+  - [10. Redacting Logs (`Logger.transformer`)](#10-redacting-logs-loggertransformer)
 - [License](#license)
 
 ---
@@ -1444,6 +1445,33 @@ for (final session in sessions) {
   print('${session.id}: ${session.size} bytes, ${session.lastModified}');
   print(await session.readMeta());       // {'sessionId': ..., 'appVersion': ...}
 }
+```
+
+---
+
+### 10. Redacting Logs (`Logger.transformer`)
+
+Assign `Logger.transformer` to mask secrets/PII, or drop disallowed logs
+entirely, right before publishing — it is inherited by child loggers just
+like `level`/`publisher`, and returning `null` drops the log. Build it with
+`Log.copyWith`, which always preserves the log's identity (its number and
+time); a throwing transformer is fail-closed — the log is dropped and the
+unmasked version is never published.
+
+```dart
+log.transformer = (entry) => entry.copyWith(
+  message: entry.message.replaceAll(RegExp(r'\d{16}'), '**** **** **** ****'),
+);
+```
+
+To mask a single destination instead, wrap it in `TransformPublisher` inside
+a `MultiPublisher` — other publishers keep receiving the log untouched:
+
+```dart
+log.publisher = MultiPublisher([
+  ConsoleLogPrinter(rows: [...]),                       // stays verbatim
+  TransformPublisher(fileStorage, transformer: redact), // masked before writing
+]);
 ```
 
 ---
