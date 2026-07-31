@@ -40,10 +40,22 @@ final class LogMessage implements LogBlock {
     var dataStr = '';
     if (log.hasData) {
       var dataOnNewLine = false;
+      // An empty rendering means nothing by itself: an empty
+      // LoggableMultiData and a builder without props both render empty
+      // legitimately. Only Sanitize.drop removes the data block, and
+      // that signal comes from whoever offered the root — never from the
+      // mere presence of an installed rule.
+      var dropped = false;
       final data = log.data;
       if (data is! LoggableMultiData) {
-        dataStr = Loggable.objectToString(log.data, theme: theme);
-      } else if (Loggable.sanitizeRootToString(data, theme: theme)
+        final rendered = Loggable.renderRoot(data, theme: theme);
+        dataStr = rendered.text;
+        dropped = rendered.dropped;
+      } else if (Loggable.sanitizeRootToString(
+        data,
+        theme: theme,
+        config: data.config,
+      )
           case final rendered?) {
         // The rule was offered the whole data object and dropped or
         // replaced it. Both the sanitize and the rendering of the result
@@ -52,6 +64,7 @@ final class LogMessage implements LogBlock {
         // straight into the section loop below, and a root offered
         // nowhere is a root that leaks.
         dataStr = rendered;
+        dropped = rendered.isEmpty;
       } else {
         dataOnNewLine = !row.singleLine &&
             (data.data.isEmpty || data.data.keys.first.isNotEmpty);
@@ -80,12 +93,10 @@ final class LogMessage implements LogBlock {
             parts.join(row.singleLine ? theme.data.punctuation(', ') : '\n');
       }
 
-      // An empty rendering with a sanitizer armed means the rule dropped
-      // the value: a colon with nothing after it would be noise. Without
-      // a sanitizer nothing can be dropped, so the block is printed
-      // exactly as before (an empty data object still gets its colon).
-      if (messageStr.isNotEmpty &&
-          (dataStr.isNotEmpty || Loggable.sanitizer == null)) {
+      // A dropped value leaves no data block: a colon with nothing after
+      // it would be noise. Anything else is printed exactly as before —
+      // an empty data object still gets its colon.
+      if (messageStr.isNotEmpty && !dropped) {
         dataStr =
             dataOnNewLine ? '\n$dataStr' : '${theme.styledColon} $dataStr';
       }

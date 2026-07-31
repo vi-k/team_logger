@@ -340,12 +340,20 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     }
   }
 
+  /// A placeholder line for a log that failed to encode.
+  ///
+  /// Only the error TYPE reaches the file. The error text may carry the
+  /// very data it was raised about — a sanitizer rule that refuses a
+  /// value by throwing (`ArgumentError.value(ctx.value)` is the natural
+  /// form) puts the secret straight into `toString()`, and the file is
+  /// exactly where it must not end up. The full error object goes to
+  /// [onError] and nowhere else.
   String _encodeFallback(Log log, Object error) => jsonEncode(<String, Object?>{
         'num': log.num,
         'level': log.level,
         'levelName': log.levelName,
         'time': log.time.toUtc().toIso8601String(),
-        'encodeError': '$error',
+        'encodeError': error.runtimeType.toString(),
       });
 
   void _report(Object error, StackTrace stackTrace) {

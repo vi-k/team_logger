@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:team_logger/team_logger_io.dart';
 import 'package:test/test.dart';
 
-/// Runs a `LoggableMultiData` log through a real [ConsoleLogPrinter] on a
-/// single line and returns what it printed.
-String _printMultiData(LoggableMultiData data) {
+/// Runs a log through a real [ConsoleLogPrinter] on a single line and
+/// returns what it printed.
+String _printData(Object? data) {
   final lines = <String>[];
   Logger('app')
     ..level = LogLevels.all
@@ -21,6 +21,16 @@ String _printMultiData(LoggableMultiData data) {
 
   return lines.join('\n').trimRight();
 }
+
+/// Same, for a `LoggableMultiData` — the printer renders those itself.
+String _printMultiData(LoggableMultiData data) => _printData(data);
+
+/// Data that legitimately renders to an empty string.
+LoggableData _emptyRendering() => Loggable.builder(
+      const Object(),
+      showName: false,
+      showBrackets: false,
+    );
 
 void main() {
   group('sanitizer e2e', () {
@@ -138,6 +148,21 @@ void main() {
       );
     });
 
+    test('a root replacement inherits the container config', () {
+      // The replacement stands in for the container, so it is rendered
+      // with the container's formatting — and both multi-data renderers
+      // must agree on that.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? 12 : ctx.value;
+
+      final data = LoggableMultiData(
+        {'s': 'topsecret'},
+        config: const LoggableConfig(units: 'kg'),
+      );
+
+      expect(data.toString(), '12kg');
+      expect(_printMultiData(data), 'login: 12kg');
+    });
+
     test('every renderer offers the multi-data root exactly once', () {
       var roots = 0;
       Loggable.sanitizer = (ctx) {
@@ -227,6 +252,46 @@ void main() {
       // Zero behaviour change while `Loggable.sanitizer` is null: an
       // empty rendering is only read as "dropped" when a rule is armed.
       expect(_printMultiData(LoggableMultiData({})), 'login:');
+    });
+
+    test('an empty multi-data prints its colon with a rule armed too', () {
+      // The data block must not depend on the mere presence of a rule:
+      // an empty rendering is a legitimate rendering, and only
+      // `Sanitize.drop` removes the block. The printer used to read
+      // "empty output + a sanitizer installed" as a drop.
+      Loggable.sanitizer = (ctx) => ctx.value;
+
+      expect(_printMultiData(LoggableMultiData({})), 'login:');
+    });
+
+    test('data rendering empty prints its colon without a sanitizer', () {
+      expect(_printData(_emptyRendering()), 'login:');
+    });
+
+    test('data rendering empty prints its colon with a rule armed too', () {
+      Loggable.sanitizer = (ctx) => ctx.value;
+
+      expect(_printData(_emptyRendering()), 'login:');
+    });
+
+    test('a wrapped data root is offered unwrapped, exactly once', () {
+      // The printer offers the root itself now (it needs to know whether
+      // the rule dropped it); a `LoggableWrapper` must stay transparent
+      // there just like it is in the walkers.
+      final seen = <Object?>[];
+      Loggable.sanitizer = (ctx) {
+        seen.add(ctx.value);
+
+        return ctx.value;
+      };
+
+      expect(
+        _printData(
+          Loggable.from(1, config: const LoggableConfig(units: 'kg')),
+        ),
+        'login: 1kg',
+      );
+      expect(seen, [1]);
     });
 
     test('without a sanitizer multi-data printing is unchanged', () {

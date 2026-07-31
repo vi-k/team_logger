@@ -1538,9 +1538,17 @@ A few things worth knowing before writing a rule:
 - For a property with a `view` (see "Property Configuration" above), the
   rule sees the `view` object, not the text it renders — redact such
   properties by `name`/`path`, not by matching rendered content.
+- A `Map` key is not offered to the rule: the rule gets the entry's
+  *value* and sees the key as `ctx.name`. A secret in the key itself
+  (`{'ann@example.com': {...}}`) cannot be replaced — a name-based rule
+  can only drop the whole entry with `Sanitize.drop`. Values *inside* a
+  key object are still rendered, and so are still offered, under the
+  entry's own path.
 - In a collection-element position, `Sanitize.drop` renders as
   `'<dropped>'` rather than removing the element, so the printed
-  collection length stays honest.
+  collection length stays honest. A `Prop` rendered on its own (the
+  `LoggableData.props` list is public) does the same: with no container
+  to remove it from, it prints the marker instead of vanishing.
 - `Loggable.sanitizer` is a per-isolate static: set it again in any
   isolate you spawn.
 - Sanitizing happens while rendering, so cycle protection, collection

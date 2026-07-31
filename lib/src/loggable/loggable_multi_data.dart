@@ -19,7 +19,8 @@ final class LoggableMultiData {
     // Корень предлагаем правилу тем же хелпером, что и обходчики: этот
     // метод в них не заходит, поэтому без вызова сам объект данных
     // правилу не показывался бы вовсе.
-    if (Loggable.sanitizeRootToString(this) case final rendered?) {
+    if (Loggable.sanitizeRootToString(this, config: config)
+        case final rendered?) {
       return rendered;
     }
 

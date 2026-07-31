@@ -286,30 +286,45 @@ final class LoggableData {
     final className = _type.typeName ?? _type.value.toString();
     final propsList = this.props.where((p) => !p.hidden).toList();
 
-    // Санитайз каждого свойства ровно один раз: drop исключает его из
-    // props целиком (запись отсутствует / элемент списка пропущен).
-    final kept = <(Prop<Object?>, Object?)>[];
-    for (final p in propsList) {
-      final sanitized = p._sanitized();
-      if (!Loggable._isDropped(sanitized)) kept.add((p, sanitized));
+    final Object props;
+    if (!Loggable._sanitizing) {
+      // Прежний путь: без правила выбрасывать нечего, промежуточный
+      // список пар не нужен.
+      MapEntry<String, Object?> entryOf(Prop<Object?> p) =>
+          p.toMapEntry(config: propConfig);
+
+      Object? jsonOf(Prop<Object?> p) {
+        final entry = entryOf(p);
+        return p.showName ? {entry.key: entry.value} : entry.value;
+      }
+
+      props = propsList.any((p) => !p.showName)
+          ? propsList.map(jsonOf).toList()
+          : Map.fromEntries(propsList.map(entryOf));
+    } else {
+      // Санитайз каждого свойства ровно один раз: drop исключает его из
+      // props целиком (запись отсутствует / элемент списка пропущен).
+      final kept = <(Prop<Object?>, Object?)>[];
+      for (final p in propsList) {
+        final sanitized = p._sanitized();
+        if (!Loggable._isDropped(sanitized)) kept.add((p, sanitized));
+      }
+
+      MapEntry<String, Object?> entryOf((Prop<Object?>, Object?) e) =>
+          e.$1.toMapEntry(config: propConfig, sanitized: e.$2);
+
+      Object? jsonOf((Prop<Object?>, Object?) e) {
+        final entry = entryOf(e);
+        return e.$1.showName ? {entry.key: entry.value} : entry.value;
+      }
+
+      // Форму (список или Map) определяют уцелевшие свойства: если
+      // единственное безымянное свойство выброшено, списочная форма
+      // больше не нужна.
+      props = kept.any((e) => !e.$1.showName)
+          ? kept.map(jsonOf).toList()
+          : Map.fromEntries(kept.map(entryOf));
     }
-
-    // Форму (список или Map) определяют уцелевшие свойства: если
-    // единственное безымянное свойство выброшено, списочная форма больше
-    // не нужна.
-    final hasNonamed = kept.any((e) => !e.$1.showName);
-
-    MapEntry<String, Object?> entryOf((Prop<Object?>, Object?) e) =>
-        e.$1.toMapEntry(config: propConfig, sanitized: e.$2);
-
-    Object? jsonOf((Prop<Object?>, Object?) e) {
-      final entry = entryOf(e);
-      return e.$1.showName ? {entry.key: entry.value} : entry.value;
-    }
-
-    final props = hasNonamed
-        ? kept.map(jsonOf).toList()
-        : Map.fromEntries(kept.map(entryOf));
 
     return {
       if (_type.showName) Loggable._classKey: className,
@@ -410,10 +425,19 @@ final class Prop<T extends Object?> {
   });
 
   /// Значение, которое реально рендерится: `view`, если он задан, иначе
-  /// `value`. Санитайзер видит именно его — иначе секрет во `view` прошёл
-  /// бы мимо: сам объект `view` через
-  /// [Loggable.objectToString]/[Loggable.objectToJson] не проходит, его
-  /// рисует собственный конвертер.
+  /// `value`. Санитайзер видит именно его — иначе секрет во `view`
+  /// прошёл бы мимо правил: реализацию [LoggableView] рисует её
+  /// собственный конвертер, и сам объект `view` в
+  /// [Loggable.objectToString]/[Loggable.objectToJson] не уходит.
+  ///
+  /// Это верно только для таких `view`. Сырой [Loggable] или
+  /// [LoggableWrapper] в роли `view` в обходчики как раз ЗАХОДИТ: его
+  /// `toString` — это `logClassInfo().toLogString()` и
+  /// [Loggable.objectToString] соответственно. Поэтому рендер `view`
+  /// обязан идти под сегментом свойства (см. [toLogString] и
+  /// [toMapEntry]): без него вложенный обход стартовал бы с пустого
+  /// пути — и предложил бы своё значение правилу второй раз, уже как
+  /// корень.
   Object? get _renderedValue => view is LoggableNoView ? value : view;
 
   /// Результат санитайза свойства: исходное [_renderedValue], замена или

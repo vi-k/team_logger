@@ -69,6 +69,14 @@ abstract mixin class Loggable {
   /// же обходчики, из которых правило и было вызвано. Логировать изнутри
   /// правила тоже нельзя.
   ///
+  /// Ключ [Map] правилу не предлагается: правило получает значение
+  /// записи, а ключ видит как [SanitizeContext.name] и часть
+  /// [SanitizeContext.path]. Секрет в самом ключе
+  /// (`{'ann@example.com': {...}}`) заменой не вычистить — правило по
+  /// имени может только выбросить запись целиком через [Sanitize.drop].
+  /// Значения ВНУТРИ объекта-ключа при этом рендерятся обычным обходом
+  /// и правилу предлагаются — под путём самой записи.
+  ///
   /// Санитайзер — статическое поле, то есть живёт в пределах одного
   /// изолята: правило, установленное в главном изоляте, не применится к
   /// логам, отрисованным в порождённом, — там его нужно установить
@@ -241,6 +249,52 @@ abstract mixin class Loggable {
         depth: depth,
         config: config,
       ),
+    );
+  }
+
+  /// Рендерит КОРНЕВОЕ значение и сообщает, отбросило ли его правило.
+  ///
+  /// Принтеру мало готового текста: пустая строка бывает и законным
+  /// рендером (пустой [LoggableMultiData], `Loggable.builder` без
+  /// свойств), и результатом [Sanitize.drop], — а двоеточие блока данных
+  /// должно пропадать только во втором случае. Снаружи их не различить:
+  /// корневое предложение живёт внутри [sanitizeRootToString], а звать её
+  /// второй раз нельзя — правило сработало бы на корень дважды. Поэтому
+  /// сигнал отдаёт тот, кто предложил.
+  ///
+  /// Корень предлагается ровно один раз: если правило его не тронуло,
+  /// значение рендерится под заглушкой, и [objectToString] не предложит
+  /// его повторно.
+  @internal
+  static ({String text, bool dropped}) renderRoot(
+    Object? obj, {
+    LogTheme theme = LogTheme.noColors,
+  }) {
+    if (!_sanitizing) {
+      return (text: objectToString(obj, theme: theme), dropped: false);
+    }
+
+    // Обёртка разворачивается ДО корневого предложения — как в
+    // [objectToString]: правилу показывается завёрнутое значение, а не
+    // упаковка параметров рендера.
+    var value = obj;
+    var config = const LoggableConfig();
+    while (value is LoggableWrapper) {
+      config = value.config.merge(config);
+      value = value.data;
+    }
+
+    if (sanitizeRootToString(value, theme: theme, config: config)
+        case final rendered?) {
+      return (text: rendered, dropped: rendered.isEmpty);
+    }
+
+    return (
+      text: _withSegment(
+        _rootGuardSegment,
+        () => objectToString(value, theme: theme, config: config),
+      ),
+      dropped: false,
     );
   }
 
@@ -907,15 +961,22 @@ abstract mixin class Loggable {
       return;
     }
 
-    final last = showIndexes
+    // Последний элемент рендерится лениво: при collectionMaxCount == 1
+    // он в вывод не попадает, а рендер — это ещё и санитайз, то есть
+    // правилу предлагалось бы отсечённое лимитом значение. Спека
+    // оговаривает такой эффект только для бюджета по ДЛИНЕ (там размер
+    // кандидата иначе не измерить), но не для лимита по количеству.
+    late final last = showIndexes
         ? indexedObj2str(count - 1, iterable.last)
         : obj2str(count - 1, iterable.last);
-    final lastSize = last.lengthWithoutEscapeCodes;
+    late final lastSize = last.lengthWithoutEscapeCodes;
 
     if (count == 2) {
-      // (₌₂ ₀:a, ₁:b)
-      if (hasSpaceFor(firstSize + delimiterSize + lastSize) &&
-          (maxCount == null || maxCount > 1)) {
+      // (₌₂ ₀:a, ₁:b). Проверка лимита — первой: иначе `lastSize`
+      // посчитался бы и при maxCount == 1, где последнего элемента в
+      // выводе нет.
+      if ((maxCount == null || maxCount > 1) &&
+          hasSpaceFor(firstSize + delimiterSize + lastSize)) {
         buf
           ..write(first)
           ..write(delimiter)
@@ -1424,36 +1485,67 @@ abstract mixin class Loggable {
 
   /// Санитайз значения записи по ключу; при [Sanitize.drop] возвращает
   /// `null`, чтобы [_mapToString] пропустил запись целиком.
+  ///
+  /// Ключ рендерится РОВНО один раз: полученный текст идёт и в вывод, и
+  /// в сегмент пути с именем для правила. Раньше он рисовался дважды —
+  /// черновым `entry.key.toString()` ради имени и ещё раз в вывод, — и
+  /// свойства [Loggable]-ключа предлагались правилу по двум разным
+  /// путям, причём в вывод шёл ВТОРОЙ рендер, а правило по пути
+  /// маскировало первый. Черновик к тому же считался безусловно, до
+  /// раннего выхода [_sanitizeChild]: без правила ключ рендерился
+  /// дважды, а `toString()` звался там, где до 0.6.0 не звался вовсе.
   static String? _mapEntryToString(
     MapEntry<Object?, Object?> entry, {
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final name = entry.key?.toString();
+    final depthTheme = theme.depthTheme(depth);
+
+    final String key;
+    final String? name;
+    if (entry.key case final String stringKey) {
+      key = theme.formatValue(stringKey);
+      name = stringKey;
+    } else {
+      final objectKey = entry.key;
+      // Сам ключ правилу не предлагается (см. dartdoc [sanitizer]), но
+      // его содержимое проходит через обходчики: рендерим под
+      // заглушкой, иначе при пустом стеке сегментов ключ ушёл бы в
+      // обходчик КОРНЕМ — и был бы предложен. Заглушка не входит ни в
+      // путь, ни в глубину, поэтому свойства ключа видны правилу под
+      // путём самой записи.
+      key = _withSegment(
+        _rootGuardSegment,
+        () => objectToString(
+          objectKey,
+          theme: theme,
+          depth: depth + 1,
+          config: config,
+        ),
+      );
+      // Имя и сегмент — данные для правила, а не вывод: стили темы из
+      // них убираем. Без правила они не нужны и не считаются.
+      name =
+          _sanitizing && objectKey != null ? key.ansiRemoveEscapeCodes() : null;
+    }
+
     final segment = name ?? 'null';
     final value = _sanitizeChild(segment, name, entry.value);
     if (_isDropped(value)) return null;
 
-    String obj2str(Object? obj) => _withSegment(
-          segment,
-          () => objectToString(
-            obj,
-            depth: depth + 1,
-            theme: theme,
-            config: config,
-          ),
-        );
-
-    final depthTheme = theme.depthTheme(depth);
-
-    final key = switch (entry.key) {
-      final String key => theme.formatValue(key),
-      final key => obj2str(key),
-    };
+    final valueStr = _withSegment(
+      segment,
+      () => objectToString(
+        value,
+        depth: depth + 1,
+        theme: theme,
+        config: config,
+      ),
+    );
 
     return '${theme.data.keyStyle(key)}${depthTheme.punctuation(':')}'
-        ' ${theme.data.valueStyle(obj2str(value))}';
+        ' ${theme.data.valueStyle(valueStr)}';
   }
 
   static String _mapToString(
@@ -1491,18 +1583,25 @@ abstract mixin class Loggable {
     // санитизированные до Sanitize.drop.
     final result = <String, Object?>{};
     for (final entry in map.entries) {
-      final name = entry.key?.toString();
+      // Ключ рендерится один раз (см. [_mapEntryToString]): его текст —
+      // и ключ в JSON, и сегмент пути с именем для правила.
+      final String? name;
+      if (entry.key case final String stringKey) {
+        name = stringKey;
+      } else if (entry.key case final objectKey?) {
+        // `toString` ключа может зайти в обходчики ([Loggable],
+        // [LoggableWrapper]): под заглушкой ключ не будет предложен
+        // правилу как корень.
+        name = _withSegment(_rootGuardSegment, objectKey.toString);
+      } else {
+        name = null;
+      }
+
       final segment = name ?? 'null';
       final value = _sanitizeChild(segment, name, entry.value);
       if (_isDropped(value)) continue;
 
-      final key = _escapeServiceKey(
-        switch (entry.key) {
-          final String key => key,
-          final key => key.toString(),
-        },
-      );
-      result[key] = _withSegment(
+      result[_escapeServiceKey(segment)] = _withSegment(
         segment,
         () => objectToJson(value, config: itemConfig),
       );

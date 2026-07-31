@@ -1,0 +1,284 @@
+import 'package:ansi_escape_codes/extensions.dart';
+import 'package:team_logger/team_logger.dart';
+import 'package:test/test.dart';
+
+/// Регрессии кросс-ревью 0.6.1 (Codex + адверсариальный ревьюер).
+///
+/// Каждая группа пинит одну находку: двойной рендер ключа [Map] (B1),
+/// его безусловность (B2), санитайз отсечённого лимитом элемента (B4),
+/// поведение [Prop] при `Sanitize.drop` (B9.2).
+void main() {
+  group('cross-review — a map key is rendered exactly once', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('a Loggable key offers its props once, at one path in both outputs',
+        () {
+      // Ключ рендерился дважды: черновым `entry.key.toString()` (для
+      // пути) и ещё раз в вывод — с расходящимися путями, из-за чего
+      // правило по пути маскировало черновик и пропускало напечатанное.
+      final seen = <String>[];
+      Loggable.sanitizer = (ctx) {
+        seen.add('${ctx.path}@${ctx.depth}');
+
+        return ctx.value;
+      };
+
+      final map = <Object?, Object?>{_Account('DE89'): 'primary'};
+
+      Loggable.objectToString(map);
+      final text = [...seen];
+      seen.clear();
+
+      Loggable.objectToJson(map);
+      final json = [...seen];
+
+      // Свойства ключа предлагаются под путём самого ключа (ключ — не
+      // сегмент пути, см. README §10), значение записи — под ключом.
+      expect(text, ['@0', 'iban@1', '_Account(iban: "DE89")@1']);
+      expect(json, text);
+    });
+
+    test('a path rule masks the printed key in both outputs', () {
+      Loggable.sanitizer = (ctx) => ctx.path == 'iban' ? '<masked>' : ctx.value;
+
+      final map = <Object?, Object?>{
+        _Account('DE89370400440532013000'): 'primary',
+      };
+
+      expect(
+        Loggable.objectToString(map),
+        '{_Account(iban: "<masked>"): "primary"}',
+      );
+      expect(
+        Loggable.objectToJson(map),
+        {'_Account(iban: "<masked>")': 'primary'},
+      );
+    });
+
+    test('a non-String key is rendered exactly once without a sanitizer', () {
+      // «Одна проверка на null на значение, больше ничего»: без правила
+      // ключ обязан рендериться ровно так же, как до 0.6.0.
+      final key = _CountingKey();
+
+      Loggable.objectToString(<Object?, Object?>{key: 1});
+      expect(key.calls, 1, reason: 'objectToString');
+
+      key.calls = 0;
+      Loggable.objectToJson(<Object?, Object?>{key: 1});
+      expect(key.calls, 1, reason: 'objectToJson');
+    });
+
+    test('a non-String key is rendered exactly once with a rule armed', () {
+      Loggable.sanitizer = (ctx) => ctx.value;
+      final key = _CountingKey();
+
+      Loggable.objectToString(<Object?, Object?>{key: 1});
+      expect(key.calls, 1, reason: 'objectToString');
+
+      key.calls = 0;
+      Loggable.objectToJson(<Object?, Object?>{key: 1});
+      expect(key.calls, 1, reason: 'objectToJson');
+    });
+
+    test('a Loggable key with a throwing toString still renders as text', () {
+      // До 0.6.0 строковый путь рисовал нестроковые ключи через
+      // objectToString, поэтому toString() такого ключа не звался вовсе.
+      final map = <Object?, Object?>{_ThrowingKey('DE89'): 'primary'};
+
+      expect(
+        Loggable.objectToString(map),
+        '{_ThrowingKey(iban: "DE89"): "primary"}',
+      );
+    });
+
+    test('the key handed to the rule carries no escape codes', () {
+      final names = <String?>[];
+      Loggable.sanitizer = (ctx) {
+        names.add(ctx.name);
+
+        return ctx.value;
+      };
+
+      // Тема со стилями: сам напечатанный ключ раскрашен, но имя и путь —
+      // это данные для правила, а не вывод.
+      final theme = LogMainTheme(info: LogThemeData.gray10).info;
+      final out = Loggable.objectToString(
+        <Object?, Object?>{_Account('DE89'): 'primary'},
+        theme: theme,
+      );
+
+      expect(out.ansiHasEscapeCodes, isTrue);
+      expect(names.last, '_Account(iban: "DE89")');
+    });
+  });
+
+  group('cross-review — collectionMaxCount does not render the cut tail', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('with maxCount 1 the last element is not offered to the rule', () {
+      final offered = <String>[];
+      Loggable.sanitizer = (ctx) {
+        offered.add('${ctx.path}=${ctx.value}');
+
+        return ctx.value;
+      };
+
+      expect(
+        Loggable.objectToString(
+          [1, 2, 3],
+          config: const LoggableConfig(collectionMaxCount: 1),
+        ),
+        '[₌₃ ₀:1, …]',
+      );
+      expect(offered, ['=[1, 2, 3]', '[0]=1']);
+    });
+
+    test('with maxCount 1 and two elements the tail is not offered either', () {
+      final offered = <String>[];
+      Loggable.sanitizer = (ctx) {
+        offered.add('${ctx.path}=${ctx.value}');
+
+        return ctx.value;
+      };
+
+      expect(
+        Loggable.objectToString(
+          [1, 2],
+          config: const LoggableConfig(collectionMaxCount: 1),
+        ),
+        '[₌₂ ₀:1, …]',
+      );
+      expect(offered, ['=[1, 2]', '[0]=1']);
+    });
+
+    test('the surviving last element is still offered, in output order', () {
+      final offered = <String>[];
+      Loggable.sanitizer = (ctx) {
+        offered.add('${ctx.path}=${ctx.value}');
+
+        return ctx.value;
+      };
+
+      expect(
+        Loggable.objectToString(
+          [1, 2, 3, 4],
+          config: const LoggableConfig(collectionMaxCount: 3),
+        ),
+        '[₌₄ ₀:1, ₁:2, …, ₃:4]',
+      );
+      expect(offered, ['=[1, 2, 3, 4]', '[0]=1', '[3]=4', '[1]=2']);
+    });
+  });
+
+  group('cross-review — LoggableData.toJson without a sanitizer', () {
+    test('keeps the map shape', () {
+      expect(
+        Loggable.objectToJson(
+          Loggable.builder(const Object(), name: 'D')
+            ..prop('a', 1)
+            ..prop('b', 2),
+        ),
+        {
+          ':c': 'D',
+          ':p': {'a': 1, 'b': 2},
+        },
+      );
+    });
+
+    test('keeps the list shape when an unnamed prop is present', () {
+      expect(
+        Loggable.objectToJson(
+          Loggable.builder(const Object(), name: 'D')
+            ..prop('a', 1)
+            ..prop('b', 2, showName: false),
+        ),
+        {
+          ':c': 'D',
+          ':p': [
+            {'a': 1},
+            2,
+          ],
+        },
+      );
+    });
+  });
+
+  group('cross-review — a Prop rendered directly on drop', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('prints the drop marker, having no container to remove it from', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      final props = _User('ann', 'hunter2').logClassInfo().props;
+
+      expect(
+        props.map((p) => p.toLogString()).toList(),
+        ['name: "ann"', 'password: <dropped>'],
+      );
+      expect(
+        Map.fromEntries(props.map((p) => p.toMapEntry())),
+        {
+          'name': 'ann',
+          'password': {':view': '<dropped>'},
+        },
+      );
+    });
+
+    test('rendering through LoggableData removes the prop entirely', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      expect(
+        Loggable.objectToString(_User('ann', 'hunter2')),
+        '_User(name: "ann")',
+      );
+    });
+  });
+}
+
+final class _Account with Loggable {
+  final String iban;
+
+  _Account(this.iban);
+
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('iban', iban);
+}
+
+final class _ThrowingKey with Loggable {
+  final String iban;
+
+  _ThrowingKey(this.iban);
+
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('iban', iban);
+
+  @override
+  String toString() => throw StateError('toString must not be called');
+}
+
+final class _CountingKey {
+  int calls = 0;
+
+  @override
+  String toString() {
+    calls++;
+
+    return 'key';
+  }
+}
+
+final class _User with Loggable {
+  final String name;
+  final String password;
+
+  _User(this.name, this.password);
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..prop('name', name)
+      ..prop('password', password);
+  }
+}

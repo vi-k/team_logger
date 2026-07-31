@@ -382,9 +382,42 @@ void main() {
       final lines = _lines(File('${tmp.path}/s1.1.jsonl'));
       expect(lines, hasLength(4));
       expect(_json(lines[1])['message'], 'one');
-      expect(_json(lines[2])['encodeError'], contains('bomb'));
+      // Только тип ошибки: её текст может нести те самые данные, ради
+      // сокрытия которых правило и бросило (см. тест ниже).
+      expect(_json(lines[2])['encodeError'], 'StateError');
       expect(_json(lines[3])['message'], 'three');
       expect(reports, hasLength(1));
+      expect(reports.single.toString(), contains('bomb'));
+
+      await storage.close();
+    });
+
+    test('an encode error carrying a secret is not written to the file',
+        () async {
+      // ArgumentError.value(ctx.value) — совершенно естественная форма
+      // отказа для правила: до фикса fallback-строка писала в JSONL
+      // текст исключения вместе с секретом.
+      addTearDown(() => Loggable.sanitizer = null);
+      Loggable.sanitizer = (ctx) => ctx.name == 'password'
+          ? throw ArgumentError.value(ctx.value, 'value')
+          : ctx.value;
+
+      final reports = <Object>[];
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 's1',
+        onError: (error, stackTrace) => reports.add(error),
+      );
+      _logger(storage).i('login', data: {'password': 'hunter2'});
+      await storage.flush().timeout(_timeout);
+
+      final content = File('${tmp.path}/s1.1.jsonl').readAsStringSync();
+      expect(content, isNot(contains('hunter2')));
+
+      final lines = _lines(File('${tmp.path}/s1.1.jsonl'));
+      expect(_json(lines[1])['encodeError'], 'ArgumentError');
+      // Полная информация — только в onError.
+      expect(reports.single.toString(), contains('hunter2'));
 
       await storage.close();
     });
