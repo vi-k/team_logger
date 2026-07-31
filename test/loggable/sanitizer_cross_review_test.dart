@@ -94,6 +94,18 @@ void main() {
       );
     });
 
+    test('the same key still throws in JSON, as it did before 0.6.0', () {
+      // Асимметрия двух путей, а не недосмотр: JSON рисует ключ через
+      // `key.toString()` и звал его и в 0.5.2. Пин, чтобы «строковый путь
+      // toString не зовёт» не прочиталось как «не зовёт нигде».
+      final map = <Object?, Object?>{_ThrowingKey('DE89'): 'primary'};
+
+      expect(() => Loggable.objectToJson(map), throwsStateError);
+
+      Loggable.sanitizer = (ctx) => ctx.value;
+      expect(() => Loggable.objectToJson(map), throwsStateError);
+    });
+
     test('the key handed to the rule carries no escape codes', () {
       final names = <String?>[];
       Loggable.sanitizer = (ctx) {

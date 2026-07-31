@@ -1569,6 +1569,9 @@ abstract mixin class Loggable {
           _sanitizing && objectKey != null ? key.ansiRemoveEscapeCodes() : null;
     }
 
+    // Ключ уже отрисован целиком, даже если запись сейчас отбросят: имя
+    // для правила — это и есть напечатанный ключ, а решение о drop
+    // принимается по имени. Порядок неизбежен, не оптимизация «потом».
     final segment = name ?? 'null';
     final value = _sanitizeChild(segment, name, entry.value);
     if (_isDropped(value)) return null;

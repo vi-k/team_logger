@@ -22,9 +22,6 @@ String _printData(Object? data) {
   return lines.join('\n').trimRight();
 }
 
-/// Same, for a `LoggableMultiData` — the printer renders those itself.
-String _printMultiData(LoggableMultiData data) => _printData(data);
-
 /// Data that legitimately renders to an empty string.
 LoggableData _emptyRendering() => Loggable.builder(
       const Object(),
@@ -75,7 +72,7 @@ void main() {
             (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
 
         expect(
-          _printMultiData(
+          _printData(
             LoggableMultiData({'req': 'ok', 'password': 'hunter2'}),
           ),
           'login: req: "ok"',
@@ -90,7 +87,7 @@ void main() {
             (ctx) => ctx.name == 'password' ? '***' : ctx.value;
 
         expect(
-          _printMultiData(
+          _printData(
             LoggableMultiData({'req': 'ok', 'password': 'hunter2'}),
           ),
           'login: req: "ok", password: "***"',
@@ -110,7 +107,7 @@ void main() {
           return ctx.path == 'user.password' ? '***' : ctx.value;
         };
 
-        final out = _printMultiData(
+        final out = _printData(
           LoggableMultiData({
             'user': {'name': 'ann', 'password': 'hunter2'},
           }),
@@ -135,7 +132,7 @@ void main() {
         Loggable.sanitizer =
             (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
 
-        expect(_printMultiData(LoggableMultiData({'s': 'topsecret'})), 'login');
+        expect(_printData(LoggableMultiData({'s': 'topsecret'})), 'login');
       },
     );
 
@@ -143,7 +140,7 @@ void main() {
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
 
       expect(
-        _printMultiData(LoggableMultiData({'s': 'topsecret'})),
+        _printData(LoggableMultiData({'s': 'topsecret'})),
         'login: "***"',
       );
     });
@@ -163,7 +160,7 @@ void main() {
       );
 
       expect(data.toString(), '12kg', reason: 'LoggableMultiData.toString');
-      expect(_printMultiData(data), 'login: 12kg', reason: 'ConsoleLogPrinter');
+      expect(_printData(data), 'login: 12kg', reason: 'ConsoleLogPrinter');
       expect(
         Loggable.objectToString(data),
         '12kg',
@@ -198,7 +195,7 @@ void main() {
       expect(roots, 1, reason: 'LoggableMultiData.toString');
 
       roots = 0;
-      _printMultiData(data);
+      _printData(data);
       expect(roots, 1, reason: 'ConsoleLogPrinter');
     });
 
@@ -228,7 +225,7 @@ void main() {
       final json = [...seen];
       seen.clear();
 
-      _printMultiData(data);
+      _printData(data);
       final console = [...seen];
 
       expect(text, [
@@ -264,7 +261,7 @@ void main() {
     test('an empty multi-data still prints its colon without a sanitizer', () {
       // Zero behaviour change while `Loggable.sanitizer` is null: an
       // empty rendering is only read as "dropped" when a rule is armed.
-      expect(_printMultiData(LoggableMultiData({})), 'login:');
+      expect(_printData(LoggableMultiData({})), 'login:');
     });
 
     test('an empty multi-data prints its colon with a rule armed too', () {
@@ -274,7 +271,7 @@ void main() {
       // "empty output + a sanitizer installed" as a drop.
       Loggable.sanitizer = (ctx) => ctx.value;
 
-      expect(_printMultiData(LoggableMultiData({})), 'login:');
+      expect(_printData(LoggableMultiData({})), 'login:');
     });
 
     test('data rendering empty prints its colon without a sanitizer', () {
@@ -309,7 +306,7 @@ void main() {
 
     test('without a sanitizer multi-data printing is unchanged', () {
       expect(
-        _printMultiData(
+        _printData(
           LoggableMultiData({'req': 'ok', 'password': 'hunter2'}),
         ),
         'login: req: "ok", password: "hunter2"',
