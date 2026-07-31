@@ -15,11 +15,19 @@ final class LoggableMultiData {
     bool wrapLines = false,
     String Function(String key)? keyFormatter,
     String Function(String value)? valueFormatter,
-  }) =>
-      data.entries.map((e) {
-        final value = Loggable.objectToString(e.value, config: config);
-        final key = e.key;
-        return '${key.isEmpty ? '' : '${keyFormatter?.call(key) ?? key}: '}'
-            '${valueFormatter?.call(value) ?? value}';
-      }).join(wrapLines ? '\n' : ', ');
+  }) {
+    // Через общий хелпер, а не по data.entries напрямую: иначе значение
+    // секции ушло бы в обходчик как корень — мимо правил по имени и с
+    // потерей префикса пути (см. [Loggable.forEachMultiDataEntry]).
+    final parts = <String>[];
+    Loggable.forEachMultiDataEntry(this, (key, value) {
+      final text = Loggable.objectToString(value, config: config);
+      parts.add(
+        '${key.isEmpty ? '' : '${keyFormatter?.call(key) ?? key}: '}'
+        '${valueFormatter?.call(text) ?? text}',
+      );
+    });
+
+    return parts.join(wrapLines ? '\n' : ', ');
+  }
 }

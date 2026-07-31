@@ -58,6 +58,21 @@ abstract mixin class Loggable {
   ///   _ => ctx.value,
   /// };
   /// ```
+  ///
+  /// Правило обязано быть чистой функцией от [SanitizeContext]: без
+  /// побочных эффектов (сам факт вызова не гарантирует, что значение
+  /// будет напечатано, — см. спеку, «Циклы, лимиты, ленивость») и без
+  /// рендеринга. Рендеринг — это не только явные
+  /// [objectToString]/[objectToJson], но и интерполяция `'${ctx.value}'`
+  /// либо `ctx.value.toString()` для [Loggable], [LoggableData],
+  /// [LoggableWrapper] и [LoggableMultiData]: их `toString` заходит в те
+  /// же обходчики, из которых правило и было вызвано. Логировать изнутри
+  /// правила тоже нельзя.
+  ///
+  /// Санитайзер — статическое поле, то есть живёт в пределах одного
+  /// изолята: правило, установленное в главном изоляте, не применится к
+  /// логам, отрисованным в порождённом, — там его нужно установить
+  /// заново.
   static LogValueSanitizer? sanitizer;
 
   /// Сегменты пути к текущему значению: [String] — имя или ключ,
@@ -67,14 +82,20 @@ abstract mixin class Loggable {
 
   static bool get _sanitizing => sanitizer != null;
 
-  /// Плейсхолдер-сегмент, которым помечается повторный рендер значения,
-  /// заменившего корень (см. [_sanitizeRoot]). Он держит
-  /// [_sanitizeSegments] непустым — санитайзер не срабатывает на замену
-  /// повторно, — но сам не является частью пути и не должен считаться
-  /// уровнем глубины.
-  static const Object _rootReplacementPlaceholder = Object();
+  /// Сегмент-заглушка корневой позиции: держит [_sanitizeSegments]
+  /// непустым, оставаясь вне пути и вне счёта глубины.
+  ///
+  /// Ставится дважды (см. [_sanitizeRoot]): на время вызова правила для
+  /// корня — иначе рендер изнутри правила снова попал бы в корневую
+  /// ветку и зациклился, — и на повторный рендер значения, заменившего
+  /// корень, — иначе санитайзер сработал бы на замену второй раз.
+  ///
+  /// Собственный приватный тип, а не `const Object()`: два разных
+  /// `const Object()` идентичны, и маркер спутался бы с любым другим
+  /// (см. [Prop._notSanitized]).
+  static const Object _rootGuardSegment = _SanitizeGuardSegment();
 
-  /// Сколько плейсхолдеров сейчас в [_sanitizeSegments] (0 или 1) —
+  /// Сколько заглушек сейчас в [_sanitizeSegments] (0 или 1) —
   /// чтобы [_sanitizeChild] и [SanitizeContext.path] могли исключить их
   /// за O(1), не сканируя стек на каждый узел.
   static int _placeholderCount = 0;
@@ -84,16 +105,30 @@ abstract mixin class Loggable {
   /// Возвращает исходное значение (не трогали), замену или
   /// [Sanitize.drop]. Вызывать ровно один раз на значение: обходчики
   /// для не-корневых значений санитайзер не применяют.
+  ///
+  /// [LoggableWrapper] разворачивается: правилу показывается завёрнутое
+  /// значение, а не обёртка, — как и в корне (см. [objectToString]),
+  /// иначе `Loggable.from(password)` в позиции свойства, записи [Map]
+  /// или элемента коллекции прошёл бы мимо правил по содержимому. Если
+  /// правило вернуло содержимое без изменений, рендерится ИСХОДНАЯ
+  /// обёртка — её `config` должен уцелеть; замена рендерится как обычное
+  /// значение (так же, как в правиле для `view`).
   static Object? _sanitizeChild(Object segment, String? name, Object? value) {
     final sanitizer = Loggable.sanitizer;
     if (sanitizer == null) return value;
 
+    var offered = value;
+    while (offered is LoggableWrapper) {
+      offered = offered.data;
+    }
+
+    final Object? result;
     _sanitizeSegments.add(segment);
     try {
-      return sanitizer(
+      result = sanitizer(
         SanitizeContext._(
           name,
-          value,
+          offered,
           _sanitizeSegments.length - _placeholderCount,
           _sanitizeSegments,
         ),
@@ -101,6 +136,8 @@ abstract mixin class Loggable {
     } finally {
       _sanitizeSegments.removeLast();
     }
+
+    return identical(result, offered) ? value : result;
   }
 
   /// Рендерит ребёнка, держа его сегмент в стеке пути, — чтобы у
@@ -108,7 +145,7 @@ abstract mixin class Loggable {
   static T _withSegment<T>(Object segment, T Function() render) {
     if (!_sanitizing) return render();
 
-    final isPlaceholder = identical(segment, _rootReplacementPlaceholder);
+    final isPlaceholder = identical(segment, _rootGuardSegment);
     _sanitizeSegments.add(segment);
     if (isPlaceholder) _placeholderCount++;
     try {
@@ -135,11 +172,48 @@ abstract mixin class Loggable {
   /// Возвращает [Sanitize.drop], замену или исходный объект. Повторного
   /// применения не происходит: рекурсивный вызов с заменой выполняется
   /// внутри [_withSegment], поэтому стек уже не пуст.
+  ///
+  /// Само правило тоже вызывается под заглушкой: без неё рендер изнутри
+  /// правила (в том числе неявный — `'${ctx.value}'` для [Loggable] и
+  /// компании) снова увидел бы пустой стек, снова позвал бы правило и
+  /// ушёл бы в бесконечную рекурсию. Правилу рендерить по-прежнему
+  /// нельзя (см. [sanitizer]), но зависание — слишком дорогая цена за
+  /// нарушение контракта.
   static Object? _sanitizeRoot(Object? obj) {
     final sanitizer = Loggable.sanitizer;
     if (sanitizer == null) return obj;
 
-    return sanitizer(SanitizeContext._(null, obj, 0, _sanitizeSegments));
+    return _withSegment(
+      _rootGuardSegment,
+      () => sanitizer(SanitizeContext._(null, obj, 0, _sanitizeSegments)),
+    );
+  }
+
+  /// Обходит записи [LoggableMultiData], применяя санитайзер к каждой по
+  /// её ключу ровно один раз, и вызывает [render] для уцелевших.
+  ///
+  /// ЕДИНСТВЕННАЯ точка санитайза записей multi-data. Секции рисуют
+  /// четыре разных места ([_multiDataToString], [_multiDataToJson],
+  /// `LoggableMultiData.toString` и `LogMessage` в принтере — у каждого
+  /// свои разделители и переносы строк), но позицию значения знает
+  /// только этот хелпер: рендерер, обошедший его стороной, отдал бы
+  /// значение обходчику как КОРЕНЬ — без имени, без сегмента пути и мимо
+  /// правила.
+  ///
+  /// [render] получает уже санитизированное значение и обязан рендерить
+  /// его только внутри вызова: сегмент ключа держится в стеке пути,
+  /// чтобы у вложенных значений путь был полным.
+  @internal
+  static void forEachMultiDataEntry(
+    LoggableMultiData data,
+    void Function(String key, Object? value) render,
+  ) {
+    for (final entry in data.data.entries) {
+      final sanitized = _sanitizeChild(entry.key, entry.key, entry.value);
+      if (_isDropped(sanitized)) continue;
+
+      _withSegment(entry.key, () => render(entry.key, sanitized));
+    }
   }
 
   /// Метод должен заполнить [data] описанием исследуемого класса.
@@ -312,7 +386,7 @@ abstract mixin class Loggable {
         // Сегмент-заглушка держит стек непустым: к замене санитайзер
         // повторно не применится. В depth/path он не учитывается.
         return _withSegment(
-          _rootReplacementPlaceholder,
+          _rootGuardSegment,
           () => objectToString(
             sanitized,
             theme: theme,
@@ -353,8 +427,6 @@ abstract mixin class Loggable {
     required int depth,
     required LoggableConfig config,
   }) {
-    final depthTheme = theme.depthTheme(depth);
-
     final converter = _converters[obj.runtimeType];
     if (converter != null) {
       return converter.convertToData(obj).toLogString(
@@ -397,31 +469,42 @@ abstract mixin class Loggable {
         ),
       // LoggableWrapper разворачивается прозрачно в [objectToString] до
       // попадания сюда (см. комментарий там) — эта ветка недостижима.
-      LoggableMultiData() => obj.data.entries
-          .map((e) {
-            final sanitized = _sanitizeChild(e.key, e.key, e.value);
-            if (_isDropped(sanitized)) return null;
-
-            final value = _withSegment(
-              e.key,
-              () => Loggable.objectToString(
-                sanitized,
-                theme: theme,
-                depth: depth,
-                config: obj.config.merge(config),
-              ),
-            );
-
-            return switch (e.key) {
-              '' => value,
-              final key =>
-                '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
-            };
-          })
-          .whereType<String>()
-          .join(depthTheme.punctuation(', ')),
+      LoggableMultiData() => _multiDataToString(
+          obj,
+          theme: theme,
+          depth: depth,
+          config: config,
+        ),
       _ => theme.formatValue(obj.toString())
     };
+  }
+
+  static String _multiDataToString(
+    LoggableMultiData obj, {
+    required LogTheme theme,
+    required int depth,
+    required LoggableConfig config,
+  }) {
+    final depthTheme = theme.depthTheme(depth);
+    final entryConfig = obj.config.merge(config);
+    final parts = <String>[];
+
+    forEachMultiDataEntry(obj, (key, value) {
+      final text = objectToString(
+        value,
+        theme: theme,
+        depth: depth,
+        config: entryConfig,
+      );
+
+      parts.add(
+        key.isEmpty
+            ? text
+            : '${theme.data.sectionStyle(key)}${theme.styledColon} $text',
+      );
+    });
+
+    return parts.join(depthTheme.punctuation(', '));
   }
 
   static Object? objectToJson(
@@ -444,7 +527,7 @@ abstract mixin class Loggable {
         // Сегмент-заглушка держит стек непустым: к замене санитайзер
         // повторно не применится. В depth/path он не учитывается.
         return _withSegment(
-          _rootReplacementPlaceholder,
+          _rootGuardSegment,
           () => objectToJson(sanitized, config: config),
         );
       }
@@ -503,22 +586,15 @@ abstract mixin class Loggable {
     LoggableMultiData obj, {
     required LoggableJsonConfig config,
   }) {
+    final entryConfig = obj.config.mergeWithJsonConfig(config);
+
     // Маркер типа — первым, как и в остальных служебных структурах.
     // Затереть его пользовательский ключ не может: ключи, начинающиеся
     // с ':', экранируются.
     final result = <String, Object?>{_kindKey: 'multi'};
-    for (final entry in obj.data.entries) {
-      final sanitized = _sanitizeChild(entry.key, entry.key, entry.value);
-      if (_isDropped(sanitized)) continue;
-
-      result[_escapeServiceKey(entry.key)] = _withSegment(
-        entry.key,
-        () => objectToJson(
-          sanitized,
-          config: obj.config.mergeWithJsonConfig(config),
-        ),
-      );
-    }
+    forEachMultiDataEntry(obj, (key, value) {
+      result[_escapeServiceKey(key)] = objectToJson(value, config: entryConfig);
+    });
 
     return result;
   }

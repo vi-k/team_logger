@@ -46,19 +46,29 @@ final class LogMessage implements LogBlock {
       } else {
         dataOnNewLine = !row.singleLine &&
             (data.data.isEmpty || data.data.keys.first.isNotEmpty);
-        dataStr = data.data.entries.map((e) {
-          final value = Loggable.objectToString(
-            e.value,
+
+        // The section layout is duplicated here (the printer needs the
+        // per-section line split), but the per-entry sanitize is not:
+        // it lives in Loggable.forEachMultiDataEntry. Walking
+        // `data.data.entries` directly would hand every section value to
+        // the walker as a ROOT — unnamed, with an empty path — so
+        // name-based rules would never fire on a section.
+        final parts = <String>[];
+        Loggable.forEachMultiDataEntry(data, (key, value) {
+          final text = Loggable.objectToString(
+            value,
             theme: theme,
             config: data.config,
           );
 
-          return switch (e.key) {
-            '' => value,
-            final key =>
-              '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
-          };
-        }).join(row.singleLine ? theme.data.punctuation(', ') : '\n');
+          parts.add(
+            key.isEmpty
+                ? text
+                : '${theme.data.sectionStyle(key)}${theme.styledColon} $text',
+          );
+        });
+        dataStr =
+            parts.join(row.singleLine ? theme.data.punctuation(', ') : '\n');
       }
 
       if (messageStr.isNotEmpty) {
