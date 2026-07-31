@@ -1474,6 +1474,57 @@ log.publisher = MultiPublisher([
 ]);
 ```
 
+#### Per-Value Sanitization (`Loggable.sanitizer`)
+
+`Logger.transformer` replaces the log as a whole. To redact values
+**inside** `data` — including values nested in objects, maps and
+collections — assign a global sanitizer instead: it is called for every
+value on its way to the output, so no publisher can miss it (console,
+file storage, session export, an in-app log viewer — all of them go
+through the same rendering code).
+
+```dart
+Loggable.sanitizer = (ctx) => switch (ctx.name) {
+  'password' || 'token' => Sanitize.drop,      // the property disappears
+  'pan' => '**** **** **** ${(ctx.value! as String).substring(12)}',
+  _ => ctx.value,
+};
+
+log.i(
+  'checkout',
+  data: {
+    'user': 'ann',
+    'token': 'abc123',
+    'card': {'pan': '4111111111111234'},
+  },
+);
+// checkout: {user: "ann", card: {pan: "**** **** **** 1234"}}
+```
+
+`ctx` (a `SanitizeContext`) also carries `path` (`user.card.pan`) and
+`depth`. Returning a replacement stops the *original*'s children from
+being offered to the rule, but the replacement is rendered normally — its
+own children are offered to the rule like any other value. A rule whose
+replacement itself matches the same rule recurses forever.
+
+A few things worth knowing before writing a rule:
+
+- The rule must be a pure function with no side effects, and it must not
+  render or log from inside itself — not even implicitly, via
+  `toString()`/string interpolation of the value it was handed.
+- For a property with a `view` (see "Property Configuration" above), the
+  rule sees the `view` object, not the text it renders — redact such
+  properties by `name`/`path`, not by matching rendered content.
+- In a collection-element position, `Sanitize.drop` renders as
+  `'<dropped>'` rather than removing the element, so the printed
+  collection length stays honest.
+- `Loggable.sanitizer` is a per-isolate static: set it again in any
+  isolate you spawn.
+- Sanitizing happens while rendering, so cycle protection, collection
+  limits and lazy iterables are unaffected, and filtered-out logs still
+  cost nothing. The raw value still lives in `Log.data` — reach for
+  `Logger.transformer` when a value must not exist in memory at all.
+
 ---
 
 ## License

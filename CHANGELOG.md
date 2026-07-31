@@ -1,3 +1,31 @@
+## 0.6.0
+
+- Per-value sanitization of logged data: assign [Loggable.sanitizer] to
+  process every value on its way to the output. The callback receives a
+  [SanitizeContext] (name, value, a lazily built path such as
+  `user.card.number`, depth) and returns the value unchanged, a
+  replacement, or [Sanitize.drop] to remove the property/entry from the
+  output entirely. The hook is global, so it cannot be forgotten on a
+  publisher: it applies to the console printer, file storage, session
+  export and any direct [Loggable.objectToString]/[objectToJson] call —
+  including an in-app log viewer.
+- A replacement is rendered as a plain value: the original's children are
+  no longer offered to the rule, but the replacement's own children are,
+  normally — a rule whose replacement itself matches the same rule
+  recurses forever. A property's `view` is what the rule sees, not the
+  text it renders (no [LoggableView] goes through the walkers), so such a
+  property must be redacted by `name`/`path`, not by matching rendered
+  content. In a collection-element position [Sanitize.drop] renders
+  `'<dropped>'` rather than removing the element, so the printed
+  collection length stays honest.
+- The rule must be free of side effects and must neither render nor log
+  from inside itself — [Loggable.sanitizer] is a per-isolate static, so
+  set it again in any isolate you spawn. Cycle protection, collection
+  limits and lazy iterables are unaffected: sanitization happens while
+  rendering, so filtered-out logs still cost nothing. The raw value still
+  lives in [Log.data]; reach for [Logger.transformer] when a value must
+  not exist in memory at all.
+
 ## 0.5.2
 
 - Pre-publication log processing (primarily for security — masking
