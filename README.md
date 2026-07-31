@@ -1458,7 +1458,7 @@ pick based on what you need before reading the examples below:
 | --- | --- | --- |
 | Sees | The whole log: message, data, tags, trace IDs, path, error, stack trace | Every value inside `data`, with its name/path/depth |
 | Drop a whole log | Yes — return `null` | No — only individual values, via `Sanitize.drop` |
-| If the rule throws | Fail-closed — the log is not published | Surfaces to the publisher; the log is still published |
+| If the rule throws | Fail-closed — the log is not published, the error goes to `onError`/the zone | Not fail-closed — the error escapes into the publisher (see below) |
 | Raw value in memory | Replaced in `Log.data` | Original stays in `Log.data`; only the rendered output is masked |
 | Scope | Per-logger (inherited by subloggers); per-destination via `TransformPublisher` | Global, per isolate |
 | Covers `message`/`error`/`stackTrace` | Yes | No — those never pass through the render walkers |
@@ -1466,6 +1466,13 @@ pick based on what you need before reading the examples below:
 In short: use `Logger.transformer` to drop a log or to redact
 `message`/`error`/`stackTrace`; use `Loggable.sanitizer` to redact values
 nested inside `data` without touching the raw object.
+
+A sanitizer rule must not throw. Unlike a transformer, it has no
+fail-closed guard: the error escapes into whichever publisher was
+rendering. `FileLogStorage` reports it to its `onError` and writes a
+fallback line without the data; `ConsoleLogPrinter` does not catch it, so
+the exception leaves `publish()` — `MultiPublisher` isolates it, but a
+printer used on its own propagates it to the logging call site.
 
 Assign `Logger.transformer` to mask secrets/PII, or drop disallowed logs
 entirely, right before publishing — it is inherited by child loggers just

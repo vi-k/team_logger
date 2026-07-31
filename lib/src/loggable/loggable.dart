@@ -80,6 +80,13 @@ abstract mixin class Loggable {
   /// `toString()`, `FileLogCodec` пишет их так же, — так что санитайзер
   /// эти поля не видит и подменить не может. Замаскировать их или
   /// отбросить лог целиком — задача `Logger.transformer`.
+  ///
+  /// Бросать из правила нельзя: fail-closed здесь нет, в отличие от
+  /// `Logger.transformer`. Исключение уходит в тот publisher, который в
+  /// этот момент рендерил: `FileLogStorage` отдаст его своему `onError` и
+  /// запишет fallback-строку без данных, а `ConsoleLogPrinter` его не
+  /// ловит — исключение покинет `publish()`, и `MultiPublisher` его
+  /// изолирует, но принтер сам по себе пробросит его в точку логирования.
   static LogValueSanitizer? sanitizer;
 
   /// Сегменты пути к текущему значению: [String] — имя или ключ,
