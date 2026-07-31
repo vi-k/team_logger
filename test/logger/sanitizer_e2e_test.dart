@@ -150,8 +150,11 @@ void main() {
 
     test('a root replacement inherits the container config', () {
       // The replacement stands in for the container, so it is rendered
-      // with the container's formatting — and both multi-data renderers
-      // must agree on that.
+      // with the container's formatting — and all FOUR renderers of a
+      // multi-data must agree on that. The walkers used to offer the
+      // root with the ambient config only, so `objectToString` and
+      // `objectToJson` — the JSONL path — dropped the units that the
+      // console printed.
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? 12 : ctx.value;
 
       final data = LoggableMultiData(
@@ -159,8 +162,18 @@ void main() {
         config: const LoggableConfig(units: 'kg'),
       );
 
-      expect(data.toString(), '12kg');
-      expect(_printMultiData(data), 'login: 12kg');
+      expect(data.toString(), '12kg', reason: 'LoggableMultiData.toString');
+      expect(_printMultiData(data), 'login: 12kg', reason: 'ConsoleLogPrinter');
+      expect(
+        Loggable.objectToString(data),
+        '12kg',
+        reason: 'Loggable.objectToString',
+      );
+      expect(
+        Loggable.objectToJson(data),
+        {':v': 12, ':u': 'kg'},
+        reason: 'Loggable.objectToJson',
+      );
     });
 
     test('every renderer offers the multi-data root exactly once', () {

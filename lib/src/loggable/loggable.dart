@@ -258,10 +258,22 @@ abstract mixin class Loggable {
         sanitized,
         theme: theme,
         depth: depth,
-        config: config,
+        config: _rootConfig(obj, config),
       ),
     );
   }
+
+  /// Конфигурация, которой рендерится ЗАМЕНА корня.
+  ///
+  /// Замена встаёт на место контейнера, поэтому форматируется его
+  /// настройками: у [LoggableMultiData] свой `config`, и обходчик его не
+  /// видит — ему передан только окружающий. Без этого мержа рендереры
+  /// расходились бы: `LoggableMultiData.toString` и `LogMessage`
+  /// передают сюда `data.config` сами (для них мерж идемпотентен), а
+  /// [objectToString]/[objectToJson] печатали бы замену без units и
+  /// лимитов контейнера — то есть JSONL расходился бы с консолью.
+  static LoggableConfig _rootConfig(Object? obj, LoggableConfig config) =>
+      obj is LoggableMultiData ? obj.config.merge(config) : config;
 
   /// Рендерит КОРНЕВОЕ значение и сообщает, отбросило ли его правило.
   ///
@@ -639,9 +651,17 @@ abstract mixin class Loggable {
       if (!identical(sanitized, obj)) {
         // Сегмент-заглушка держит стек непустым: к замене санитайзер
         // повторно не применится. В depth/path он не учитывается.
+        // Конфигурация — как в [sanitizeRootToString] (см. [_rootConfig]):
+        // замена корня форматируется настройками контейнера, иначе JSON
+        // разошёлся бы со строковым выводом.
         return _withSegment(
           _rootGuardSegment,
-          () => objectToJson(sanitized, config: config),
+          () => objectToJson(
+            sanitized,
+            config: obj is LoggableMultiData
+                ? obj.config.mergeWithJsonConfig(config)
+                : config,
+          ),
         );
       }
     }
