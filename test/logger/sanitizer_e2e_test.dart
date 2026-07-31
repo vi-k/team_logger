@@ -4,6 +4,24 @@ import 'dart:io';
 import 'package:team_logger/team_logger_io.dart';
 import 'package:test/test.dart';
 
+/// Runs a `LoggableMultiData` log through a real [ConsoleLogPrinter] on a
+/// single line and returns what it printed.
+String _printMultiData(LoggableMultiData data) {
+  final lines = <String>[];
+  Logger('app')
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.noColors,
+      rows: const [
+        LogRow.singleLine(children: [LogMessage()]),
+      ],
+      output: lines.add,
+    )
+    ..i('login', data: data);
+
+  return lines.join('\n').trimRight();
+}
+
 void main() {
   group('sanitizer e2e', () {
     tearDown(() => Loggable.sanitizer = null);
@@ -33,6 +51,74 @@ void main() {
       expect(out, contains('ann'));
       expect(out, isNot(contains('hunter2')));
       expect(out, isNot(contains('password')));
+    });
+
+    test(
+      'a multi-data section is dropped by name in the console printer',
+      () {
+        // The printer duplicates the multi-data layout (it needs the
+        // per-section line split). Before the fix it also duplicated the
+        // rendering call, handing each section value to the walker as a
+        // ROOT — so a name-based rule never fired and the secret was
+        // printed.
+        Loggable.sanitizer =
+            (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+        expect(
+          _printMultiData(
+            LoggableMultiData({'req': 'ok', 'password': 'hunter2'}),
+          ),
+          'login: req: "ok"',
+        );
+      },
+    );
+
+    test(
+      'a multi-data section is replaced by name in the console printer',
+      () {
+        Loggable.sanitizer =
+            (ctx) => ctx.name == 'password' ? '***' : ctx.value;
+
+        expect(
+          _printMultiData(
+            LoggableMultiData({'req': 'ok', 'password': 'hunter2'}),
+          ),
+          'login: req: "ok", password: "***"',
+        );
+      },
+    );
+
+    test(
+      'a value nested in a multi-data section keeps the section in its path',
+      () {
+        // A `path`-based rule used to work in JSONL and fail on console:
+        // the printer rendered the section without its path segment.
+        final paths = <String>[];
+        Loggable.sanitizer = (ctx) {
+          paths.add(ctx.path);
+
+          return ctx.path == 'user.password' ? '***' : ctx.value;
+        };
+
+        final out = _printMultiData(
+          LoggableMultiData({
+            'user': {'name': 'ann', 'password': 'hunter2'},
+          }),
+        );
+
+        expect(paths, ['user', 'user.name', 'user.password']);
+        expect(out, isNot(contains('hunter2')));
+        expect(out, contains('***'));
+      },
+    );
+
+    test('without a sanitizer multi-data printing is unchanged', () {
+      expect(
+        _printMultiData(
+          LoggableMultiData({'req': 'ok', 'password': 'hunter2'}),
+        ),
+        'login: req: "ok", password: "hunter2"',
+      );
     });
 
     test('the secret never reaches the JSONL file', () async {
