@@ -260,6 +260,45 @@ void main() {
       expect(calls, lessThan(10));
     });
 
+    test(
+      'a candidate evicted by the length budget may still be offered '
+      '(the rule must have no side effects)',
+      () {
+        // В отличие от collectionMaxCount (тест выше), бюджет длины
+        // измеряет уже отрендеренный — и потому уже санитизированный —
+        // текст кандидата, а буферизованный элемент может быть задним
+        // числом вытеснен многоточием. Это не баг, а задокументированное
+        // следствие того, как считается бюджет (см. дизайн-спеку,
+        // раздел «Циклы, лимиты, ленивость»): значение может быть
+        // предложено правилу и не попасть в вывод. Пин теста намеренно
+        // жёсткий — если бюджет когда-нибудь станет считать размер без
+        // рендера кандидата, это изменение контракта, и тест обязан
+        // упасть.
+        final offered = <String>[];
+        Loggable.sanitizer = (ctx) {
+          final value = ctx.value;
+          if (value is String) offered.add(value);
+
+          return value;
+        };
+
+        final out = Loggable.objectToString(
+          Iterable<String>.generate(6, (i) => 'v$i'),
+          config: const LoggableConfig(
+            collectionShowIndexes: false,
+            collectionShowCount: false,
+            collectionMaxStringLength: 15,
+          ),
+        );
+
+        // (a) вывод обрезан бюджетом, как и ожидается.
+        expect(out, '("v0", "v1", …)');
+        // (b) правилу предложили значение, которого нет в выводе.
+        expect(offered, contains('v2'));
+        expect(out, isNot(contains('v2')));
+      },
+    );
+
     test('an infinite iterable still does not hang', () {
       Loggable.sanitizer = (ctx) => ctx.value;
 
