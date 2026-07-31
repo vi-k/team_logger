@@ -168,6 +168,54 @@ void main() {
       expect(seen, ['', 'acc', 'acc.iban', 'acc._Account(iban: "DE89")']);
     });
 
+    test('ctx.name of a non-String key is the key as that output renders it',
+        () {
+      // Следствие правильного исправления (имя = ключ в том виде, в
+      // каком он напечатан, посчитанный один раз и переиспользованный), а
+      // не баг: строковый путь берёт имя из objectToString, JSON — из
+      // key.toString(). Формы разные, и строковая зависит от темы.
+      final names = <String>[];
+      Loggable.sanitizer = (ctx) {
+        if (ctx.name case final name?) names.add(name);
+
+        return ctx.value;
+      };
+
+      final listKey = <Object?, Object?>{
+        [1, 2]: 'hunter2',
+      };
+      final enumKey = <Object?, Object?>{_Role.admin: 'hunter2'};
+
+      Loggable.objectToJson(listKey);
+      expect(names, ['[1, 2]'], reason: 'objectToJson');
+
+      names.clear();
+      Loggable.objectToString(listKey);
+      expect(names, ['[₌₂ ₀:1, ₁:2]'], reason: 'objectToString');
+
+      names.clear();
+      Loggable.objectToJson(enumKey);
+      expect(names, ['_Role.admin'], reason: 'objectToJson, enum key');
+
+      names.clear();
+      Loggable.objectToString(enumKey);
+      expect(names, ['.admin'], reason: 'objectToString, enum key');
+    });
+
+    test('a name rule written for one output misses the other', () {
+      // Поэтому README и dartdoc велят редактировать такие записи по
+      // значению или выбрасывать целиком, а не правилом по тексту ключа.
+      Loggable.sanitizer =
+          (ctx) => ctx.name == '[1, 2]' ? '<masked>' : ctx.value;
+
+      final map = <Object?, Object?>{
+        [1, 2]: 'hunter2',
+      };
+
+      expect(Loggable.objectToJson(map), {'[1, 2]': '<masked>'});
+      expect(Loggable.objectToString(map), contains('hunter2'));
+    });
+
     test('dropping the entry is what keeps a key secret out of JSON', () {
       Loggable.sanitizer =
           (ctx) => ctx.name == '{pw: hunter2}' ? Sanitize.drop : ctx.value;
@@ -326,6 +374,8 @@ final class _ThrowingKey with Loggable {
   @override
   String toString() => throw StateError('toString must not be called');
 }
+
+enum _Role { admin }
 
 final class _CountingKey {
   int calls = 0;

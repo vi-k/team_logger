@@ -1562,6 +1562,13 @@ A few things worth knowing before writing a rule:
   the entry's: in `{'acc': {Account('DE89'): 'x'}}` the key's property
   arrives as `acc.iban`, while the entry itself is
   `acc.Account(iban: "DE89")`.
+- For a non-`String` key, `ctx.name` is the key as **that particular
+  output** renders it: the string output renders it through the walker
+  and the theme (`[₌₂ ₀:1, ₁:2]`, `.admin`), JSON through `key.toString()`
+  (`[1, 2]`, `Role.admin`). The two forms differ — and the string one
+  depends on the theme — so a rule matching the key text fires in one
+  output and lets the entry through in the other. Redact such entries by
+  value, or drop them, rather than by matching the key text.
 - In a collection-element position, `Sanitize.drop` renders as
   `'<dropped>'` rather than removing the element, so the printed
   collection length stays honest. A `Prop` rendered on its own (the
