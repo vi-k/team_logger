@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../theme/log_main_theme.dart';
 import 'loggable.dart';
 import 'loggable_json_config.dart';
@@ -79,6 +81,23 @@ final class LoggableConfig with Loggable {
         doubleFormat: doubleFormat ?? other.doubleFormat,
         intFormat: intFormat ?? other.intFormat,
         stringInQuotes: stringInQuotes ?? other.stringInQuotes,
+      );
+
+  /// Копия конфигурации без [units].
+  ///
+  /// Нужна там, где значение подставлено санитайзером: units описывают
+  /// исходную величину, а замаскированное значение — уже не она
+  /// (см. `Prop.toLogString`).
+  @internal
+  LoggableConfig withoutUnits() => LoggableConfig(
+        enumDotShorthand: enumDotShorthand,
+        collectionMaxCount: collectionMaxCount,
+        collectionMaxStringLength: collectionMaxStringLength,
+        collectionShowCount: collectionShowCount,
+        collectionShowIndexes: collectionShowIndexes,
+        doubleFormat: doubleFormat,
+        intFormat: intFormat,
+        stringInQuotes: stringInQuotes,
       );
 
   LoggableEffectiveConfig toEffectiveConfig(LogMainTheme theme) =>

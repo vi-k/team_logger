@@ -285,7 +285,6 @@ final class LoggableData {
 
     final className = _type.typeName ?? _type.value.toString();
     final propsList = this.props.where((p) => !p.hidden).toList();
-    final hasNonamed = propsList.any((p) => !p.showName);
 
     // Санитайз каждого свойства ровно один раз: drop исключает его из
     // props целиком (запись отсутствует / элемент списка пропущен).
@@ -294,6 +293,11 @@ final class LoggableData {
       final sanitized = p._sanitized();
       if (!Loggable._isDropped(sanitized)) kept.add((p, sanitized));
     }
+
+    // Форму (список или Map) определяют уцелевшие свойства: если
+    // единственное безымянное свойство выброшено, списочная форма больше
+    // не нужна.
+    final hasNonamed = kept.any((e) => !e.$1.showName);
 
     MapEntry<String, Object?> entryOf((Prop<Object?>, Object?) e) =>
         e.$1.toMapEntry(config: propConfig, sanitized: e.$2);
@@ -368,6 +372,13 @@ final class LoggableNoView {
   String toString() => '<no view>';
 }
 
+final class _NotSanitized {
+  const _NotSanitized();
+
+  @override
+  String toString() => '<not sanitized>';
+}
+
 final class Prop<T extends Object?> {
   static const noView = LoggableNoView._();
 
@@ -375,7 +386,12 @@ final class Prop<T extends Object?> {
   /// [toLogString]/[toMapEntry]. Отличаем «вызывающий не передал результат»
   /// от «санитайзер заменил значение на null» — `null` сам по себе валидная
   /// замена и не должен читаться как «не считали».
-  static const Object _notSanitized = Object();
+  ///
+  /// Собственный приватный тип, а не `const Object()`: все `const Object()`
+  /// в программе — один и тот же объект, поэтому санитайзер, вернувший
+  /// `const Object()` как замену, был бы прочитан как «вызывающий ничего не
+  /// передал», и напечатался бы оригинал.
+  static const Object _notSanitized = _NotSanitized();
 
   final String name;
   final T value;
@@ -405,20 +421,37 @@ final class Prop<T extends Object?> {
   /// иначе правило сработает на одно и то же свойство дважды.
   Object? _sanitized() => Loggable._sanitizeChild(name, name, _renderedValue);
 
+  /// Результат санитайза для рендера: переданный вызывающим либо,
+  /// если аргумент опущен, посчитанный здесь.
+  ///
+  /// [LoggableData] всегда передаёт `sanitized:` — она обязана позвать
+  /// правило один раз на свойство, чтобы уметь выбросить свойство
+  /// целиком при [Sanitize.drop]. Но [LoggableData.props] публичен, и
+  /// `p.toLogString()` можно вызвать напрямую: без этого fallback такой
+  /// вызов печатал бы несанитизированное значение.
+  Object? _effectiveSanitized(Object? sanitized) =>
+      identical(sanitized, _notSanitized) && Loggable._sanitizing
+          ? _sanitized()
+          : sanitized;
+
   MapEntry<String, Object?> toMapEntry({
     LoggableJsonConfig config = const LoggableJsonConfig(),
     Object? sanitized = _notSanitized,
   }) {
     final effectiveConfig = this.config.mergeWithJsonConfig(config);
+    final effectiveSanitized = _effectiveSanitized(sanitized);
 
     // Замена рендерится как обычное значение под сегментом свойства: units
     // и LoggableView рассчитаны на оригинал и к подставленному значению не
     // применяются — иначе часть оригинала просочилась бы через них.
-    if (!identical(sanitized, _notSanitized) &&
-        !identical(sanitized, _renderedValue)) {
+    if (!identical(effectiveSanitized, _notSanitized) &&
+        !identical(effectiveSanitized, _renderedValue)) {
       final propJson = Loggable._withSegment(
         name,
-        () => Loggable.objectToJson(sanitized, config: effectiveConfig),
+        () => Loggable.objectToJson(
+          effectiveSanitized,
+          config: effectiveConfig.copyWith(units: null),
+        ),
       );
 
       return MapEntry(showName ? name : '@$name', propJson);
@@ -459,6 +492,7 @@ final class Prop<T extends Object?> {
     String name2str() => theme.data.keyStyle(theme.formatValue(name));
 
     final effectiveConfig = this.config.merge(config);
+    final effectiveSanitized = _effectiveSanitized(sanitized);
     final depthTheme = theme.depthTheme(depth);
     final prefix =
         showName ? '${name2str()}${depthTheme.punctuation(':')} ' : '';
@@ -466,15 +500,15 @@ final class Prop<T extends Object?> {
     // Замена рендерится как обычное значение под сегментом свойства: units
     // и LoggableView рассчитаны на оригинал и к подставленному значению не
     // применяются.
-    if (!identical(sanitized, _notSanitized) &&
-        !identical(sanitized, _renderedValue)) {
+    if (!identical(effectiveSanitized, _notSanitized) &&
+        !identical(effectiveSanitized, _renderedValue)) {
       final replacement = Loggable._withSegment(
         name,
         () => Loggable.objectToString(
-          sanitized,
+          effectiveSanitized,
           theme: theme,
           depth: depth + 1,
-          config: effectiveConfig,
+          config: effectiveConfig.withoutUnits(),
         ),
       );
 
