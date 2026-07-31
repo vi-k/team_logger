@@ -56,6 +56,8 @@ final class SanitizeContext {
   String get path {
     final buf = StringBuffer();
     for (final segment in _segments) {
+      // Плейсхолдер повторного рендера замены корня — не часть пути.
+      if (identical(segment, Loggable._rootReplacementPlaceholder)) continue;
       if (segment is int) {
         buf.write('[$segment]');
       } else {

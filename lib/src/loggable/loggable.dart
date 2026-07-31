@@ -67,15 +67,23 @@ abstract mixin class Loggable {
 
   static bool get _sanitizing => sanitizer != null;
 
+  /// Плейсхолдер-сегмент, которым помечается повторный рендер значения,
+  /// заменившего корень (см. [_sanitizeRoot]). Он держит
+  /// [_sanitizeSegments] непустым — санитайзер не срабатывает на замену
+  /// повторно, — но сам не является частью пути и не должен считаться
+  /// уровнем глубины.
+  static const Object _rootReplacementPlaceholder = Object();
+
+  /// Сколько плейсхолдеров сейчас в [_sanitizeSegments] (0 или 1) —
+  /// чтобы [_sanitizeChild] и [SanitizeContext.path] могли исключить их
+  /// за O(1), не сканируя стек на каждый узел.
+  static int _placeholderCount = 0;
+
   /// Применяет санитайзер к ребёнку, зная его позицию.
   ///
   /// Возвращает исходное значение (не трогали), замену или
   /// [Sanitize.drop]. Вызывать ровно один раз на значение: обходчики
   /// для не-корневых значений санитайзер не применяют.
-  ///
-  /// Пока не вызывается ниоткуда: обходчики Map/коллекций/свойств
-  /// подключат его в следующих задачах (см. план).
-  // ignore: unused_element
   static Object? _sanitizeChild(Object segment, String? name, Object? value) {
     final sanitizer = Loggable.sanitizer;
     if (sanitizer == null) return value;
@@ -86,7 +94,7 @@ abstract mixin class Loggable {
         SanitizeContext._(
           name,
           value,
-          _sanitizeSegments.length,
+          _sanitizeSegments.length - _placeholderCount,
           _sanitizeSegments,
         ),
       );
@@ -100,10 +108,13 @@ abstract mixin class Loggable {
   static T _withSegment<T>(Object segment, T Function() render) {
     if (!_sanitizing) return render();
 
+    final isPlaceholder = identical(segment, _rootReplacementPlaceholder);
     _sanitizeSegments.add(segment);
+    if (isPlaceholder) _placeholderCount++;
     try {
       return render();
     } finally {
+      if (isPlaceholder) _placeholderCount--;
       _sanitizeSegments.removeLast();
     }
   }
@@ -275,9 +286,9 @@ abstract mixin class Loggable {
       if (identical(sanitized, Sanitize.drop)) return '';
       if (!identical(sanitized, obj)) {
         // Сегмент-заглушка держит стек непустым: к замене санитайзер
-        // повторно не применится.
+        // повторно не применится. В depth/path он не учитывается.
         return _withSegment(
-          '',
+          _rootReplacementPlaceholder,
           () => objectToString(
             sanitized,
             theme: theme,
@@ -366,20 +377,29 @@ abstract mixin class Loggable {
           depth: depth,
           config: obj.config.merge(config),
         ),
-      LoggableMultiData() => obj.data.entries.map((e) {
-          final value = Loggable.objectToString(
-            e.value,
-            theme: theme,
-            depth: depth,
-            config: obj.config.merge(config),
-          );
+      LoggableMultiData() => obj.data.entries
+          .map((e) {
+            final sanitized = _sanitizeChild(e.key, e.key, e.value);
+            if (identical(sanitized, Sanitize.drop)) return null;
 
-          return switch (e.key) {
-            '' => value,
-            final key =>
-              '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
-          };
-        }).join(depthTheme.punctuation(', ')),
+            final value = _withSegment(
+              e.key,
+              () => Loggable.objectToString(
+                sanitized,
+                theme: theme,
+                depth: depth,
+                config: obj.config.merge(config),
+              ),
+            );
+
+            return switch (e.key) {
+              '' => value,
+              final key =>
+                '${theme.data.sectionStyle(key)}${theme.styledColon} $value',
+            };
+          })
+          .whereType<String>()
+          .join(depthTheme.punctuation(', ')),
       _ => theme.formatValue(obj.toString())
     };
   }
@@ -393,9 +413,9 @@ abstract mixin class Loggable {
       if (identical(sanitized, Sanitize.drop)) return null;
       if (!identical(sanitized, obj)) {
         // Сегмент-заглушка держит стек непустым: к замене санитайзер
-        // повторно не применится.
+        // повторно не применится. В depth/path он не учитывается.
         return _withSegment(
-          '',
+          _rootReplacementPlaceholder,
           () => objectToJson(sanitized, config: config),
         );
       }
@@ -444,22 +464,36 @@ abstract mixin class Loggable {
           obj.data,
           config: obj.config.mergeWithJsonConfig(config),
         ),
-      LoggableMultiData() => {
-          // Маркер типа — первым, как и в остальных служебных структурах.
-          // Затереть его пользовательский ключ не может: ключи, начинающиеся
-          // с ':', экранируются.
-          _kindKey: 'multi',
-          ...obj.data.map((k, v) {
-            final value = Loggable.objectToJson(
-              v,
-              config: obj.config.mergeWithJsonConfig(config),
-            );
-
-            return MapEntry(_escapeServiceKey(k), value);
-          }),
-        },
+      LoggableMultiData() => _multiDataToJson(obj, config: config),
       _ => {_viewKey: obj.toString()}
     };
+  }
+
+  /// Санитайз записей `LoggableMultiData` по ключу для JSON; собираем
+  /// циклом (а не `Map.map`), чтобы уметь пропускать записи,
+  /// санитизированные до [Sanitize.drop].
+  static Map<String, Object?> _multiDataToJson(
+    LoggableMultiData obj, {
+    required LoggableJsonConfig config,
+  }) {
+    // Маркер типа — первым, как и в остальных служебных структурах.
+    // Затереть его пользовательский ключ не может: ключи, начинающиеся
+    // с ':', экранируются.
+    final result = <String, Object?>{_kindKey: 'multi'};
+    for (final entry in obj.data.entries) {
+      final sanitized = _sanitizeChild(entry.key, entry.key, entry.value);
+      if (identical(sanitized, Sanitize.drop)) continue;
+
+      result[_escapeServiceKey(entry.key)] = _withSegment(
+        entry.key,
+        () => objectToJson(
+          sanitized,
+          config: obj.config.mergeWithJsonConfig(config),
+        ),
+      );
+    }
+
+    return result;
   }
 
   /// Преобразует список в строку в виде `[₌₅ ₀:first, …, ₄:last]`.
@@ -1179,17 +1213,27 @@ abstract mixin class Loggable {
     };
   }
 
-  static String _mapEntryToString(
+  /// Санитайз значения записи по ключу; при [Sanitize.drop] возвращает
+  /// `null`, чтобы [_mapToString] пропустил запись целиком.
+  static String? _mapEntryToString(
     MapEntry<Object?, Object?> entry, {
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    String obj2str(Object? obj) => objectToString(
-          obj,
-          depth: depth + 1,
-          theme: theme,
-          config: config,
+    final name = entry.key?.toString();
+    final segment = name ?? 'null';
+    final value = _sanitizeChild(segment, name, entry.value);
+    if (identical(value, Sanitize.drop)) return null;
+
+    String obj2str(Object? obj) => _withSegment(
+          segment,
+          () => objectToString(
+            obj,
+            depth: depth + 1,
+            theme: theme,
+            config: config,
+          ),
         );
 
     final depthTheme = theme.depthTheme(depth);
@@ -1200,7 +1244,7 @@ abstract mixin class Loggable {
     };
 
     return '${theme.data.keyStyle(key)}${depthTheme.punctuation(':')}'
-        ' ${theme.data.valueStyle(obj2str(entry.value))}';
+        ' ${theme.data.valueStyle(obj2str(value))}';
   }
 
   static String _mapToString(
@@ -1221,6 +1265,7 @@ abstract mixin class Loggable {
             config: config,
           ),
         )
+        .whereType<String>()
         .join(depthTheme.punctuation(', '));
 
     return '${depthTheme.brackets(start)}$body${depthTheme.brackets(end)}';
@@ -1233,16 +1278,26 @@ abstract mixin class Loggable {
     // Не передаём units дочерним элементам.
     late final itemConfig = config.copyWith(units: null);
 
-    final result = map.map((k, v) {
+    // Собираем циклом (а не map.map), чтобы уметь пропускать записи,
+    // санитизированные до Sanitize.drop.
+    final result = <String, Object?>{};
+    for (final entry in map.entries) {
+      final name = entry.key?.toString();
+      final segment = name ?? 'null';
+      final value = _sanitizeChild(segment, name, entry.value);
+      if (identical(value, Sanitize.drop)) continue;
+
       final key = _escapeServiceKey(
-        switch (k) {
-          String() => k,
-          _ => k.toString(),
+        switch (entry.key) {
+          final String key => key,
+          final key => key.toString(),
         },
       );
-
-      return MapEntry(key, objectToJson(v, config: itemConfig));
-    });
+      result[key] = _withSegment(
+        segment,
+        () => objectToJson(value, config: itemConfig),
+      );
+    }
 
     return switch (config.units) {
       null => result,
