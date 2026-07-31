@@ -143,5 +143,45 @@ void main() {
         expect(seen, {'replacement|replacement': 1});
       },
     );
+
+    test(
+      'Sanitize.drop as ordinary map data is not swallowed when unset',
+      () {
+        // Loggable.sanitizer остаётся null: Sanitize.drop — публичный API,
+        // и приложение вправе хранить его как обычные данные. Проверка
+        // на drop не должна срабатывать без установленного санитайзера.
+        final data = {'a': 1, 'b': Sanitize.drop, 'c': 3};
+        final droppedText = Loggable.objectToString(Sanitize.drop);
+        expect(
+          Loggable.objectToString(data),
+          '{a: 1, b: $droppedText, c: 3}',
+        );
+
+        final droppedJson = Loggable.objectToJson(Sanitize.drop);
+        expect(
+          Loggable.objectToJson(data),
+          {'a': 1, 'b': droppedJson, 'c': 3},
+        );
+      },
+    );
+
+    test(
+      'Sanitize.drop as ordinary multi-data value is not swallowed '
+      'when unset',
+      () {
+        final data = LoggableMultiData({'req': 'ok', 'flag': Sanitize.drop});
+        final droppedText = Loggable.objectToString(Sanitize.drop);
+        expect(
+          Loggable.objectToString(data),
+          'req: "ok", flag: $droppedText',
+        );
+
+        final droppedJson = Loggable.objectToJson(Sanitize.drop);
+        expect(
+          Loggable.objectToJson(data),
+          {':k': 'multi', 'req': 'ok', 'flag': droppedJson},
+        );
+      },
+    );
   });
 }

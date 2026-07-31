@@ -119,6 +119,17 @@ abstract mixin class Loggable {
     }
   }
 
+  /// `true`, если [value] — маркер [Sanitize.drop] от АКТИВНОГО
+  /// санитайзера.
+  ///
+  /// Без установленного санитайзера [Sanitize.drop] — обычные
+  /// пользовательские данные: без этой проверки, будучи публичным
+  /// API, он мог бы случайно затереть чужую запись в выводе. Общий
+  /// предикат, чтобы обходчики Map/коллекций/свойств не повторяли эту
+  /// проверку (и потенциальную ошибку) каждый на свой лад.
+  static bool _isDropped(Object? value) =>
+      _sanitizing && identical(value, Sanitize.drop);
+
   /// Санитайз корня: у корня нет ни имени, ни сегмента пути.
   ///
   /// Возвращает [Sanitize.drop], замену или исходный объект. Повторного
@@ -380,7 +391,7 @@ abstract mixin class Loggable {
       LoggableMultiData() => obj.data.entries
           .map((e) {
             final sanitized = _sanitizeChild(e.key, e.key, e.value);
-            if (identical(sanitized, Sanitize.drop)) return null;
+            if (_isDropped(sanitized)) return null;
 
             final value = _withSegment(
               e.key,
@@ -482,7 +493,7 @@ abstract mixin class Loggable {
     final result = <String, Object?>{_kindKey: 'multi'};
     for (final entry in obj.data.entries) {
       final sanitized = _sanitizeChild(entry.key, entry.key, entry.value);
-      if (identical(sanitized, Sanitize.drop)) continue;
+      if (_isDropped(sanitized)) continue;
 
       result[_escapeServiceKey(entry.key)] = _withSegment(
         entry.key,
@@ -1224,7 +1235,7 @@ abstract mixin class Loggable {
     final name = entry.key?.toString();
     final segment = name ?? 'null';
     final value = _sanitizeChild(segment, name, entry.value);
-    if (identical(value, Sanitize.drop)) return null;
+    if (_isDropped(value)) return null;
 
     String obj2str(Object? obj) => _withSegment(
           segment,
@@ -1285,7 +1296,7 @@ abstract mixin class Loggable {
       final name = entry.key?.toString();
       final segment = name ?? 'null';
       final value = _sanitizeChild(segment, name, entry.value);
-      if (identical(value, Sanitize.drop)) continue;
+      if (_isDropped(value)) continue;
 
       final key = _escapeServiceKey(
         switch (entry.key) {
