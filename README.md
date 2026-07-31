@@ -1544,20 +1544,27 @@ A few things worth knowing before writing a rule:
   can only drop the whole entry with `Sanitize.drop`.
 - Values *inside* a key object are offered only where the key's rendering
   goes through the walkers: **always in the string output, but in JSON
-  only for `Loggable`/`LoggableWrapper` keys** — `objectToJson` renders
-  any other key via `key.toString()`, which never enters the walkers. So
-  a secret inside a plain container key is masked on the console and
-  **survives into `objectToJson`, and therefore into JSONL files**:
+  only for keys that re-enter the walkers through their own `toString()`**
+  — `Loggable`, `LoggableData`, `LoggableWrapper` and `LoggableMultiData`.
+  Any other key `objectToJson` renders via plain `key.toString()`, so a
+  secret inside a plain container key is masked on the console and
+  **survives into `objectToJson`** — and therefore into JSONL files
+  written with `dataFormat: FileLogDataFormat.json` (the default,
+  `FileLogDataFormat.text`, writes the masked string form):
 
   ```dart
   Loggable.sanitizer = (ctx) => ctx.name == 'pw' ? '<masked>' : ctx.value;
   log.i('m', data: <Object?, Object?>{{'pw': 'hunter2'}: 'primary'});
-  // console: {{pw: "<masked>"}: "primary"}
-  // JSONL:   "data":{"{pw: hunter2}":"primary"}   ← the secret is in the file
+  // console:    {{pw: "<masked>"}: "primary"}
+  // json JSONL: "data":{"{pw: hunter2}":"primary"}  ← the secret is in the file
   ```
 
-  The way to handle that is to drop the entry (`Sanitize.drop` on a rule
-  matching the key text), not to replace a value inside it. And where a
+  The way to handle that is to drop the entry rather than replace a value
+  inside it — but match on the entry's *value*, not on the key text: as
+  the next point explains, a non-`String` key reaches the rule in the form
+  the current output renders, so `ctx.name` differs between the console
+  and JSON and a key-text rule would drop the entry in only one of them.
+  And where a
   key's contents *are* offered, they carry the **container's** path, not
   the entry's: in `{'acc': {Account('DE89'): 'x'}}` the key's property
   arrives as `acc.iban`, while the entry itself is

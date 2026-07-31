@@ -77,13 +77,18 @@ abstract mixin class Loggable {
   ///
   /// Значения ВНУТРИ объекта-ключа предлагаются только там, где рендер
   /// ключа заходит в обходчики: в строковом выводе — всегда, в JSON —
-  /// только для [Loggable] и [LoggableWrapper]. Любой другой ключ
-  /// [objectToJson] рисует через `key.toString()`, мимо обходчиков, —
-  /// поэтому секрет внутри обычного контейнера-ключа
+  /// только у ключей, чей `toString()` сам зовёт обходчик ([Loggable],
+  /// [LoggableData], [LoggableWrapper], [LoggableMultiData]). Любой
+  /// другой ключ [objectToJson] рисует обычным `key.toString()`, мимо
+  /// обходчиков, — поэтому секрет внутри обычного контейнера-ключа
   /// (`{{'pw': 'hunter2'}: 'primary'}`) на консоли замаскируется
-  /// (`{{pw: "<masked>"}: "primary"}`), а в [objectToJson] — и, значит, в
-  /// JSONL-файле — уцелеет (`{"{pw: hunter2}": "primary"}`). Убрать его
-  /// оттуда можно только выбросив запись целиком. Там же, где содержимое
+  /// (`{{pw: "<masked>"}: "primary"}`), а в [objectToJson] уцелеет
+  /// (`{"{pw: hunter2}": "primary"}`) — и попадёт в JSONL-файл, если тот
+  /// пишется с `dataFormat: FileLogDataFormat.json` (по умолчанию
+  /// `text`, то есть строковая — уже замаскированная — форма). Убрать
+  /// секрет оттуда можно только выбросив запись целиком, причём правилом
+  /// по ЗНАЧЕНИЮ: текст ключа у двух выводов разный (см. ниже), и правило
+  /// по нему сработало бы только в одном. Там же, где содержимое
   /// ключа предлагается, оно идёт под путём КОНТЕЙНЕРА, а не записи: в
   /// `{'acc': {Account('DE89'): 'x'}}` свойство ключа придёт как
   /// `acc.iban`, тогда как сама запись — `acc.Account(iban: "DE89")`.
@@ -1632,8 +1637,8 @@ abstract mixin class Loggable {
         name = stringKey;
       } else if (entry.key case final objectKey?) {
         // `toString` ключа может зайти в обходчики ([Loggable],
-        // [LoggableWrapper]): под заглушкой ключ не будет предложен
-        // правилу как корень.
+        // [LoggableData], [LoggableWrapper], [LoggableMultiData]): под
+        // заглушкой ключ не будет предложен правилу как корень.
         name = _withSegment(_rootGuardSegment, objectKey.toString);
       } else {
         name = null;
