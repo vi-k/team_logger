@@ -114,6 +114,11 @@ final class LevelLogger
 /// number and time. Do not log through the same logger from inside a
 /// transformer: the call re-enters the transformer and recurses until
 /// [StackOverflowError].
+///
+/// For per-value redaction inside `data` — nested objects, maps,
+/// collections — use [Loggable.sanitizer] instead: it is offered every
+/// value on its way to the output, each with its own name and path,
+/// rather than the log as a whole.
 final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   static const _tagsKey = #team_logger_tags;
 

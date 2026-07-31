@@ -55,7 +55,7 @@ formatting, and customizable styling themes.
   - [7. Trace Propagation (`TraceId`)](#7-trace-propagation-traceid)
   - [8. Circular Buffer (`LogStorage`)](#8-circular-buffer-logstorage)
   - [9. Saving Logs to Files (`FileLogStorage`)](#9-saving-logs-to-files-filelogstorage)
-  - [10. Redacting Logs (`Logger.transformer`)](#10-redacting-logs-loggertransformer)
+  - [10. Redacting Logs (`Logger.transformer` and `Loggable.sanitizer`)](#10-redacting-logs-loggertransformer-and-loggablesanitizer)
 - [License](#license)
 
 ---
@@ -1449,7 +1449,23 @@ for (final session in sessions) {
 
 ---
 
-### 10. Redacting Logs (`Logger.transformer`)
+### 10. Redacting Logs (`Logger.transformer` and `Loggable.sanitizer`)
+
+team_logger has two redaction hooks, and they solve different problems —
+pick based on what you need before reading the examples below:
+
+| | `Logger.transformer` | `Loggable.sanitizer` |
+| --- | --- | --- |
+| Sees | The whole log: message, data, tags, trace IDs, path, error, stack trace | Every value inside `data`, with its name/path/depth |
+| Drop a whole log | Yes — return `null` | No — only individual values, via `Sanitize.drop` |
+| If the rule throws | Fail-closed — the log is not published | Surfaces to the publisher; the log is still published |
+| Raw value in memory | Replaced in `Log.data` | Original stays in `Log.data`; only the rendered output is masked |
+| Scope | Per-logger (inherited by subloggers); per-destination via `TransformPublisher` | Global, per isolate |
+| Covers `message`/`error`/`stackTrace` | Yes | No — those never pass through the render walkers |
+
+In short: use `Logger.transformer` to drop a log or to redact
+`message`/`error`/`stackTrace`; use `Loggable.sanitizer` to redact values
+nested inside `data` without touching the raw object.
 
 Assign `Logger.transformer` to mask secrets/PII, or drop disallowed logs
 entirely, right before publishing — it is inherited by child loggers just
