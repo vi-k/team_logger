@@ -203,6 +203,47 @@ abstract mixin class Loggable {
     );
   }
 
+  /// Предлагает правилу КОРНЕВОЕ значение и, если правило его тронуло,
+  /// возвращает готовый строковый вывод.
+  ///
+  /// `null` означает «рендерить самому вызывающему»: правило значение не
+  /// тронуло, санитайзера нет, либо это вообще не корень — стек
+  /// сегментов не пуст, а значит значение уже предложено правилу по
+  /// своей позиции. Пустая строка — [Sanitize.drop], всё остальное —
+  /// отрисованная замена.
+  ///
+  /// ЕДИНСТВЕННАЯ точка корневого предложения для строкового вывода. Её
+  /// зовёт [objectToString], и её же ОБЯЗАНЫ звать альтернативные
+  /// рендереры multi-data (`LoggableMultiData.toString` и `LogMessage` в
+  /// принтере): они входят сразу в [forEachMultiDataEntry], поэтому без
+  /// этого вызова корень не предлагался бы правилу вовсе — на консоли
+  /// печаталось бы то, что в JSONL-файле правило выбрасывает.
+  @internal
+  static String? sanitizeRootToString(
+    Object? obj, {
+    LogTheme theme = LogTheme.noColors,
+    int depth = 0,
+    LoggableConfig config = const LoggableConfig(),
+  }) {
+    if (!_sanitizing || _sanitizeSegments.isNotEmpty) return null;
+
+    final sanitized = _sanitizeRoot(obj);
+    if (identical(sanitized, Sanitize.drop)) return '';
+    if (identical(sanitized, obj)) return null;
+
+    // Сегмент-заглушка держит стек непустым: к замене санитайзер
+    // повторно не применится. В depth/path он не учитывается.
+    return _withSegment(
+      _rootGuardSegment,
+      () => objectToString(
+        sanitized,
+        theme: theme,
+        depth: depth,
+        config: config,
+      ),
+    );
+  }
+
   /// Обходит записи [LoggableMultiData], применяя санитайзер к каждой по
   /// её ключу ровно один раз, и вызывает [render] для уцелевших.
   ///
@@ -213,6 +254,10 @@ abstract mixin class Loggable {
   /// только этот хелпер: рендерер, обошедший его стороной, отдал бы
   /// значение обходчику как КОРЕНЬ — без имени, без сегмента пути и мимо
   /// правила.
+  ///
+  /// Корень — не забота этого хелпера: рендереры, для которых multi-data
+  /// и есть корневое значение, обязаны сначала позвать
+  /// [sanitizeRootToString].
   ///
   /// [render] получает уже санитизированное значение и обязан рендерить
   /// его только внутри вызова: сегмент ключа держится в стеке пути,
@@ -393,22 +438,11 @@ abstract mixin class Loggable {
       );
     }
 
-    if (_sanitizing && _sanitizeSegments.isEmpty) {
-      final sanitized = _sanitizeRoot(obj);
-      if (identical(sanitized, Sanitize.drop)) return '';
-      if (!identical(sanitized, obj)) {
-        // Сегмент-заглушка держит стек непустым: к замене санитайзер
-        // повторно не применится. В depth/path он не учитывается.
-        return _withSegment(
-          _rootGuardSegment,
-          () => objectToString(
-            sanitized,
-            theme: theme,
-            depth: depth,
-            config: config,
-          ),
-        );
-      }
+    // Корневое предложение — в общем хелпере: его же зовут рендереры
+    // multi-data, не проходящие через этот обходчик.
+    if (sanitizeRootToString(obj, theme: theme, depth: depth, config: config)
+        case final rendered?) {
+      return rendered;
     }
 
     if (obj != null && _canContainCycle(obj)) {

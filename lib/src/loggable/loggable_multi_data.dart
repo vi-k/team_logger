@@ -16,9 +16,17 @@ final class LoggableMultiData {
     String Function(String key)? keyFormatter,
     String Function(String value)? valueFormatter,
   }) {
-    // Через общий хелпер, а не по data.entries напрямую: иначе значение
-    // секции ушло бы в обходчик как корень — мимо правил по имени и с
-    // потерей префикса пути (см. [Loggable.forEachMultiDataEntry]).
+    // Корень предлагаем правилу тем же хелпером, что и обходчики: этот
+    // метод в них не заходит, поэтому без вызова сам объект данных
+    // правилу не показывался бы вовсе.
+    if (Loggable.sanitizeRootToString(this) case final rendered?) {
+      return rendered;
+    }
+
+    // Секции — через общий хелпер, а не по data.entries напрямую: иначе
+    // значение секции ушло бы в обходчик как корень — мимо правил по
+    // имени и с потерей префикса пути (см.
+    // [Loggable.forEachMultiDataEntry]).
     final parts = <String>[];
     Loggable.forEachMultiDataEntry(this, (key, value) {
       final text = Loggable.objectToString(value, config: config);

@@ -399,7 +399,137 @@ void main() {
         'req': {'pan': '4111'},
       }).toString();
 
-      expect(paths, ['req', 'req.pan']);
+      // Первое наблюдение — КОРЕНЬ (пустой путь): альтернативный
+      // рендерер обязан предложить правилу и сам объект данных.
+      expect(paths, ['', 'req', 'req.pan']);
+    });
+
+    test('offers the root value to the rule', () {
+      // До фикса toString() входил сразу в обход секций, минуя корневое
+      // предложение, которое живёт в objectToString/objectToJson.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(LoggableMultiData({'s': 'topsecret'}).toString(), '');
+    });
+
+    test('renders a root replacement instead of the sections', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(LoggableMultiData({'s': 'topsecret'}).toString(), '"***"');
+    });
+
+    test('offers the root exactly once', () {
+      var roots = 0;
+      Loggable.sanitizer = (ctx) {
+        if (ctx.depth == 0) roots++;
+
+        return ctx.value;
+      };
+
+      LoggableMultiData({'s': 'topsecret'}).toString();
+
+      expect(roots, 1);
+    });
+  });
+
+  group('sanitizer review — a raw structural view keeps the parent path', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('a Loggable view nests under the property path', () {
+      // Сырой view (и LoggableView) рендерился без сегмента свойства:
+      // вложенный обход стартовал с пустого пути, а заодно вторично
+      // предлагал правилу собственный аргумент как корень.
+      final paths = <String>[];
+      Loggable.sanitizer = (ctx) {
+        paths.add(ctx.path);
+
+        return ctx.value;
+      };
+
+      final data = Loggable.mapBuilder()
+        ..prop('user', 0, view: Loggable.from({'password': 'hunter2'}));
+
+      Loggable.objectToString(data);
+      expect(paths, ['', 'user', 'user.password']);
+
+      paths.clear();
+      Loggable.objectToJson(data);
+      expect(paths, ['', 'user', 'user.password']);
+    });
+
+    test('a rule on the full path redacts the nested value', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.path == 'user.password' ? '***' : ctx.value;
+
+      final data = Loggable.mapBuilder()
+        ..prop('user', 0, view: Loggable.from({'password': 'hunter2'}));
+
+      expect(Loggable.objectToString(data), '{user: {password: "***"}}');
+      expect(
+        Loggable.objectToJson(data).toString(),
+        isNot(contains('hunter2')),
+      );
+    });
+
+    test('a rule on the short path leaves a sibling top-level prop alone', () {
+      // Пере-редакция: укороченный путь совпадал с настоящим
+      // верхнеуровневым свойством и вычищал заодно и его.
+      Loggable.sanitizer = (ctx) => ctx.path == 'pan' ? '***' : ctx.value;
+
+      final data = Loggable.mapBuilder()
+        ..prop('card', 'unused', view: Loggable.from({'pan': '4111'}))
+        ..prop('pan', '5555');
+
+      expect(
+        Loggable.objectToString(data),
+        '{card: {pan: "4111"}, pan: "***"}',
+      );
+    });
+
+    test('the value under a raw view is offered exactly once', () {
+      var calls = 0;
+      Loggable.sanitizer = (ctx) {
+        calls++;
+
+        return ctx.value;
+      };
+
+      final data = Loggable.mapBuilder()
+        ..prop('user', 0, view: Loggable.from({'password': 'hunter2'}));
+
+      // Корень, свойство `user`, вложенный `password` — и ничего сверх.
+      Loggable.objectToString(data);
+      expect(calls, 3);
+
+      calls = 0;
+      Loggable.objectToJson(data);
+      expect(calls, 3);
+    });
+
+    test('a LoggableView.convert converter renders under the property', () {
+      final paths = <String>[];
+      Loggable.sanitizer = (ctx) {
+        paths.add(ctx.path);
+
+        return ctx.value;
+      };
+
+      final data = Loggable.mapBuilder()
+        ..prop(
+          'user',
+          {'password': 'hunter2'},
+          view: LoggableView.convert<Map<String, Object?>>(
+            (value, theme, depth) =>
+                Loggable.objectToString(value, theme: theme, depth: depth),
+          ),
+        );
+
+      Loggable.objectToString(data);
+      expect(paths, ['', 'user', 'user.password']);
+
+      paths.clear();
+      Loggable.objectToJson(data);
+      expect(paths, ['', 'user', 'user.password']);
     });
   });
 }

@@ -106,11 +106,128 @@ void main() {
           }),
         );
 
-        expect(paths, ['user', 'user.name', 'user.password']);
+        // The first observation is the ROOT (empty path): the printer
+        // must offer the whole data object before walking its sections.
+        expect(paths, ['', 'user', 'user.name', 'user.password']);
         expect(out, isNot(contains('hunter2')));
         expect(out, contains('***'));
       },
     );
+
+    test(
+      'a multi-data root dropped by the rule leaves no data block on the '
+      'console',
+      () {
+        // Both the printer and LoggableMultiData.toString entered the
+        // section walk directly, so the ROOT value was never offered: a
+        // rule honoured in the JSONL file was ignored on the console —
+        // the default publisher — and the secret was printed.
+        Loggable.sanitizer =
+            (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+        expect(_printMultiData(LoggableMultiData({'s': 'topsecret'})), 'login');
+      },
+    );
+
+    test('a multi-data root replaced by the rule is printed instead', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(
+        _printMultiData(LoggableMultiData({'s': 'topsecret'})),
+        'login: "***"',
+      );
+    });
+
+    test('every renderer offers the multi-data root exactly once', () {
+      var roots = 0;
+      Loggable.sanitizer = (ctx) {
+        if (ctx.depth == 0) roots++;
+
+        return ctx.value;
+      };
+
+      final data = LoggableMultiData({'s': 'topsecret'});
+
+      Loggable.objectToString(data);
+      expect(roots, 1, reason: 'objectToString');
+
+      roots = 0;
+      Loggable.objectToJson(data);
+      expect(roots, 1, reason: 'objectToJson');
+
+      roots = 0;
+      data.toString();
+      expect(roots, 1, reason: 'LoggableMultiData.toString');
+
+      roots = 0;
+      _printMultiData(data);
+      expect(roots, 1, reason: 'ConsoleLogPrinter');
+    });
+
+    test('console, JSON and text renderers observe the same positions', () {
+      // The invariant behind both leaks: whichever renderer runs, every
+      // rendered value is offered once, at the same path and the same
+      // depth. A renderer that grew its own walk again shows up here as
+      // a missing root, a truncated path or a repeated position.
+      final seen = <String>[];
+      Loggable.sanitizer = (ctx) {
+        seen.add('${ctx.path}@${ctx.depth}');
+
+        return ctx.value;
+      };
+
+      final data = LoggableMultiData({
+        'req': {'pan': '4111'},
+        'res': Loggable.mapBuilder()
+          ..prop('card', 'unused', view: Loggable.from({'cvv': '123'})),
+      });
+
+      Loggable.objectToString(data);
+      final text = [...seen];
+      seen.clear();
+
+      Loggable.objectToJson(data);
+      final json = [...seen];
+      seen.clear();
+
+      _printMultiData(data);
+      final console = [...seen];
+
+      expect(text, [
+        '@0',
+        'req@1',
+        'req.pan@2',
+        'res@1',
+        'res.card@2',
+        'res.card.cvv@3',
+      ]);
+      expect(json, text);
+      expect(console, text);
+    });
+
+    test('a plain data root dropped by the rule leaves no data block', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      final lines = <String>[];
+      Logger('app')
+        ..level = LogLevels.all
+        ..publisher = ConsoleLogPrinter(
+          theme: LogMainTheme.noColors,
+          rows: const [
+            LogRow.singleLine(children: [LogMessage()]),
+          ],
+          output: lines.add,
+        )
+        ..i('login', data: {'password': 'hunter2'});
+
+      expect(lines.join('\n').trimRight(), 'login');
+    });
+
+    test('an empty multi-data still prints its colon without a sanitizer', () {
+      // Zero behaviour change while `Loggable.sanitizer` is null: an
+      // empty rendering is only read as "dropped" when a rule is armed.
+      expect(_printMultiData(LoggableMultiData({})), 'login:');
+    });
 
     test('without a sanitizer multi-data printing is unchanged', () {
       expect(

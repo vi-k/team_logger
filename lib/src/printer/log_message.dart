@@ -43,6 +43,15 @@ final class LogMessage implements LogBlock {
       final data = log.data;
       if (data is! LoggableMultiData) {
         dataStr = Loggable.objectToString(log.data, theme: theme);
+      } else if (Loggable.sanitizeRootToString(data, theme: theme)
+          case final rendered?) {
+        // The rule was offered the whole data object and dropped or
+        // replaced it. Both the sanitize and the rendering of the result
+        // live in that one helper — the same one Loggable.objectToString
+        // uses — because this branch never reaches the walker: it goes
+        // straight into the section loop below, and a root offered
+        // nowhere is a root that leaks.
+        dataStr = rendered;
       } else {
         dataOnNewLine = !row.singleLine &&
             (data.data.isEmpty || data.data.keys.first.isNotEmpty);
@@ -71,7 +80,12 @@ final class LogMessage implements LogBlock {
             parts.join(row.singleLine ? theme.data.punctuation(', ') : '\n');
       }
 
-      if (messageStr.isNotEmpty) {
+      // An empty rendering with a sanitizer armed means the rule dropped
+      // the value: a colon with nothing after it would be noise. Without
+      // a sanitizer nothing can be dropped, so the block is printed
+      // exactly as before (an empty data object still gets its colon).
+      if (messageStr.isNotEmpty &&
+          (dataStr.isNotEmpty || Loggable.sanitizer == null)) {
         dataStr =
             dataOnNewLine ? '\n$dataStr' : '${theme.styledColon} $dataStr';
       }

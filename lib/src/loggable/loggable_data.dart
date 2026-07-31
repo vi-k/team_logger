@@ -411,8 +411,9 @@ final class Prop<T extends Object?> {
 
   /// Значение, которое реально рендерится: `view`, если он задан, иначе
   /// `value`. Санитайзер видит именно его — иначе секрет во `view` прошёл
-  /// бы мимо: ни одна реализация [LoggableView] не проходит через
-  /// [Loggable.objectToString]/[Loggable.objectToJson].
+  /// бы мимо: сам объект `view` через
+  /// [Loggable.objectToString]/[Loggable.objectToJson] не проходит, его
+  /// рисует собственный конвертер.
   Object? get _renderedValue => view is LoggableNoView ? value : view;
 
   /// Результат санитайза свойства: исходное [_renderedValue], замена или
@@ -459,25 +460,33 @@ final class Prop<T extends Object?> {
 
     // Как и раньше: units применяются к значению ровно один раз —
     // [Loggable.objectToJson] делает это сам, [LoggableView] сам управляет
-    // своими units, и только «сырой» view оборачивается здесь. Рекурсивные
-    // вызовы объекта-значения держат сегмент свойства в стеке — иначе
-    // вложенный обход бил бы по корневому пути санитайзера, а не по
-    // позиции свойства.
+    // своими units, и только «сырой» view оборачивается здесь.
+    //
+    // Сегмент свойства держится в стеке во ВСЕХ ветках, включая обе
+    // «видовые»: большинство view в обходчики не заходят, но `Loggable`
+    // в качестве view и конвертер [LoggableView.convert], зовущий
+    // [Loggable.objectToJson], — заходят. Без сегмента такой вложенный
+    // обход стартовал бы с пустого пути: путь свойства терялся бы, а сам
+    // аргумент предлагался бы правилу второй раз — уже как корень.
     final propJson = switch (view) {
       LoggableNoView() => Loggable._withSegment(
           name,
           () => Loggable.objectToJson(value, config: effectiveConfig),
         ),
-      final LoggableView view => view.toJson(value),
+      final LoggableView view =>
+        Loggable._withSegment(name, () => view.toJson(value)),
       bool() || num() => Loggable._withSegment(
           name,
           () => Loggable.objectToJson(view, config: effectiveConfig),
         ),
-      final view => {
-          Loggable._viewKey: view.toString(),
-          if (effectiveConfig.units case final units?)
-            Loggable._unitsKey: units,
-        },
+      final view => Loggable._withSegment<Object?>(
+          name,
+          () => {
+            Loggable._viewKey: view.toString(),
+            if (effectiveConfig.units case final units?)
+              Loggable._unitsKey: units,
+          },
+        ),
     };
 
     return MapEntry(showName ? name : '@$name', propJson);
@@ -515,17 +524,26 @@ final class Prop<T extends Object?> {
       return '$prefix${theme.formatValue(replacement)}';
     }
 
+    // Сегмент свойства держится в стеке во ВСЕХ ветках: большинство view
+    // в обходчики не заходят, но `Loggable` в качестве view (его
+    // `toString` зовёт [Loggable.objectToString]) и конвертер
+    // [LoggableView.convert], делающий то же самое, — заходят. Без
+    // сегмента такой вложенный обход стартовал бы с пустого пути: путь
+    // свойства терялся бы, а сам аргумент предлагался бы правилу второй
+    // раз — уже как корень.
     final effectiveView = switch (view) {
       LoggableNoView() => null,
-      final LoggableView view =>
-        view.toLogString(value, theme: theme, depth: depth),
-      final view =>
-        '$view${Loggable.unitsToString(effectiveConfig.units, theme)}',
+      final LoggableView view => Loggable._withSegment(
+          name,
+          () => view.toLogString(value, theme: theme, depth: depth),
+        ),
+      final view => Loggable._withSegment(
+          name,
+          () => '$view${Loggable.unitsToString(effectiveConfig.units, theme)}',
+        ),
     };
     final styledValue = theme.formatValue(
       effectiveView ??
-          // Держим сегмент свойства в стеке для санитайзера — иначе
-          // вложенный обход значения бил бы по корневому пути.
           Loggable._withSegment(
             name,
             () => Loggable.objectToString(
