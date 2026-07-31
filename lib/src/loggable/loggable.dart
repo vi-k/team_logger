@@ -292,6 +292,19 @@ abstract mixin class Loggable {
     int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
+    // LoggableWrapper — прозрачная упаковка параметров рендера, а не
+    // самостоятельное значение. Разворачиваем её до проверки корня: иначе
+    // санитайзер увидел бы обёртку и её содержимое как два разных корня
+    // (сам объект-обёртку, а затем ещё раз данные внутри неё).
+    if (obj is LoggableWrapper) {
+      return objectToString(
+        obj.data,
+        theme: theme,
+        depth: depth,
+        config: obj.config.merge(config),
+      );
+    }
+
     if (_sanitizing && _sanitizeSegments.isEmpty) {
       final sanitized = _sanitizeRoot(obj);
       if (identical(sanitized, Sanitize.drop)) return '';
@@ -382,12 +395,8 @@ abstract mixin class Loggable {
           depth: depth,
           config: config,
         ),
-      LoggableWrapper() => Loggable.objectToString(
-          obj.data,
-          theme: theme,
-          depth: depth,
-          config: obj.config.merge(config),
-        ),
+      // LoggableWrapper разворачивается прозрачно в [objectToString] до
+      // попадания сюда (см. комментарий там) — эта ветка недостижима.
       LoggableMultiData() => obj.data.entries
           .map((e) {
             final sanitized = _sanitizeChild(e.key, e.key, e.value);
@@ -419,6 +428,15 @@ abstract mixin class Loggable {
     Object? obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
+    // См. комментарий в [objectToString]: обёртка разворачивается до
+    // проверки корня, чтобы санитайзер не увидел два корня вместо одного.
+    if (obj is LoggableWrapper) {
+      return objectToJson(
+        obj.data,
+        config: obj.config.mergeWithJsonConfig(config),
+      );
+    }
+
     if (_sanitizing && _sanitizeSegments.isEmpty) {
       final sanitized = _sanitizeRoot(obj);
       if (identical(sanitized, Sanitize.drop)) return null;
@@ -471,10 +489,8 @@ abstract mixin class Loggable {
       Map<Object?, Object?>() => _mapToJson(obj, config: config),
       Loggable() => obj.logClassInfo().toJson(config: config),
       LoggableData() => obj.toJson(config: config),
-      LoggableWrapper() => Loggable.objectToJson(
-          obj.data,
-          config: obj.config.mergeWithJsonConfig(config),
-        ),
+      // LoggableWrapper разворачивается прозрачно в [objectToJson] до
+      // попадания сюда (см. комментарий там) — эта ветка недостижима.
       LoggableMultiData() => _multiDataToJson(obj, config: config),
       _ => {_viewKey: obj.toString()}
     };

@@ -320,4 +320,171 @@ void main() {
       expect(Loggable.objectToJson(list).toString(), contains('cycle'));
     });
   });
+
+  group('Loggable.sanitizer — props', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('sanitizes props of a Loggable object in both outputs', () {
+      Loggable.sanitizer = (ctx) => ctx.name == 'password' ? '***' : ctx.value;
+
+      final user = _User('ann', 'hunter2');
+      expect(Loggable.objectToString(user), contains('"***"'));
+      expect(Loggable.objectToString(user), isNot(contains('hunter2')));
+      expect(
+        Loggable.objectToJson(user).toString(),
+        isNot(contains('hunter2')),
+      );
+    });
+
+    test('drop removes the prop entirely', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      final out = Loggable.objectToString(_User('ann', 'hunter2'));
+      expect(out, contains('ann'));
+      expect(out, isNot(contains('password')));
+    });
+
+    test('the sanitizer sees the view, not the raw value', () {
+      final seen = <Object?>[];
+      Loggable.sanitizer = (ctx) {
+        if (ctx.depth > 0) seen.add(ctx.value);
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString(
+        Loggable.builder(const Object(), name: 'D')
+          ..prop('card', 'raw-pan', view: 'view-pan'),
+      );
+
+      expect(seen, ['view-pan']);
+    });
+
+    test('replacing a prop with a view leaks neither value nor view', () {
+      Loggable.sanitizer = (ctx) => ctx.name == 'card' ? '***' : ctx.value;
+
+      final data = Loggable.builder(const Object(), name: 'D')
+        ..prop('card', 'raw-pan', view: 'view-pan');
+
+      final out = Loggable.objectToString(data);
+      expect(out, contains('***'));
+      expect(out, isNot(contains('raw-pan')));
+      expect(out, isNot(contains('view-pan')));
+      expect(
+        Loggable.objectToJson(data).toString(),
+        isNot(contains('raw-pan')),
+      );
+    });
+
+    test('computed props are visible through their view', () {
+      Loggable.sanitizer = (ctx) => ctx.name == 'total' ? '***' : ctx.value;
+
+      final out = Loggable.objectToString(
+        Loggable.builder(const Object(), name: 'D')
+          ..computed('total', 'secret-total'),
+      );
+
+      expect(out, contains('***'));
+      expect(out, isNot(contains('secret-total')));
+    });
+
+    test('LoggableView is replaced as a whole', () {
+      Loggable.sanitizer = (ctx) => ctx.name == 'x' ? '***' : ctx.value;
+
+      final out = Loggable.objectToString(
+        Loggable.builder(const Object(), name: 'D')
+          ..prop('x', 1, view: const LoggableView(42, units: 'kg')),
+      );
+
+      expect(out, contains('***'));
+      expect(out, isNot(contains('42')));
+    });
+
+    test('mapBuilder props are sanitized too', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      final out = Loggable.objectToString(
+        Loggable.mapBuilder()
+          ..prop('a', 1, units: 'kg')
+          ..prop('password', 'hunter2'),
+      );
+
+      expect(out, '{a: 1kg}');
+    });
+
+    test('LoggableWrapper is transparent', () {
+      final seen = <Object?>[];
+      Loggable.sanitizer = (ctx) {
+        seen.add(ctx.value);
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString(
+        Loggable.from('hunter2', config: const LoggableConfig()),
+      );
+
+      expect(seen, ['hunter2']);
+    });
+
+    test(
+      'sanitizes a single prop exactly once — the root path does not '
+      're-fire on it',
+      () {
+        // Свойство должно попадать под санитайзер ровно один раз — своим
+        // собственным вызовом (depth > 0). До фикса значение свойства
+        // рендерилось через objectToString с пустым стеком сегментов, что
+        // било по корневому пути (depth 0) вместо/вместе с позиционным.
+        // Правило вида `(ctx) => ctx.name == 'p' ? Sanitize.drop : ctx.value`
+        // ломается при повторном применении к собственному результату —
+        // поэтому здесь важен именно счётчик вызовов, а не факт замены.
+        var propCalls = 0;
+        Loggable.sanitizer = (ctx) {
+          if (ctx.depth > 0) propCalls++;
+
+          return ctx.value;
+        };
+
+        Loggable.objectToString(
+          Loggable.builder(const Object(), name: 'D')..prop('a', 1),
+        );
+
+        expect(propCalls, 1);
+      },
+    );
+
+    test(
+      'sanitizes a single prop exactly once in JSON output too',
+      () {
+        var propCalls = 0;
+        Loggable.sanitizer = (ctx) {
+          if (ctx.depth > 0) propCalls++;
+
+          return ctx.value;
+        };
+
+        Loggable.objectToJson(
+          Loggable.builder(const Object(), name: 'D')..prop('a', 1),
+        );
+
+        expect(propCalls, 1);
+      },
+    );
+  });
+}
+
+final class _User with Loggable {
+  final String name;
+  final String password;
+
+  _User(this.name, this.password);
+
+  @override
+  void collectLoggableData(LoggableData data) {
+    data
+      ..prop('name', name)
+      ..prop('password', password);
+  }
 }

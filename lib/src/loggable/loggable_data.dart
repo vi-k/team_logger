@@ -283,20 +283,29 @@ final class LoggableData {
     // и попадают в ":u" на его уровне.
     final propConfig = config.copyWith(units: null);
 
-    MapEntry<String, Object?> prop2entry(Prop<Object?> p) =>
-        p.toMapEntry(config: propConfig);
-
-    Object? prop2json(Prop<Object?> p) {
-      final entry = prop2entry(p);
-      return p.showName ? {entry.key: entry.value} : entry.value;
-    }
-
     final className = _type.typeName ?? _type.value.toString();
     final propsList = this.props.where((p) => !p.hidden).toList();
     final hasNonamed = propsList.any((p) => !p.showName);
+
+    // Санитайз каждого свойства ровно один раз: drop исключает его из
+    // props целиком (запись отсутствует / элемент списка пропущен).
+    final kept = <(Prop<Object?>, Object?)>[];
+    for (final p in propsList) {
+      final sanitized = p._sanitized();
+      if (!Loggable._isDropped(sanitized)) kept.add((p, sanitized));
+    }
+
+    MapEntry<String, Object?> entryOf((Prop<Object?>, Object?) e) =>
+        e.$1.toMapEntry(config: propConfig, sanitized: e.$2);
+
+    Object? jsonOf((Prop<Object?>, Object?) e) {
+      final entry = entryOf(e);
+      return e.$1.showName ? {entry.key: entry.value} : entry.value;
+    }
+
     final props = hasNonamed
-        ? propsList.map(prop2json).toList()
-        : Map.fromEntries(propsList.map(prop2entry));
+        ? kept.map(jsonOf).toList()
+        : Map.fromEntries(kept.map(entryOf));
 
     return {
       if (_type.showName) Loggable._classKey: className,
@@ -319,11 +328,19 @@ final class LoggableData {
       return theme.data.nameStyle(valueFormat?.call(name) ?? name);
     }
 
-    String prop2str(Prop<Object?> p) => p.toLogString(
-          theme: theme,
-          depth: depth,
-          config: config,
-        );
+    // Санитайз каждого свойства ровно один раз; drop убирает свойство из
+    // вывода целиком (без повисшего разделителя).
+    String? prop2str(Prop<Object?> p) {
+      final sanitized = p._sanitized();
+      if (Loggable._isDropped(sanitized)) return null;
+
+      return p.toLogString(
+        theme: theme,
+        depth: depth,
+        config: config,
+        sanitized: sanitized,
+      );
+    }
 
     final buf = StringBuffer();
     if (_type.showName) buf.write(name2str());
@@ -332,6 +349,7 @@ final class LoggableData {
       props
           .where((p) => !p.hidden)
           .map(prop2str)
+          .whereType<String>()
           .join(depthTheme.punctuation(', ')),
     );
     if (_type.showBrackets) buf.write(depthTheme.brackets(')'));
@@ -353,6 +371,12 @@ final class LoggableNoView {
 final class Prop<T extends Object?> {
   static const noView = LoggableNoView._();
 
+  /// Сентинел «санитайз ещё не считали» для параметра `sanitized` в
+  /// [toLogString]/[toMapEntry]. Отличаем «вызывающий не передал результат»
+  /// от «санитайзер заменил значение на null» — `null` сам по себе валидная
+  /// замена и не должен читаться как «не считали».
+  static const Object _notSanitized = Object();
+
   final String name;
   final T value;
   final Object? view;
@@ -369,18 +393,53 @@ final class Prop<T extends Object?> {
     this.config = const LoggableConfig(),
   });
 
+  /// Значение, которое реально рендерится: `view`, если он задан, иначе
+  /// `value`. Санитайзер видит именно его — иначе секрет во `view` прошёл
+  /// бы мимо: ни одна реализация [LoggableView] не проходит через
+  /// [Loggable.objectToString]/[Loggable.objectToJson].
+  Object? get _renderedValue => view is LoggableNoView ? value : view;
+
+  /// Результат санитайза свойства: исходное [_renderedValue], замена или
+  /// [Sanitize.drop]. Вызывать ровно один раз на свойство — результат
+  /// передаётся в [toLogString]/[toMapEntry] параметром `sanitized`,
+  /// иначе правило сработает на одно и то же свойство дважды.
+  Object? _sanitized() => Loggable._sanitizeChild(name, name, _renderedValue);
+
   MapEntry<String, Object?> toMapEntry({
     LoggableJsonConfig config = const LoggableJsonConfig(),
+    Object? sanitized = _notSanitized,
   }) {
     final effectiveConfig = this.config.mergeWithJsonConfig(config);
 
-    // Как и в [toLogString]: units применяются к значению ровно один раз —
+    // Замена рендерится как обычное значение под сегментом свойства: units
+    // и LoggableView рассчитаны на оригинал и к подставленному значению не
+    // применяются — иначе часть оригинала просочилась бы через них.
+    if (!identical(sanitized, _notSanitized) &&
+        !identical(sanitized, _renderedValue)) {
+      final propJson = Loggable._withSegment(
+        name,
+        () => Loggable.objectToJson(sanitized, config: effectiveConfig),
+      );
+
+      return MapEntry(showName ? name : '@$name', propJson);
+    }
+
+    // Как и раньше: units применяются к значению ровно один раз —
     // [Loggable.objectToJson] делает это сам, [LoggableView] сам управляет
-    // своими units, и только «сырой» view оборачивается здесь.
+    // своими units, и только «сырой» view оборачивается здесь. Рекурсивные
+    // вызовы объекта-значения держат сегмент свойства в стеке — иначе
+    // вложенный обход бил бы по корневому пути санитайзера, а не по
+    // позиции свойства.
     final propJson = switch (view) {
-      LoggableNoView() => Loggable.objectToJson(value, config: effectiveConfig),
+      LoggableNoView() => Loggable._withSegment(
+          name,
+          () => Loggable.objectToJson(value, config: effectiveConfig),
+        ),
       final LoggableView view => view.toJson(value),
-      bool() || num() => Loggable.objectToJson(view, config: effectiveConfig),
+      bool() || num() => Loggable._withSegment(
+          name,
+          () => Loggable.objectToJson(view, config: effectiveConfig),
+        ),
       final view => {
           Loggable._viewKey: view.toString(),
           if (effectiveConfig.units case final units?)
@@ -395,10 +454,33 @@ final class Prop<T extends Object?> {
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
     LoggableConfig config = const LoggableConfig(),
+    Object? sanitized = _notSanitized,
   }) {
     String name2str() => theme.data.keyStyle(theme.formatValue(name));
 
     final effectiveConfig = this.config.merge(config);
+    final depthTheme = theme.depthTheme(depth);
+    final prefix =
+        showName ? '${name2str()}${depthTheme.punctuation(':')} ' : '';
+
+    // Замена рендерится как обычное значение под сегментом свойства: units
+    // и LoggableView рассчитаны на оригинал и к подставленному значению не
+    // применяются.
+    if (!identical(sanitized, _notSanitized) &&
+        !identical(sanitized, _renderedValue)) {
+      final replacement = Loggable._withSegment(
+        name,
+        () => Loggable.objectToString(
+          sanitized,
+          theme: theme,
+          depth: depth + 1,
+          config: effectiveConfig,
+        ),
+      );
+
+      return '$prefix${theme.formatValue(replacement)}';
+    }
+
     final effectiveView = switch (view) {
       LoggableNoView() => null,
       final LoggableView view =>
@@ -408,16 +490,18 @@ final class Prop<T extends Object?> {
     };
     final styledValue = theme.formatValue(
       effectiveView ??
-          Loggable.objectToString(
-            value,
-            theme: theme,
-            depth: depth + 1,
-            config: effectiveConfig,
+          // Держим сегмент свойства в стеке для санитайзера — иначе
+          // вложенный обход значения бил бы по корневому пути.
+          Loggable._withSegment(
+            name,
+            () => Loggable.objectToString(
+              value,
+              theme: theme,
+              depth: depth + 1,
+              config: effectiveConfig,
+            ),
           ),
     );
-    final depthTheme = theme.depthTheme(depth);
-    final prefix =
-        showName ? '${name2str()}${depthTheme.punctuation(':')} ' : '';
 
     return '$prefix$styledValue';
   }
@@ -506,11 +590,19 @@ final class _LoggableMapBuilder extends LoggableData {
     // и попадают в ":u" на его уровне.
     final propConfig = effectiveConfig.copyWith(units: null);
 
-    MapEntry<String, Object?> prop2entry(Prop<Object?> p) =>
-        p.toMapEntry(config: propConfig);
+    // Санитайз каждого свойства ровно один раз; drop убирает запись из
+    // Map целиком.
+    MapEntry<String, Object?>? prop2entry(Prop<Object?> p) {
+      final sanitized = p._sanitized();
+      if (Loggable._isDropped(sanitized)) return null;
+
+      return p.toMapEntry(config: propConfig, sanitized: sanitized);
+    }
 
     final propsList = this.props.where((p) => !p.hidden).toList();
-    final props = Map.fromEntries(propsList.map(prop2entry));
+    final props = Map.fromEntries(
+      propsList.map(prop2entry).whereType<MapEntry<String, Object?>>(),
+    );
 
     return {
       ...props,
@@ -528,15 +620,27 @@ final class _LoggableMapBuilder extends LoggableData {
     final effectiveConfig = this.config.merge(config);
     final depthTheme = theme.depthTheme(depth);
 
-    String prop2str(Prop<Object?> p) => p.toLogString(
-          theme: theme,
-          depth: depth,
-          config: effectiveConfig,
-        );
+    // Санитайз каждого свойства ровно один раз; drop убирает свойство из
+    // вывода целиком.
+    String? prop2str(Prop<Object?> p) {
+      final sanitized = p._sanitized();
+      if (Loggable._isDropped(sanitized)) return null;
 
-    return '${depthTheme.brackets('{')}'
-        '${props.where((p) => !p.hidden).map(prop2str).join(depthTheme.punctuation(', '))}'
-        '${depthTheme.brackets('}')}';
+      return p.toLogString(
+        theme: theme,
+        depth: depth,
+        config: effectiveConfig,
+        sanitized: sanitized,
+      );
+    }
+
+    final body = props
+        .where((p) => !p.hidden)
+        .map(prop2str)
+        .whereType<String>()
+        .join(depthTheme.punctuation(', '));
+
+    return '${depthTheme.brackets('{')}$body${depthTheme.brackets('}')}';
   }
 }
 
