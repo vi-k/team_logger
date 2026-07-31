@@ -10,6 +10,7 @@ import 'loggable_json_config.dart';
 import 'loggable_multi_data.dart';
 
 part 'loggable_data.dart';
+part 'log_value_sanitizer.dart';
 
 /// A mixin describing how a class should look in logs.
 ///
@@ -38,6 +39,86 @@ abstract mixin class Loggable {
   static const _upKey = ':up';
 
   static final Map<Type, LoggableTypeConverter<Object?>> _converters = {};
+
+  /// Глобальный санитайзер выводимых значений.
+  ///
+  /// `null` (по умолчанию) — вывод без обработки и без накладных
+  /// расходов. Применяется в [objectToString] и [objectToJson], то есть
+  /// ко ВСЕМ выводам: publisher'ам, in-app просмотрщику логов, экспорту
+  /// сессий.
+  ///
+  /// Каждое значение обрабатывается ровно один раз, тем местом, которое
+  /// знает его позицию (свойство, ключ [Map], индекс элемента).
+  /// Правило получает [SanitizeContext] и возвращает исходное значение,
+  /// замену или [Sanitize.drop].
+  ///
+  /// ```dart
+  /// Loggable.sanitizer = (ctx) => switch (ctx.name) {
+  ///   'password' || 'token' => Sanitize.drop,
+  ///   _ => ctx.value,
+  /// };
+  /// ```
+  static LogValueSanitizer? sanitizer;
+
+  /// Сегменты пути к текущему значению: [String] — имя или ключ,
+  /// [int] — индекс. Статический стек, как и [_visiting], чтобы не
+  /// менять сигнатуры обходчиков.
+  static final List<Object> _sanitizeSegments = <Object>[];
+
+  static bool get _sanitizing => sanitizer != null;
+
+  /// Применяет санитайзер к ребёнку, зная его позицию.
+  ///
+  /// Возвращает исходное значение (не трогали), замену или
+  /// [Sanitize.drop]. Вызывать ровно один раз на значение: обходчики
+  /// для не-корневых значений санитайзер не применяют.
+  ///
+  /// Пока не вызывается ниоткуда: обходчики Map/коллекций/свойств
+  /// подключат его в следующих задачах (см. план).
+  // ignore: unused_element
+  static Object? _sanitizeChild(Object segment, String? name, Object? value) {
+    final sanitizer = Loggable.sanitizer;
+    if (sanitizer == null) return value;
+
+    _sanitizeSegments.add(segment);
+    try {
+      return sanitizer(
+        SanitizeContext._(
+          name,
+          value,
+          _sanitizeSegments.length,
+          _sanitizeSegments,
+        ),
+      );
+    } finally {
+      _sanitizeSegments.removeLast();
+    }
+  }
+
+  /// Рендерит ребёнка, держа его сегмент в стеке пути, — чтобы у
+  /// вложенных значений путь был полным.
+  static T _withSegment<T>(Object segment, T Function() render) {
+    if (!_sanitizing) return render();
+
+    _sanitizeSegments.add(segment);
+    try {
+      return render();
+    } finally {
+      _sanitizeSegments.removeLast();
+    }
+  }
+
+  /// Санитайз корня: у корня нет ни имени, ни сегмента пути.
+  ///
+  /// Возвращает [Sanitize.drop], замену или исходный объект. Повторного
+  /// применения не происходит: рекурсивный вызов с заменой выполняется
+  /// внутри [_withSegment], поэтому стек уже не пуст.
+  static Object? _sanitizeRoot(Object? obj) {
+    final sanitizer = Loggable.sanitizer;
+    if (sanitizer == null) return obj;
+
+    return sanitizer(SanitizeContext._(null, obj, 0, _sanitizeSegments));
+  }
 
   /// Метод должен заполнить [data] описанием исследуемого класса.
   void collectLoggableData(LoggableData data);
@@ -189,6 +270,24 @@ abstract mixin class Loggable {
     int depth = 0,
     LoggableConfig config = const LoggableConfig(),
   }) {
+    if (_sanitizing && _sanitizeSegments.isEmpty) {
+      final sanitized = _sanitizeRoot(obj);
+      if (identical(sanitized, Sanitize.drop)) return '';
+      if (!identical(sanitized, obj)) {
+        // Сегмент-заглушка держит стек непустым: к замене санитайзер
+        // повторно не применится.
+        return _withSegment(
+          '',
+          () => objectToString(
+            sanitized,
+            theme: theme,
+            depth: depth,
+            config: config,
+          ),
+        );
+      }
+    }
+
     if (obj != null && _canContainCycle(obj)) {
       final ancestorIndex = _visitingIndexOf(obj);
       if (ancestorIndex != -1) {
@@ -289,6 +388,19 @@ abstract mixin class Loggable {
     Object? obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
+    if (_sanitizing && _sanitizeSegments.isEmpty) {
+      final sanitized = _sanitizeRoot(obj);
+      if (identical(sanitized, Sanitize.drop)) return null;
+      if (!identical(sanitized, obj)) {
+        // Сегмент-заглушка держит стек непустым: к замене санитайзер
+        // повторно не применится.
+        return _withSegment(
+          '',
+          () => objectToJson(sanitized, config: config),
+        );
+      }
+    }
+
     if (obj != null && _canContainCycle(obj)) {
       final ancestorIndex = _visitingIndexOf(obj);
       if (ancestorIndex != -1) {
