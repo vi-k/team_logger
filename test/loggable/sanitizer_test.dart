@@ -184,4 +184,101 @@ void main() {
       },
     );
   });
+
+  group('Loggable.sanitizer — collections', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('elements are unnamed and indexed in the path', () {
+      final paths = <String>[];
+      Loggable.sanitizer = (ctx) {
+        paths.add('${ctx.path}|${ctx.name}');
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString({
+        'items': [
+          {'pan': '4111'},
+        ],
+      });
+
+      expect(paths, [
+        '|null',
+        'items|items',
+        'items[0]|null',
+        'items[0].pan|pan',
+      ]);
+    });
+
+    test('replaces an element value', () {
+      Loggable.sanitizer = (ctx) => ctx.value == 'secret' ? '***' : ctx.value;
+
+      expect(
+        Loggable.objectToString(['a', 'secret']),
+        contains('"***"'),
+      );
+      expect(
+        Loggable.objectToString(['a', 'secret']),
+        isNot(contains('secret')),
+      );
+    });
+
+    test('drop in an element position becomes a marker, length is kept', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.value == 'secret' ? Sanitize.drop : ctx.value;
+
+      final out = Loggable.objectToString(['a', 'secret', 'c']);
+      expect(out, contains('<dropped>'));
+      expect(out, isNot(contains('secret')));
+      expect(Loggable.objectToJson(['a', 'secret', 'c']), isNotNull);
+    });
+
+    test('json output sanitizes elements too', () {
+      Loggable.sanitizer = (ctx) => ctx.value == 'secret' ? '***' : ctx.value;
+
+      expect(
+        Loggable.objectToJson(['a', 'secret']).toString(),
+        isNot(contains('secret')),
+      );
+    });
+
+    test('collection limits still apply with a sanitizer', () {
+      var calls = 0;
+      Loggable.sanitizer = (ctx) {
+        calls++;
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString(
+        List<int>.generate(100, (i) => i),
+        config: const LoggableConfig(collectionMaxCount: 3),
+      );
+
+      // Санитайзер не вызывается для того, что лимит не вывел:
+      // корень + не больше выведенных элементов.
+      expect(calls, lessThan(10));
+    });
+
+    test('an infinite iterable still does not hang', () {
+      Loggable.sanitizer = (ctx) => ctx.value;
+
+      final out = Loggable.objectToString(
+        Iterable<int>.generate(1 << 30, (i) => i),
+        config: const LoggableConfig(collectionMaxCount: 3),
+      );
+
+      expect(out, isNotEmpty);
+    });
+
+    test('cycles still render as a cycle marker', () {
+      Loggable.sanitizer = (ctx) => ctx.value;
+
+      final list = <Object?>[];
+      list.add(list);
+
+      expect(Loggable.objectToString(list), isNotEmpty);
+      expect(Loggable.objectToJson(list).toString(), contains('cycle'));
+    });
+  });
 }

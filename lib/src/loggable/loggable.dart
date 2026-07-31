@@ -680,18 +680,30 @@ abstract mixin class Loggable {
     required int? maxLength,
     required bool showIndexes,
   }) {
-    String obj2str(Object? obj) => objectToString(
-          obj,
+    // Санитайз элемента коллекции: позиция — индекс в исходной
+    // коллекции (не порядковый номер среди выведенных — иначе после
+    // обрезки путь врал бы), имени нет. Sanitize.drop в этой позиции не
+    // убирает элемент (иначе разъехались бы длина и бюджет обрезки), а
+    // превращается в маркер '<dropped>'.
+    String obj2str(int index, Object? obj) {
+      final value = _sanitizeChild(index, null, obj);
+
+      return _withSegment(
+        index,
+        () => objectToString(
+          _isDropped(value) ? '<dropped>' : value,
           theme: theme,
           depth: depth + 1,
           config: config,
-        );
+        ),
+      );
+    }
 
     String index2str(int index) =>
         depthTheme.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
-        '${index2str(index)}${obj2str(obj)}';
+        '${index2str(index)}${obj2str(index, obj)}';
 
     bool hasSpaceFor(int len) => maxLength == null || len <= maxLength;
 
@@ -739,7 +751,7 @@ abstract mixin class Loggable {
 
     final first = showIndexes
         ? indexedObj2str(0, iterator.current)
-        : obj2str(iterator.current);
+        : obj2str(0, iterator.current);
     final firstSize = first.lengthWithoutEscapeCodes;
     // Если первый элемент не помещается в строку, выводим многоточие: (₌ₙ …)
     // Но делаем это только в случае, когда размер элемента больше многоточия,
@@ -757,7 +769,7 @@ abstract mixin class Loggable {
 
     final last = showIndexes
         ? indexedObj2str(count - 1, iterable.last)
-        : obj2str(iterable.last);
+        : obj2str(count - 1, iterable.last);
     final lastSize = last.lengthWithoutEscapeCodes;
 
     if (count == 2) {
@@ -829,7 +841,7 @@ abstract mixin class Loggable {
       iterator.moveNext();
       final item = showIndexes
           ? indexedObj2str(i, iterator.current)
-          : obj2str(iterator.current);
+          : obj2str(i, iterator.current);
       final itemSize = delimiterSize + item.lengthWithoutEscapeCodes;
 
       // Если новый элемент не вмещается, пытаемся вставить вместо него
@@ -885,23 +897,35 @@ abstract mixin class Loggable {
     required LoggableConfig config,
     required bool showIndexes,
   }) {
-    String obj2str(Object? obj) => objectToString(
-          obj,
+    // См. комментарий в [_addEfficientLengthIterableItemsToBuf]: индекс —
+    // позиция в исходной коллекции, drop = маркер, а не удаление.
+    String obj2str(int index, Object? obj) {
+      final value = _sanitizeChild(index, null, obj);
+
+      return _withSegment(
+        index,
+        () => objectToString(
+          _isDropped(value) ? '<dropped>' : value,
           theme: theme,
           depth: depth + 1,
           config: config,
-        );
+        ),
+      );
+    }
 
     String indexedObj2str(int index, Object? obj) =>
-        '${depthTheme.description(theme.formatIndex(index))}${obj2str(obj)}';
+        '${depthTheme.description(theme.formatIndex(index))}'
+        '${obj2str(index, obj)}';
 
     final delimiter = depthTheme.punctuation(', ');
     buf.write(
-      showIndexes
-          ? iterable.indexed
-              .map((item) => indexedObj2str(item.$1, item.$2))
-              .join(delimiter)
-          : iterable.map(obj2str).join(delimiter),
+      iterable.indexed
+          .map(
+            (item) => showIndexes
+                ? indexedObj2str(item.$1, item.$2)
+                : obj2str(item.$1, item.$2),
+          )
+          .join(delimiter),
     );
   }
 
@@ -946,10 +970,20 @@ abstract mixin class Loggable {
     // Не передаём units дочерним элементам.
     late final itemConfig = config.copyWith(units: null);
 
-    Object? obj2json(Object? obj) => objectToJson(
-          obj,
+    // Санитайз элемента: индекс — позиция в исходной коллекции.
+    // Sanitize.drop заменяется маркером, а не убирает элемент, — иначе
+    // разъедутся ':l' (длина) и фактическое число элементов в ':v'.
+    Object? obj2json(int index, Object? obj) {
+      final value = _sanitizeChild(index, null, obj);
+
+      return _withSegment(
+        index,
+        () => objectToJson(
+          _isDropped(value) ? '<dropped>' : value,
           config: itemConfig,
-        );
+        ),
+      );
+    }
 
     var maxCount = config.collectionMaxCount;
     assert(maxCount == null || maxCount >= 0);
@@ -958,7 +992,8 @@ abstract mixin class Loggable {
     }
 
     if (maxCount == null || iterable.length <= maxCount) {
-      final values = iterable.map(obj2json).toList();
+      final values =
+          iterable.indexed.map((item) => obj2json(item.$1, item.$2)).toList();
       return isList && config.units == null
           ? values
           : {
@@ -973,10 +1008,13 @@ abstract mixin class Loggable {
       _lengthKey: iterable.length,
       _valueKey: switch (maxCount) {
         0 => <Object>[],
-        1 => [obj2json(iterable.first)],
+        1 => [obj2json(0, iterable.first)],
         _ => [
-            ...iterable.take(maxCount - 1).map(obj2json),
-            obj2json(iterable.last),
+            ...iterable
+                .take(maxCount - 1)
+                .indexed
+                .map((item) => obj2json(item.$1, item.$2)),
+            obj2json(iterable.length - 1, iterable.last),
           ],
       },
       if (config.units case final units?) _unitsKey: units,
@@ -1046,18 +1084,27 @@ abstract mixin class Loggable {
     required int? maxLength,
     required bool showIndexes,
   }) {
-    String obj2str(Object? obj) => objectToString(
-          obj,
+    // См. комментарий в [_addEfficientLengthIterableItemsToBuf]: индекс —
+    // позиция в исходной коллекции, drop = маркер, а не удаление.
+    String obj2str(int index, Object? obj) {
+      final value = _sanitizeChild(index, null, obj);
+
+      return _withSegment(
+        index,
+        () => objectToString(
+          _isDropped(value) ? '<dropped>' : value,
           theme: theme,
           depth: depth + 1,
           config: config,
-        );
+        ),
+      );
+    }
 
     String index2str(int index) =>
         depthTheme.description(theme.formatIndex(index));
 
     String indexedObj2str(int index, Object? obj) =>
-        '${index2str(index)}${obj2str(obj)}';
+        '${index2str(index)}${obj2str(index, obj)}';
 
     bool hasSpaceFor(int len) => maxLength == null || len <= maxLength;
 
@@ -1114,7 +1161,7 @@ abstract mixin class Loggable {
         break;
       }
 
-      var item = showIndexes ? indexedObj2str(i, e) : obj2str(e);
+      var item = showIndexes ? indexedObj2str(i, e) : obj2str(i, e);
       var itemSize = item.lengthWithoutEscapeCodes;
       if (i != 0) {
         item = '$delimiter$item';
@@ -1185,10 +1232,20 @@ abstract mixin class Loggable {
     // Не передаём units дочерним элементам.
     late final itemConfig = config.copyWith(units: null);
 
-    Object? obj2json(Object? obj) => objectToJson(
-          obj,
+    // Санитайз элемента: индекс — позиция в [values]. Метод обрезает
+    // только хвост (не пропускает элементы из середины), поэтому она
+    // всегда совпадает с позицией в исходной коллекции.
+    Object? obj2json(int index, Object? obj) {
+      final value = _sanitizeChild(index, null, obj);
+
+      return _withSegment(
+        index,
+        () => objectToJson(
+          _isDropped(value) ? '<dropped>' : value,
           config: itemConfig,
-        );
+        ),
+      );
+    }
 
     var maxCount = config.collectionMaxCount;
     assert(maxCount == null || maxCount >= 0);
@@ -1218,7 +1275,8 @@ abstract mixin class Loggable {
 
     return {
       _kindKey: 'iterable',
-      _valueKey: values.map(obj2json).toList(),
+      _valueKey:
+          values.indexed.map((item) => obj2json(item.$1, item.$2)).toList(),
       if (trimmed ?? false) _trimKey: true,
       if (config.units case final units?) _unitsKey: units,
     };
