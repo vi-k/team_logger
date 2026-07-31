@@ -1541,9 +1541,27 @@ A few things worth knowing before writing a rule:
 - A `Map` key is not offered to the rule: the rule gets the entry's
   *value* and sees the key as `ctx.name`. A secret in the key itself
   (`{'ann@example.com': {...}}`) cannot be replaced — a name-based rule
-  can only drop the whole entry with `Sanitize.drop`. Values *inside* a
-  key object are still rendered, and so are still offered, under the
-  entry's own path.
+  can only drop the whole entry with `Sanitize.drop`.
+- Values *inside* a key object are offered only where the key's rendering
+  goes through the walkers: **always in the string output, but in JSON
+  only for `Loggable`/`LoggableWrapper` keys** — `objectToJson` renders
+  any other key via `key.toString()`, which never enters the walkers. So
+  a secret inside a plain container key is masked on the console and
+  **survives into `objectToJson`, and therefore into JSONL files**:
+
+  ```dart
+  Loggable.sanitizer = (ctx) => ctx.name == 'pw' ? '<masked>' : ctx.value;
+  log.i('m', data: <Object?, Object?>{{'pw': 'hunter2'}: 'primary'});
+  // console: {{pw: "<masked>"}: "primary"}
+  // JSONL:   "data":{"{pw: hunter2}":"primary"}   ← the secret is in the file
+  ```
+
+  The way to handle that is to drop the entry (`Sanitize.drop` on a rule
+  matching the key text), not to replace a value inside it. And where a
+  key's contents *are* offered, they carry the **container's** path, not
+  the entry's: in `{'acc': {Account('DE89'): 'x'}}` the key's property
+  arrives as `acc.iban`, while the entry itself is
+  `acc.Account(iban: "DE89")`.
 - In a collection-element position, `Sanitize.drop` renders as
   `'<dropped>'` rather than removing the element, so the printed
   collection length stays honest. A `Prop` rendered on its own (the

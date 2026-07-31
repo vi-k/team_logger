@@ -6,7 +6,10 @@ import 'package:test/test.dart';
 ///
 /// Каждая группа пинит одну находку: двойной рендер ключа [Map] (B1),
 /// его безусловность (B2), санитайз отсечённого лимитом элемента (B4),
-/// поведение [Prop] при `Sanitize.drop` (B9.2).
+/// поведение [Prop] при `Sanitize.drop` (B9.2). Отдельная группа пинит
+/// то, что README §10 и dartdoc `Loggable.sanitizer` обещают про
+/// содержимое объекта-ключа: где оно предлагается правилу, под каким
+/// путём и где НЕ предлагается (утечка в JSON).
 void main() {
   group('cross-review — a map key is rendered exactly once', () {
     tearDown(() => Loggable.sanitizer = null);
@@ -109,6 +112,72 @@ void main() {
 
       expect(out.ansiHasEscapeCodes, isTrue);
       expect(names.last, '_Account(iban: "DE89")');
+    });
+  });
+
+  group('cross-review — what a key object exposes to the rule', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('a secret inside a non-Loggable key survives into JSON', () {
+      // Документированное поведение, не баг «на будущее»: строковый путь
+      // рисует любой ключ обходчиком, а JSON — через `key.toString()`,
+      // поэтому внутрь обычного контейнера-ключа правило в JSON не
+      // заходит. Если этот вывод когда-нибудь закроют, тест упадёт — и
+      // вместе с ним придётся править README §10 и dartdoc [sanitizer].
+      Loggable.sanitizer = (ctx) => ctx.name == 'pw' ? '<masked>' : ctx.value;
+
+      final map = <Object?, Object?>{
+        {'pw': 'hunter2'}: 'primary',
+      };
+
+      expect(Loggable.objectToString(map), '{{pw: "<masked>"}: "primary"}');
+      expect(Loggable.objectToJson(map), {'{pw: hunter2}': 'primary'});
+    });
+
+    test('a Loggable key is offered in both outputs', () {
+      // Обратная сторона той же асимметрии: `toString` [Loggable]-ключа
+      // заходит в обходчики, поэтому в JSON он всё-таки санитайзится.
+      Loggable.sanitizer = (ctx) => ctx.name == 'iban' ? '<masked>' : ctx.value;
+
+      final map = <Object?, Object?>{_Account('DE89'): 'primary'};
+
+      expect(
+        Loggable.objectToString(map),
+        '{_Account(iban: "<masked>"): "primary"}',
+      );
+      expect(
+        Loggable.objectToJson(map),
+        {'_Account(iban: "<masked>")': 'primary'},
+      );
+    });
+
+    test('the contents of a key carry the container path, not the entry', () {
+      final seen = <String>[];
+      Loggable.sanitizer = (ctx) {
+        seen.add(ctx.path);
+
+        return ctx.value;
+      };
+
+      Loggable.objectToString(<Object?, Object?>{
+        'acc': <Object?, Object?>{_Account('DE89'): 'x'},
+      });
+
+      // Свойство ключа — `acc.iban`, то есть путь КОНТЕЙНЕРА `acc`, а не
+      // путь записи `acc._Account(iban: "DE89")`.
+      expect(seen, ['', 'acc', 'acc.iban', 'acc._Account(iban: "DE89")']);
+    });
+
+    test('dropping the entry is what keeps a key secret out of JSON', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == '{pw: hunter2}' ? Sanitize.drop : ctx.value;
+
+      expect(
+        Loggable.objectToJson(<Object?, Object?>{
+          {'pw': 'hunter2'}: 'primary',
+        }),
+        <String, Object?>{},
+      );
     });
   });
 
