@@ -36,8 +36,20 @@ abstract base class LoggableJsonConfig with Loggable {
   }
 }
 
+/// Маркер «параметр не передан» для [_LoggableJsonConfig.copyWith].
+///
+/// Собственный приватный тип, а не `const Object()`: все `const Object()`
+/// в программе — один и тот же объект. Здесь маркер сравнивается только
+/// с параметрами по умолчанию внутри пакета, так что коллизия сейчас не
+/// достижима, — но именно такая коллизия уже была настоящим багом в
+/// другом месте (см. [Prop._notSanitized]), поэтому тот же приватный тип
+/// используется и тут, а не только там, где он уже эксплуатируем.
+final class _Undefined {
+  const _Undefined();
+}
+
 final class _LoggableJsonConfig extends LoggableJsonConfig {
-  static const _undefined = Object();
+  static const _undefined = _Undefined();
 
   const _LoggableJsonConfig({
     super.collectionMaxCount,
