@@ -142,10 +142,18 @@ final class LazyTags extends TypedLazy<Set<String>> {
         // Тип элементов проверяется поэлементно: Iterable<String>() матчит
         // только коллекции, типизированные строкой, и List<Object> со
         // строками ронял бы вызов логирования.
-        Iterable<Object?>() => {
-            for (final tag in resolved)
-              if (tag != null) tag.toString(),
-          },
+        //
+        // Теги вне области действия санитайзера (она — только значения
+        // внутри `data`), поэтому корневое предложение подавлено: это
+        // не рендер, а сам набор [Log.tags] — он кэшируется в логе,
+        // участвует в фильтре `activeTags` и именно его видят
+        // publisher'ы, ничего не рисующие.
+        Iterable<Object?>() => Loggable.renderOutsideSanitizerScope(
+            () => {
+              for (final tag in resolved)
+                if (tag != null) tag.toString(),
+            },
+          ),
         _ => throw Exception('Invalid tags: $resolved'),
       };
 }

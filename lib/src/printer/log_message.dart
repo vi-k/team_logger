@@ -110,8 +110,13 @@ final class LogMessage implements LogBlock {
     var errorStr = '';
     if (log.error case final error?) {
       final errorTheme = theme.main.error;
+      // The error is outside the sanitizer's documented scope (values
+      // inside `data` only): it is rendered with the root offer
+      // suppressed, so a `depth == 0` rule can neither erase it —
+      // leaving a dangling colon — nor rewrite it.
+      final errorText = Loggable.renderOutsideSanitizerScope(error.toString);
       errorStr = errorTheme.data
-          .normal(theme.formatMessage(theme.formatValue(error.toString())));
+          .normal(theme.formatMessage(theme.formatValue(errorText)));
       if (messageStr.isNotEmpty || log.hasData) {
         final colon = errorTheme.styledColon;
         final newLine =

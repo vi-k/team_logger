@@ -540,4 +540,154 @@ void main() {
       },
     );
   });
+
+  group('sanitizer scope — the error and the tags stay outside it', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('a Loggable error is rendered the same without a rule', () {
+      expect(
+        _printError({'k': 1}, _Boom()),
+        'login: {k: 1}: _Boom(code: "E42")',
+      );
+    });
+
+    test('a root drop rule does not erase a Loggable error', () {
+      // The rule owns the `data` block and nothing else: dropping the
+      // root removes the data, but an error erased along with it would
+      // leave a dangling colon and lose the only reason the log exists.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(
+        _printError({'k': 1}, _Boom()),
+        'login: _Boom(code: "E42")',
+      );
+    });
+
+    test('a root replacement rule leaves a Loggable error unchanged', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(
+        _printError({'k': 1}, _Boom()),
+        'login: "***": _Boom(code: "E42")',
+      );
+    });
+
+    test('a root rule does not reach an error without any data either', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(_printError(Log.noData, _Boom()), 'login: _Boom(code: "E42")');
+    });
+
+    test('the props of an error are still offered by their position', () {
+      // Suppressing the ROOT offer must not shift the depth or the path
+      // of anything below it: the guard segment is not part of either.
+      final paths = <String>[];
+      Loggable.sanitizer = (ctx) {
+        paths.add('${ctx.path}@${ctx.depth}');
+
+        return ctx.name == 'code' ? '***' : ctx.value;
+      };
+
+      expect(_printError(Log.noData, _Boom()), 'login: _Boom(code: "***")');
+      expect(paths, ['code@1']);
+    });
+
+    test('a root rule does not rewrite the tag set of a Log', () {
+      // `Log.tags` is not a rendering: it is cached on the log, feeds
+      // `activeTags` filtering and is what every non-rendering publisher
+      // sees.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(_logWithTags([_Tag('t')]).tags, {'_Tag(v: "t")'});
+    });
+
+    test('a root drop rule does not erase a Loggable tag', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(_logWithTags([_Tag('t')]).tags, {'_Tag(v: "t")'});
+    });
+
+    test('a root rule does not rewrite a Loggable tag on the console', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      final out = _printTags([_Tag('t')]);
+      expect(out, contains('#_Tag(v: "t")'));
+      expect(out, isNot(contains('***')));
+    });
+
+    test('tags are unchanged without a rule', () {
+      expect(_logWithTags([_Tag('t')]).tags, {'_Tag(v: "t")'});
+      expect(_printTags([_Tag('t')]), contains('#_Tag(v: "t")'));
+    });
+  });
+}
+
+/// Runs a log carrying an [error] through a real [ConsoleLogPrinter].
+String _printError(Object? data, Object error) {
+  final lines = <String>[];
+  Logger('app')
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.noColors,
+      rows: const [
+        LogRow.singleLine(children: [LogMessage()]),
+      ],
+      output: lines.add,
+    )
+    ..i('login', data: data, error: error);
+
+  return lines.join('\n').trimRight();
+}
+
+/// Runs a tagged log through a real [ConsoleLogPrinter] printing the tags.
+String _printTags(Object? tags) {
+  final lines = <String>[];
+  Logger('app')
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.noColors,
+      rows: const [
+        LogRow.singleLine(children: [LogMessage(), LogTags()]),
+      ],
+      output: lines.add,
+    )
+    ..i('login', tags: tags);
+
+  return lines.join('\n').trimRight();
+}
+
+/// The [Log] a tagged call produced, as a non-rendering publisher sees it.
+Log _logWithTags(Object? tags) {
+  final publisher = _CapturePublisher();
+  Logger('app')
+    ..level = LogLevels.all
+    ..publisher = publisher
+    ..i('login', tags: tags);
+
+  return publisher.logs.single;
+}
+
+final class _CapturePublisher implements CustomLogPublisher<Log> {
+  final logs = <Log>[];
+
+  @override
+  void publish(Log log) => logs.add(log);
+}
+
+/// An error object that is also [Loggable] — the library renders it with
+/// `toString()`, outside the walkers.
+final class _Boom with Loggable implements Exception {
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('code', 'E42');
+}
+
+/// A tag object that is also [Loggable]: `LazyTags` turns it into a string
+/// with `toString()`.
+final class _Tag with Loggable {
+  final String value;
+
+  _Tag(this.value);
+
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('v', value);
 }

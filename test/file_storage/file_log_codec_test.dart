@@ -24,6 +24,24 @@ Log _makeLog(void Function(Logger log) emit) {
 Map<String, Object?> _decode(String line) =>
     jsonDecode(line) as Map<String, Object?>;
 
+/// An error object that is also [Loggable] — the codec writes it with
+/// `toString()`, outside the walkers.
+final class _Boom with Loggable implements Exception {
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('code', 'E42');
+}
+
+/// A tag object that is also [Loggable]: `LazyTags` turns it into a string
+/// with `toString()`.
+final class _Tag with Loggable {
+  final String value;
+
+  _Tag(this.value);
+
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('v', value);
+}
+
 void main() {
   group('FileLogCodec.encode', () {
     test('encodes full schema', () {
@@ -119,6 +137,57 @@ void main() {
       final log = _makeLog((l) => l.i('a\nb', data: {'x': 'y\nz'}));
 
       expect(FileLogCodec().encode(log), isNot(contains('\n')));
+    });
+  });
+
+  group('FileLogCodec — the sanitizer scope', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('a root drop rule does not erase a Loggable error', () {
+      // `error` is outside the sanitizer's documented scope: the codec
+      // writes it with `toString()`, and a root rule must not be able to
+      // blank out the only reason the log exists.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', data: {'k': 1}, error: _Boom()));
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map['error'], '_Boom(code: "E42")');
+    });
+
+    test('a root replacement rule leaves a Loggable error unchanged', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', error: _Boom()));
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map['error'], '_Boom(code: "E42")');
+    });
+
+    test('a root rule does not rewrite the tags', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', tags: [_Tag('t')]));
+
+      expect(_decode(FileLogCodec().encode(log))['tags'], ['_Tag(v: "t")']);
+    });
+
+    test('a root rule still applies to the data', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', data: {'k': 'topsecret'}));
+
+      expect(_decode(FileLogCodec().encode(log))['data'], '"***"');
+    });
+
+    test('the error and the tags are unchanged without a rule', () {
+      final log = _makeLog(
+        (l) => l.i('m', error: _Boom(), tags: [_Tag('t')]),
+      );
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map['error'], '_Boom(code: "E42")');
+      expect(map['tags'], ['_Tag(v: "t")']);
     });
   });
 

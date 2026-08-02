@@ -50,6 +50,7 @@ void main() {
         reason: 'Loggable.objectToString',
       );
       expect(Loggable.objectToJson(data), 12, reason: 'Loggable.objectToJson');
+      expect(_printData(data), 'login: 12', reason: 'ConsoleLogPrinter');
     });
 
     test('the rest of the container config still applies to a replacement', () {
@@ -85,8 +86,13 @@ void main() {
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? 12 : ctx.value;
 
       final data = Loggable.from(1, config: const LoggableConfig(units: 'kg'));
-      expect(Loggable.objectToString(data), '12');
-      expect(Loggable.objectToJson(data), 12);
+      expect(
+        Loggable.objectToString(data),
+        '12',
+        reason: 'Loggable.objectToString',
+      );
+      expect(Loggable.objectToJson(data), 12, reason: 'Loggable.objectToJson');
+      expect(_printData(data), 'login: 12', reason: 'ConsoleLogPrinter');
     });
 
     test('an ambient units config is not applied to a replacement either', () {
