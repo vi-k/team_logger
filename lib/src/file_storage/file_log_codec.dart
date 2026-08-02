@@ -37,6 +37,32 @@ final class FileLogCodec {
   String encode(Log log) {
     final levelTheme = theme[log.level];
 
+    // `data` is the sanitizer's scope, so a rule may drop the whole root.
+    // The drop is signalled out of band — an empty rendering is legal on
+    // its own — and it removes the key entirely, the same way the console
+    // printer removes the data block instead of printing a bare colon.
+    Object? data;
+    var hasData = log.hasData;
+    if (hasData) {
+      switch (dataFormat) {
+        case FileLogDataFormat.text:
+          final rendered = Loggable.renderRoot(
+            log.data,
+            theme: levelTheme,
+            config: config,
+          );
+          data = rendered.text;
+          hasData = !rendered.dropped;
+        case FileLogDataFormat.json:
+          final rendered = Loggable.renderRootJson(
+            log.data,
+            config: jsonConfig,
+          );
+          data = rendered.json;
+          hasData = !rendered.dropped;
+      }
+    }
+
     return jsonEncode(<String, Object?>{
       'num': log.num,
       'level': log.level,
@@ -47,16 +73,7 @@ final class FileLogCodec {
         'traceIds': [for (final id in log.traceIds) id.toString()],
       'message': levelTheme.formatMessage(levelTheme.formatValue(log.message)),
       if (log.tags.isNotEmpty) 'tags': [...log.tags],
-      if (log.hasData)
-        'data': switch (dataFormat) {
-          FileLogDataFormat.text => Loggable.objectToString(
-              log.data,
-              theme: levelTheme,
-              config: config,
-            ),
-          FileLogDataFormat.json =>
-            Loggable.objectToJson(log.data, config: jsonConfig),
-        },
+      if (hasData) 'data': data,
       // The error and the stack trace are outside the sanitizer's
       // documented scope (values inside `data` only): both are rendered
       // with the root offer suppressed, so a `depth == 0` rule cannot

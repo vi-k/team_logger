@@ -119,15 +119,23 @@ abstract mixin class Loggable {
   /// `units`: единицы описывают исходную величину, а маска ею не
   /// является. Ровно так же ведёт себя замена свойства.
   ///
-  /// Область действия — только значения ВНУТРИ `data`. `message`, `error`,
-  /// `stackTrace` и теги через обходчики [objectToString]/[objectToJson]
-  /// не проходят: принтер печатает `log.message` как есть и `error` через
-  /// `toString()`, `FileLogCodec` пишет их так же, теги превращает в
-  /// строки `LazyTags`, — так что санитайзер эти поля не видит и
-  /// подменить не может. Корневое предложение до них тоже не достаёт:
-  /// всё это библиотека рендерит через [renderOutsideSanitizerScope].
+  /// Область действия — только значения ВНУТРИ `data`. `message`,
+  /// `error`, `stackTrace`, теги и путь неймспейса через обходчики
+  /// [objectToString]/[objectToJson] не проходят: принтер печатает
+  /// `log.message` как есть и `error` через `toString()`, `FileLogCodec`
+  /// пишет их так же, теги и имя логгера превращают в строки `LazyTags` и
+  /// `LazyString`, — так что санитайзер эти поля не видит и подменить не
+  /// может. Корневое предложение до них тоже не достаёт: всё это
+  /// библиотека рендерит через [renderOutsideSanitizerScope].
   /// Замаскировать эти поля или отбросить лог целиком — задача
   /// `Logger.transformer`.
+  ///
+  /// ГРАНИЦА: подавляется только `toString()`, который зовёт САМА
+  /// библиотека. Интерполяцию, которую сделал вызывающий, — `log.i('$obj')`
+  /// или `log.i(() => '$obj')` — правило по-прежнему видит: она
+  /// выполняется в пользовательском коде, до библиотеки доходит уже
+  /// готовая строка. Это единственный случай, когда `depth == 0` меняет
+  /// текст лога.
   ///
   /// Бросать из правила нельзя: fail-closed здесь нет, в отличие от
   /// `Logger.transformer`. Исключение уходит в тот publisher, который в
@@ -343,26 +351,34 @@ abstract mixin class Loggable {
   /// Корень предлагается ровно один раз: если правило его не тронуло,
   /// значение рендерится под заглушкой, и [objectToString] не предложит
   /// его повторно.
+  ///
+  /// Зовут её `LogMessage` в принтере и `FileLogCodec`: у обоих блок
+  /// данных при дропе должен исчезать целиком, а не превращаться в
+  /// пустую строку.
   @internal
   static ({String text, bool dropped}) renderRoot(
     Object? obj, {
     LogTheme theme = LogTheme.noColors,
+    LoggableConfig config = const LoggableConfig(),
   }) {
     if (!_sanitizing) {
-      return (text: objectToString(obj, theme: theme), dropped: false);
+      return (
+        text: objectToString(obj, theme: theme, config: config),
+        dropped: false,
+      );
     }
 
     // Обёртка разворачивается ДО корневого предложения — как в
     // [objectToString]: правилу показывается завёрнутое значение, а не
     // упаковка параметров рендера.
     var value = obj;
-    var config = const LoggableConfig();
+    var effective = config;
     while (value is LoggableWrapper) {
-      config = value.config.merge(config);
+      effective = value.config.merge(effective);
       value = value.data;
     }
 
-    if (sanitizeRootToString(value, theme: theme, config: config)
+    if (sanitizeRootToString(value, theme: theme, config: effective)
         case final rendered?) {
       return rendered;
     }
@@ -373,7 +389,48 @@ abstract mixin class Loggable {
     return (
       text: _withSegment(
         _rootGuardSegment,
-        () => objectToString(value, theme: theme, config: config),
+        () => objectToString(value, theme: theme, config: effective),
+      ),
+      dropped: false,
+    );
+  }
+
+  /// То же, что [renderRoot], но для JSON-вывода.
+  ///
+  /// [objectToJson] на отброшенном корне отдаёт `null`, а `null` — ещё и
+  /// законное значение: по нему одному дроп не опознать. `FileLogCodec`
+  /// же обязан в этом случае не писать ключ `data` вовсе — ровно как
+  /// принтер убирает блок данных.
+  @internal
+  static ({Object? json, bool dropped}) renderRootJson(
+    Object? obj, {
+    LoggableJsonConfig config = const LoggableJsonConfig(),
+  }) {
+    if (!_sanitizing || _sanitizeSegments.isNotEmpty) {
+      return (json: objectToJson(obj, config: config), dropped: false);
+    }
+
+    var value = obj;
+    var effective = config;
+    while (value is LoggableWrapper) {
+      effective = value.config.mergeWithJsonConfig(effective);
+      value = value.data;
+    }
+
+    final sanitized = _sanitizeRoot(value);
+    if (identical(sanitized, Sanitize.drop)) return (json: null, dropped: true);
+
+    // Заглушка держится на весь рендер корня — и замены, и нетронутого
+    // значения (см. [objectToJson]).
+    return (
+      json: _withSegment(
+        _rootGuardSegment,
+        () => identical(sanitized, value)
+            ? _visitToJson(value, config: effective)
+            : objectToJson(
+                sanitized,
+                config: _rootJsonConfig(value, effective),
+              ),
       ),
       dropped: false,
     );
@@ -383,21 +440,34 @@ abstract mixin class Loggable {
   /// библиотека печатает внутри, правилу как корень не показывается.
   ///
   /// Нужно там, где библиотека сама зовёт `toString()` у
-  /// пользовательского объекта, НЕ входящего в `data`: `error` в
-  /// принтере и в `FileLogCodec`, `stackTrace` там же (в принтере — через
-  /// ЛЕНИВЫЙ `Trace.from`, поэтому подавление обязано накрывать и чтение
-  /// фреймов), каждый тег в `LazyTags.convert`.
+  /// пользовательского объекта, НЕ входящего в `data`:
+  ///
+  /// - `error` — в принтере (`LogMessage`) и в `FileLogCodec`;
+  /// - `stackTrace` — там же; в принтере через ЛЕНИВЫЙ `Trace.from`,
+  ///   поэтому подавление обязано накрывать и чтение фреймов;
+  /// - теги — `LazyTags.convert`, вместе с диагностикой невалидного
+  ///   значения;
+  /// - `message` и имя неймспейса — `_GuardedLazyString.convert`.
+  ///
   /// Область действия санитайзера — только значения внутри `data` (см.
   /// [sanitizer]), и корневое предложение, которое делает `toString()`
   /// у [Loggable] и [LoggableData], до этих значений доходить не должно:
   /// правило по `depth == 0` иначе стирало бы ошибку (оставляя висящее
-  /// двоеточие) или переписывало бы `Log.tags` — а это уже не рендер:
-  /// набор кэшируется в логе, участвует в фильтре `activeTags` и именно
-  /// его видят publisher'ы, ничего не рисующие.
+  /// двоеточие) или текст лога, а `Log.tags` и `Logger.path` — переписывало
+  /// бы; последние два вообще не рендер: они кэшируются, участвуют в
+  /// фильтрах `activeTags`/`activeNamespaces` и именно их видят
+  /// publisher'ы, ничего не рисующие.
   ///
-  /// Позиции вложенных значений при этом не меняются: заглушка не входит
-  /// ни в путь, ни в счёт глубины, — свойства такого объекта
-  /// предлагаются правилу ровно как и раньше.
+  /// Оборачивать надо ТО МЕСТО, где значение реально приводится к строке,
+  /// а не то, где создан ленивый холдер: `Trace.from` и `TypedLazy`
+  /// стрингуют значение при первом чтении, которое случается позже.
+  /// Пользовательское замыкание (ленивое сообщение, ленивое имя) при этом
+  /// остаётся СНАРУЖИ подавления — внутри него санитайзер работает как
+  /// обычно.
+  ///
+  /// Позиции вложенных значений не меняются: заглушка не входит ни в
+  /// путь, ни в счёт глубины, — свойства такого объекта предлагаются
+  /// правилу ровно как и раньше.
   @internal
   static T renderOutsideSanitizerScope<T>(T Function() render) =>
       _withSegment(_rootGuardSegment, render);

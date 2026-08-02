@@ -49,6 +49,13 @@ final class _Trace with Loggable implements StackTrace {
   void collectLoggableData(LoggableData data) => data.prop('at', 'main');
 }
 
+/// A message object that is also [Loggable]: `LazyString` turns it into a
+/// string with `toString()`.
+final class _Msg with Loggable {
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('text', 'hi');
+}
+
 void main() {
   group('FileLogCodec.encode', () {
     test('encodes full schema', () {
@@ -203,6 +210,62 @@ void main() {
 
       final map = _decode(FileLogCodec().encode(log));
       expect(map['stackTrace'], '_Trace(at: "main")');
+    });
+
+    test('a root rule does not rewrite a Loggable message', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      final log = _makeLog((l) => l.i(_Msg()));
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map['message'], '_Msg(text: "hi")');
+    });
+
+    test('a dropped root leaves no data key in text mode', () {
+      // The console printer omits the data block entirely for a drop; the
+      // codec used to write an empty string, so the two publishers
+      // disagreed on what a dropped value looks like.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', data: {'k': 'topsecret'}));
+
+      expect(_decode(FileLogCodec().encode(log)).containsKey('data'), isFalse);
+    });
+
+    test('a dropped root leaves no data key in json mode', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', data: {'k': 'topsecret'}));
+
+      final map = _decode(
+        FileLogCodec(dataFormat: FileLogDataFormat.json).encode(log),
+      );
+      expect(map.containsKey('data'), isFalse);
+    });
+
+    test('a replacement rendering empty still keeps the data key', () {
+      // An empty rendering is not a drop: the signal comes out of band.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0
+          ? Loggable.builder(Object(), showName: false, showBrackets: false)
+          : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', data: {'k': 'topsecret'}));
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map.containsKey('data'), isTrue);
+      expect(map['data'], '');
+    });
+
+    test('a dropped section still leaves the surviving ones in the data', () {
+      Loggable.sanitizer =
+          (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
+
+      final log = _makeLog(
+        (l) => l.i('m', data: {'req': 'ok', 'password': 'hunter2'}),
+      );
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map['data'], '{req: "ok"}');
     });
 
     test('the error and the tags are unchanged without a rule', () {

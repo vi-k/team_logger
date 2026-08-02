@@ -74,7 +74,12 @@ final class LevelLogger
             this,
             path: overridePath ?? logger._lazyPath.value,
             traceIds: logTraceIds,
-            message: LazyString(message, '').value,
+            // The message is outside the sanitizer's documented scope,
+            // so the library's own `toString()` on it is suppressed (see
+            // [_GuardedLazyString]). Interpolation the CALLER did —
+            // `log.i('$obj')` — happened before this point and stays
+            // affected: it is not our `toString()` call.
+            message: _GuardedLazyString(message, '').value,
             data: resolvedData,
             tags: {
               ...Logger.zonedTags(zone),
@@ -122,7 +127,13 @@ final class LevelLogger
 final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
   static const _tagsKey = #team_logger_tags;
 
-  final LazyString _lazyPath;
+  // The namespace name is outside the sanitizer's documented scope, and
+  // the resolved path is memoized here and used for `activeNamespaces`
+  // filtering — so the library's `toString()` on the name is suppressed
+  // (see [_GuardedLazyString]). The outer lazy of a kept path stays a
+  // plain LazyString: its own closure always returns a String, so it
+  // never converts anything — the name inside it does.
+  final TypedLazy<String> _lazyPath;
   final String pathSeparator;
   final Set<String> tags;
 
@@ -130,7 +141,7 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
     Object name, {
     this.pathSeparator = '/',
     this.tags = const {},
-  }) : _lazyPath = LazyString(name);
+  }) : _lazyPath = _GuardedLazyString(name);
 
   Logger._sub(
     super.parent,
@@ -141,9 +152,9 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
             ? LazyString(
                 () => '${parent.path}'
                     '${parent.pathSeparator}'
-                    '${LazyString(name).value}',
+                    '${_GuardedLazyString(name).value}',
               )
-            : LazyString(name, ''),
+            : _GuardedLazyString(name, ''),
         pathSeparator = parent.pathSeparator,
         super.sub();
 

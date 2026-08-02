@@ -641,6 +641,108 @@ void main() {
       expect(out, isNot(contains('***')));
     });
   });
+
+  group('sanitizer scope — the message and the path stay outside it', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    test('a Loggable message is rendered the same without a rule', () {
+      expect(_capture(Logger('app'), (l) => l.i(_Msg())).message, _msgText);
+    });
+
+    test('a root drop rule does not erase a Loggable message', () {
+      // `LazyString.convert` is a library-side `toString()` on a value
+      // outside the scope — erasing it would leave a log with no text.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(_capture(Logger('app'), (l) => l.i(_Msg())).message, _msgText);
+    });
+
+    test('a root replacement rule does not rewrite a Loggable message', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(_capture(Logger('app'), (l) => l.i(_Msg())).message, _msgText);
+    });
+
+    test('a Loggable message survives on the console', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(_printMessage(_Msg()), contains(_msgText));
+    });
+
+    test('a lazy Loggable message is resolved outside the scope too', () {
+      // The closure itself runs OUTSIDE the guard (it is user code); only
+      // the `toString()` of what it returned is guarded.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(_capture(Logger('app'), (l) => l.i(_Msg.new)).message, _msgText);
+    });
+
+    test('interpolation done by the caller is still sanitized', () {
+      // The accepted boundary: `'$obj'` runs in user code before the log
+      // call, so the root rule still reaches it. This is the one case the
+      // release notes record as affected.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(_capture(Logger('app'), (l) => l.i('${_Msg()}')).message, '"***"');
+      expect(
+        _capture(Logger('app'), (l) => l.i(() => '${_Msg()}')).message,
+        '"***"',
+        reason: 'a closure interpolating it is caller code as well',
+      );
+    });
+
+    test('a Loggable logger name keeps its real path', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(_capture(Logger(_Name('svc')), (l) => l.i('m')).path, _nameText);
+    });
+
+    test('a root drop rule does not erase the path either', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(_capture(Logger(_Name('svc')), (l) => l.i('m')).path, _nameText);
+    });
+
+    test('a Loggable child name keeps its real path', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      final child = Logger(_Name('svc')).createChild(name: _Name('child'));
+
+      expect(
+        _capture(child, (l) => l.i('m')).path,
+        '$_nameText/_Name(v: "child")',
+      );
+    });
+
+    test('the path is guarded where it is forced, not where it is built', () {
+      // `_lazyPath` resolves on the first `path` read and memoizes the
+      // result — once poisoned it stays poisoned for the process. The
+      // logger is built under one rule and forced under another.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+      final logger = Logger(_Name('svc'));
+
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(logger.path, _nameText);
+    });
+
+    test('a Loggable namespace still matches activeNamespaces filtering', () {
+      // The active theme keeps BBCode literal, the inactive one strips
+      // it — so the marker shows which branch the filter took.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      expect(
+        _printFiltered(Logger(_Name('svc')), {_nameText}),
+        contains('[b]hit[/b]'),
+        reason: 'the namespace matches, so the log is active',
+      );
+      expect(
+        _printFiltered(Logger(_Name('svc')), {'other'}),
+        isNot(contains('[b]')),
+        reason: 'a non-matching namespace still leaves the log inactive',
+      );
+    });
+  });
 }
 
 /// Runs a log carrying an [error] through a real [ConsoleLogPrinter].
@@ -695,14 +797,56 @@ String _printTrace(StackTrace stackTrace) {
 }
 
 /// The [Log] a tagged call produced, as a non-rendering publisher sees it.
-Log _logWithTags(Object? tags) {
+Log _logWithTags(Object? tags) =>
+    _capture(Logger('app'), (l) => l.i('login', tags: tags));
+
+/// The [Log] [emit] produced on [logger], as a non-rendering publisher
+/// sees it.
+Log _capture(Logger logger, void Function(Logger logger) emit) {
   final publisher = _CapturePublisher();
-  Logger('app')
+  logger
     ..level = LogLevels.all
-    ..publisher = publisher
-    ..i('login', tags: tags);
+    ..publisher = publisher;
+  emit(logger);
 
   return publisher.logs.single;
+}
+
+/// Runs a log whose MESSAGE is [message] through a real
+/// [ConsoleLogPrinter].
+String _printMessage(Object message) {
+  final lines = <String>[];
+  Logger('app')
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.noColors,
+      rows: const [
+        LogRow(maxLength: 200, children: [LogMessage()]),
+      ],
+      output: lines.add,
+    )
+    ..i(message);
+
+  return lines.join('\n');
+}
+
+/// Prints one log through a printer filtering on [activeNamespaces].
+String _printFiltered(Logger logger, Set<String> activeNamespaces) {
+  final lines = <String>[];
+  logger
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.noColors,
+      inactiveTheme: LogMainTheme.noColorsNoTags,
+      activeNamespaces: activeNamespaces,
+      rows: const [
+        LogRow.singleLine(children: [LogMessage()]),
+      ],
+      output: lines.add,
+    )
+    ..i('[b]hit[/b]');
+
+  return lines.join('\n');
 }
 
 final class _CapturePublisher implements CustomLogPublisher<Log> {
@@ -735,4 +879,26 @@ final class _Tag with Loggable {
 final class _Trace with Loggable implements StackTrace {
   @override
   void collectLoggableData(LoggableData data) => data.prop('at', 'main');
+}
+
+const _msgText = '_Msg(text: "hi")';
+
+/// A message object that is also [Loggable]: `LazyString` turns it into a
+/// string with `toString()`.
+final class _Msg with Loggable {
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('text', 'hi');
+}
+
+const _nameText = '_Name(v: "svc")';
+
+/// A logger name that is also [Loggable]: `Logger._lazyPath` turns it
+/// into the namespace path with `toString()`.
+final class _Name with Loggable {
+  final String value;
+
+  _Name(this.value);
+
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('v', value);
 }
