@@ -145,30 +145,39 @@ void main() {
       );
     });
 
-    test('a root replacement inherits the container config', () {
+    test('a root replacement inherits the container config, but not units', () {
       // The replacement stands in for the container, so it is rendered
       // with the container's formatting — and all FOUR renderers of a
       // multi-data must agree on that. The walkers used to offer the
       // root with the ambient config only, so `objectToString` and
-      // `objectToJson` — the JSONL path — dropped the units that the
-      // console printed.
-      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? 12 : ctx.value;
+      // `objectToJson` — the JSONL path — dropped the container limits
+      // that the console applied.
+      //
+      // `units` are the exception, and the same one a property already
+      // made: they assert something about the original quantity, and a
+      // mask is not it. See test/loggable/sanitizer_root_test.dart.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? [1, 2, 3] : ctx.value;
 
       final data = LoggableMultiData(
         {'s': 'topsecret'},
-        config: const LoggableConfig(units: 'kg'),
+        config: const LoggableConfig(collectionMaxCount: 1, units: 'kg'),
       );
 
-      expect(data.toString(), '12kg', reason: 'LoggableMultiData.toString');
-      expect(_printData(data), 'login: 12kg', reason: 'ConsoleLogPrinter');
+      const text = '[₌₃ ₀:1, …]';
+      expect(data.toString(), text, reason: 'LoggableMultiData.toString');
+      expect(_printData(data), 'login: $text', reason: 'ConsoleLogPrinter');
       expect(
         Loggable.objectToString(data),
-        '12kg',
+        text,
         reason: 'Loggable.objectToString',
       );
       expect(
         Loggable.objectToJson(data),
-        {':v': 12, ':u': 'kg'},
+        {
+          ':k': 'list',
+          ':l': 3,
+          ':v': [1],
+        },
         reason: 'Loggable.objectToJson',
       );
     });

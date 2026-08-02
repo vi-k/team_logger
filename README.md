@@ -1535,6 +1535,19 @@ A few things worth knowing before writing a rule:
 - The rule must be a pure function with no side effects, and it must not
   render or log from inside itself — not even implicitly, via
   `toString()`/string interpolation of the value it was handed.
+- The **root** value — the whole `data` object — is offered too, unnamed,
+  at `depth == 0`. That includes the direct `toString()` path: `'$obj'`,
+  `print(obj)` and a debugger's inspection of a `Loggable` or a
+  `LoggableData` all go through the same offer, so a `depth == 0` rule
+  changes what plain interpolation prints, and `Sanitize.drop` there
+  renders an empty string. (A class that mixes in `Loggable` has already
+  accepted that its `toString()` *is* log rendering — its properties are
+  sanitized on that path either way.)
+- A replacement is rendered with the container's formatting —
+  `collectionMaxCount`, `stringInQuotes`, the number formats — but never
+  with its `units`: units assert something about the original quantity,
+  and a mask is not that quantity. This holds both for a property and for
+  the root.
 - For a property with a `view` (see "Property Configuration" above), the
   rule sees the `view` object, not the text it renders — redact such
   properties by `name`/`path`, not by matching rendered content.

@@ -21,7 +21,7 @@ final class LoggableMultiData {
     // правилу не показывался бы вовсе.
     if (Loggable.sanitizeRootToString(this, config: config)
         case final rendered?) {
-      return rendered;
+      return rendered.text;
     }
 
     // Секции — через общий хелпер, а не по data.entries напрямую: иначе

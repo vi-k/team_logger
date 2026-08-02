@@ -334,6 +334,9 @@ final class LoggableData {
     };
   }
 
+  /// Рендер БЕЗ корневого предложения: обходчик, дойдя сюда, уже
+  /// предложил этот узел правилу. Корень предлагает [toString] — прямой
+  /// пользовательский путь, мимо обходчиков.
   String toLogString({
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
@@ -376,8 +379,11 @@ final class LoggableData {
     return buf.toString();
   }
 
+  /// Как и у [Loggable.toString]: прямой пользовательский путь
+  /// (интерполяция, `print`, отладчик) обязан предложить правилу корень
+  /// — свойства на нём санитайзятся и так.
   @override
-  String toString() => toLogString();
+  String toString() => Loggable._rootToString(this, toLogString);
 }
 
 final class LoggableNoView {

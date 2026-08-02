@@ -42,9 +42,10 @@ final class LogMessage implements LogBlock {
       var dataOnNewLine = false;
       // An empty rendering means nothing by itself: an empty
       // LoggableMultiData and a builder without props both render empty
-      // legitimately. Only Sanitize.drop removes the data block, and
-      // that signal comes from whoever offered the root — never from the
-      // mere presence of an installed rule.
+      // legitimately, and so may a replacement the rule returned. Only
+      // Sanitize.drop removes the data block, and that signal comes out
+      // of band from whoever offered the value — never from the emptiness
+      // of the text nor from the mere presence of an installed rule.
       var dropped = false;
       final data = log.data;
       if (data is! LoggableMultiData) {
@@ -63,8 +64,8 @@ final class LogMessage implements LogBlock {
         // uses — because this branch never reaches the walker: it goes
         // straight into the section loop below, and a root offered
         // nowhere is a root that leaks.
-        dataStr = rendered;
-        dropped = rendered.isEmpty;
+        dataStr = rendered.text;
+        dropped = rendered.dropped;
       } else {
         dataOnNewLine = !row.singleLine &&
             (data.data.isEmpty || data.data.keys.first.isNotEmpty);
@@ -76,7 +77,7 @@ final class LogMessage implements LogBlock {
         // the walker as a ROOT — unnamed, with an empty path — so
         // name-based rules would never fire on a section.
         final parts = <String>[];
-        Loggable.forEachMultiDataEntry(data, (key, value) {
+        final anyDropped = Loggable.forEachMultiDataEntry(data, (key, value) {
           final text = Loggable.objectToString(
             value,
             theme: theme,
@@ -91,6 +92,10 @@ final class LogMessage implements LogBlock {
         });
         dataStr =
             parts.join(row.singleLine ? theme.data.punctuation(', ') : '\n');
+        // Every section was dropped: the label would be left dangling
+        // over nothing. A multi-data that is empty on its own keeps its
+        // colon — nothing was dropped there, so this stays false.
+        dropped = parts.isEmpty && anyDropped;
       }
 
       // A dropped value leaves no data block: a colon with nothing after

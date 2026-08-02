@@ -106,6 +106,19 @@ abstract mixin class Loggable {
   /// логам, отрисованным в порождённом, — там его нужно установить
   /// заново.
   ///
+  /// КОРНЕВОЕ значение — сам объект `data` — предлагается правилу как
+  /// безымянное на `depth == 0`. Предлагают его и прямые
+  /// пользовательские пути, в обходчики не заходящие: [toString] у
+  /// [Loggable] и [LoggableData], `LoggableMultiData.toString`,
+  /// `LogMessage` в принтере. Поэтому правило по `depth == 0` меняет и
+  /// то, что печатает `'$obj'`/`print(obj)`, а [Sanitize.drop] в корне
+  /// даёт там пустую строку.
+  ///
+  /// Замена корня рендерится настройками контейнера
+  /// (`collectionMaxCount`, `stringInQuotes`, форматы чисел), но БЕЗ его
+  /// `units`: единицы описывают исходную величину, а маска ею не
+  /// является. Ровно так же ведёт себя замена свойства.
+  ///
   /// Область действия — только значения ВНУТРИ `data`. `message`, `error`
   /// и `stackTrace` через обходчики [objectToString]/[objectToJson] не
   /// проходят: принтер печатает `log.message` как есть и `error` через
@@ -236,13 +249,18 @@ abstract mixin class Loggable {
   }
 
   /// Предлагает правилу КОРНЕВОЕ значение и, если правило его тронуло,
-  /// возвращает готовый строковый вывод.
+  /// возвращает готовый строковый вывод вместе с признаком дропа.
   ///
   /// `null` означает «рендерить самому вызывающему»: правило значение не
   /// тронуло, санитайзера нет, либо это вообще не корень — стек
   /// сегментов не пуст, а значит значение уже предложено правилу по
-  /// своей позиции. Пустая строка — [Sanitize.drop], всё остальное —
-  /// отрисованная замена.
+  /// своей позиции.
+  ///
+  /// `dropped` отдаётся отдельным полем, а не пустым `text`: замена
+  /// вправе легитимно отрендериться в пустую строку (`Loggable.builder`
+  /// без свойств, пустая [LoggableMultiData]), и по пустоте текста дроп
+  /// от неё не отличить — а блок данных в принтере пропадает только у
+  /// дропа.
   ///
   /// ЕДИНСТВЕННАЯ точка корневого предложения для строкового вывода. Её
   /// зовёт [objectToString], и её же ОБЯЗАНЫ звать альтернативные
@@ -251,7 +269,7 @@ abstract mixin class Loggable {
   /// этого вызова корень не предлагался бы правилу вовсе — на консоли
   /// печаталось бы то, что в JSONL-файле правило выбрасывает.
   @internal
-  static String? sanitizeRootToString(
+  static ({String text, bool dropped})? sanitizeRootToString(
     Object? obj, {
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
@@ -260,19 +278,22 @@ abstract mixin class Loggable {
     if (!_sanitizing || _sanitizeSegments.isNotEmpty) return null;
 
     final sanitized = _sanitizeRoot(obj);
-    if (identical(sanitized, Sanitize.drop)) return '';
+    if (identical(sanitized, Sanitize.drop)) return (text: '', dropped: true);
     if (identical(sanitized, obj)) return null;
 
     // Сегмент-заглушка держит стек непустым: к замене санитайзер
     // повторно не применится. В depth/path он не учитывается.
-    return _withSegment(
-      _rootGuardSegment,
-      () => objectToString(
-        sanitized,
-        theme: theme,
-        depth: depth,
-        config: _rootConfig(obj, config),
+    return (
+      text: _withSegment(
+        _rootGuardSegment,
+        () => objectToString(
+          sanitized,
+          theme: theme,
+          depth: depth,
+          config: _rootConfig(obj, config),
+        ),
       ),
+      dropped: false,
     );
   }
 
@@ -283,10 +304,28 @@ abstract mixin class Loggable {
   /// видит — ему передан только окружающий. Без этого мержа рендереры
   /// расходились бы: `LoggableMultiData.toString` и `LogMessage`
   /// передают сюда `data.config` сами (для них мерж идемпотентен), а
-  /// [objectToString]/[objectToJson] печатали бы замену без units и
-  /// лимитов контейнера — то есть JSONL расходился бы с консолью.
+  /// [objectToString]/[objectToJson] печатали бы замену без лимитов
+  /// контейнера — то есть JSONL расходился бы с консолью.
+  ///
+  /// `units` при этом снимаются: единицы описывают исходную величину, а
+  /// замена ею не является. Ровно то же делает свойство (см.
+  /// `Prop.toLogString`), и корень обязан вести себя так же. Остальные
+  /// поля конфига описывают не значение, а способ печати
+  /// (`collectionMaxCount`, `stringInQuotes`, форматы чисел) — они
+  /// наследуются.
   static LoggableConfig _rootConfig(Object? obj, LoggableConfig config) =>
-      obj is LoggableMultiData ? obj.config.merge(config) : config;
+      (obj is LoggableMultiData ? obj.config.merge(config) : config)
+          .withoutUnits();
+
+  /// То же, что [_rootConfig], но для JSON-вывода.
+  static LoggableJsonConfig _rootJsonConfig(
+    Object? obj,
+    LoggableJsonConfig config,
+  ) =>
+      (obj is LoggableMultiData
+              ? obj.config.mergeWithJsonConfig(config)
+              : config)
+          .copyWith(units: null);
 
   /// Рендерит КОРНЕВОЕ значение и сообщает, отбросило ли его правило.
   ///
@@ -322,9 +361,12 @@ abstract mixin class Loggable {
 
     if (sanitizeRootToString(value, theme: theme, config: config)
         case final rendered?) {
-      return (text: rendered, dropped: rendered.isEmpty);
+      return rendered;
     }
 
+    // Корень уже предложен строкой выше, поэтому рендерится под
+    // заглушкой: без неё [objectToString] увидел бы пустой стек и
+    // предложил бы то же значение второй раз.
     return (
       text: _withSegment(
         _rootGuardSegment,
@@ -352,17 +394,29 @@ abstract mixin class Loggable {
   /// [render] получает уже санитизированное значение и обязан рендерить
   /// его только внутри вызова: сегмент ключа держится в стеке пути,
   /// чтобы у вложенных значений путь был полным.
+  ///
+  /// Возвращает `true`, если хотя бы одну запись правило отбросило.
+  /// Нужно принтеру: multi-data, у которой выброшены ВСЕ секции, не
+  /// должна оставлять висящую метку `login: ` без содержимого, а пустая
+  /// сама по себе multi-data двоеточие сохраняет. Различать эти два
+  /// случая по пустоте текста нельзя — только по факту дропа.
   @internal
-  static void forEachMultiDataEntry(
+  static bool forEachMultiDataEntry(
     LoggableMultiData data,
     void Function(String key, Object? value) render,
   ) {
+    var dropped = false;
     for (final entry in data.data.entries) {
       final sanitized = _sanitizeChild(entry.key, entry.key, entry.value);
-      if (_isDropped(sanitized)) continue;
+      if (_isDropped(sanitized)) {
+        dropped = true;
+        continue;
+      }
 
       _withSegment(entry.key, () => render(entry.key, sanitized));
     }
+
+    return dropped;
   }
 
   /// Метод должен заполнить [data] описанием исследуемого класса.
@@ -469,8 +523,12 @@ abstract mixin class Loggable {
     return data;
   }
 
+  /// Класс, подмешавший [Loggable], тем самым принял, что его `toString`
+  /// — это рендеринг лога: свойства здесь санитайзятся так же, как в
+  /// [objectToString], поэтому и сам объект в корневой позиции
+  /// предлагается правилу (см. [_rootToString]).
   @override
-  String toString() => logClassInfo().toLogString();
+  String toString() => _rootToString(this, () => logClassInfo().toLogString());
 
   /// Объекты, находящиеся в процессе форматирования в текущей цепочке
   /// рекурсии, — защита от циклических структур (по аналогии с
@@ -532,9 +590,33 @@ abstract mixin class Loggable {
     // multi-data, не проходящие через этот обходчик.
     if (sanitizeRootToString(obj, theme: theme, depth: depth, config: config)
         case final rendered?) {
-      return rendered;
+      return rendered.text;
     }
 
+    // Корень, которого правило не тронуло, рендерится под заглушкой —
+    // не только замена. Иначе стек на время рендера корня остался бы
+    // пустым, и `toString()` любого [Loggable], до которого рендер
+    // доберётся напрямую (ключ [Map], интерполяция внутри чужого
+    // `toString`), сделал бы СВОЙ корневой офер — тот же корень был бы
+    // предложен правилу второй раз.
+    if (_sanitizing && _sanitizeSegments.isEmpty) {
+      return _withSegment(
+        _rootGuardSegment,
+        () => _visitToString(obj, theme: theme, depth: depth, config: config),
+      );
+    }
+
+    return _visitToString(obj, theme: theme, depth: depth, config: config);
+  }
+
+  /// Рендер с защитой от циклов; корневое предложение к этому моменту
+  /// уже сделано.
+  static String _visitToString(
+    Object? obj, {
+    required LogTheme theme,
+    required int depth,
+    required LoggableConfig config,
+  }) {
     if (obj != null && _canContainCycle(obj)) {
       final ancestorIndex = _visitingIndexOf(obj);
       if (ancestorIndex != -1) {
@@ -557,6 +639,31 @@ abstract mixin class Loggable {
     }
 
     return _objectToString(obj, theme: theme, depth: depth, config: config);
+  }
+
+  /// Рендерит значение, стоящее в КОРНЕВОЙ позиции, собственным
+  /// `toString` вызывающего, предложив его сначала правилу.
+  ///
+  /// `toString` — прямой пользовательский путь (интерполяция, `print`,
+  /// отладчик), в [objectToString] он не заходит, поэтому корневое
+  /// предложение делает сам. Внутри обхода стек сегментов не пуст —
+  /// там значение уже предложено своей позицией, и правилу второй раз
+  /// не показывается.
+  ///
+  /// Замена рендерится обходчиком как обычное значение: собственный
+  /// `config` вызывающего (у `Loggable.builder`) к ней не применяется —
+  /// ровно как в [objectToString], где замена корня-[LoggableData] тоже
+  /// его не наследует.
+  static String _rootToString(Object? obj, String Function() render) {
+    if (!_sanitizing || _sanitizeSegments.isNotEmpty) return render();
+
+    final sanitized = _sanitizeRoot(obj);
+    if (identical(sanitized, Sanitize.drop)) return '';
+
+    return _withSegment(
+      _rootGuardSegment,
+      () => identical(sanitized, obj) ? render() : objectToString(sanitized),
+    );
   }
 
   static String _objectToString(
@@ -661,24 +768,30 @@ abstract mixin class Loggable {
     if (_sanitizing && _sanitizeSegments.isEmpty) {
       final sanitized = _sanitizeRoot(obj);
       if (identical(sanitized, Sanitize.drop)) return null;
-      if (!identical(sanitized, obj)) {
-        // Сегмент-заглушка держит стек непустым: к замене санитайзер
-        // повторно не применится. В depth/path он не учитывается.
-        // Конфигурация — как в [sanitizeRootToString] (см. [_rootConfig]):
-        // замена корня форматируется настройками контейнера, иначе JSON
-        // разошёлся бы со строковым выводом.
-        return _withSegment(
-          _rootGuardSegment,
-          () => objectToJson(
-            sanitized,
-            config: obj is LoggableMultiData
-                ? obj.config.mergeWithJsonConfig(config)
-                : config,
-          ),
-        );
-      }
+
+      // Сегмент-заглушка держит стек непустым на ВЕСЬ рендер корня — и
+      // замены, и нетронутого значения (см. [objectToString]): к корню
+      // санитайзер повторно не применится. В depth/path заглушка не
+      // учитывается. Конфигурация замены — как в [sanitizeRootToString]
+      // (см. [_rootJsonConfig]), иначе JSON разошёлся бы со строковым
+      // выводом.
+      return _withSegment(
+        _rootGuardSegment,
+        () => identical(sanitized, obj)
+            ? _visitToJson(obj, config: config)
+            : objectToJson(sanitized, config: _rootJsonConfig(obj, config)),
+      );
     }
 
+    return _visitToJson(obj, config: config);
+  }
+
+  /// Рендер с защитой от циклов; корневое предложение к этому моменту
+  /// уже сделано.
+  static Object? _visitToJson(
+    Object? obj, {
+    required LoggableJsonConfig config,
+  }) {
     if (obj != null && _canContainCycle(obj)) {
       final ancestorIndex = _visitingIndexOf(obj);
       if (ancestorIndex != -1) {
