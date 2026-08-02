@@ -115,5 +115,17 @@ void main() {
       final clearedTraces = copy.copyWith(traceIds: const []);
       expect(clearedTraces.traceIds, isEmpty);
     });
+
+    test(
+      'stackTrace rejects a value that is neither a StackTrace nor null',
+      () {
+        final original = capture((log) => log.i('m'));
+
+        expect(
+          () => original.copyWith(stackTrace: 'not a stack trace'),
+          throwsA(isA<TypeError>()),
+        );
+      },
+    );
   });
 }
