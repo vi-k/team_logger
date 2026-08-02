@@ -57,12 +57,16 @@ final class FileLogCodec {
           FileLogDataFormat.json =>
             Loggable.objectToJson(log.data, config: jsonConfig),
         },
-      // The error is outside the sanitizer's documented scope (values
-      // inside `data` only): it is rendered with the root offer
-      // suppressed, so a `depth == 0` rule cannot erase or rewrite it.
+      // The error and the stack trace are outside the sanitizer's
+      // documented scope (values inside `data` only): both are rendered
+      // with the root offer suppressed, so a `depth == 0` rule cannot
+      // erase or rewrite them.
       if (log.error case final error?)
         'error': Loggable.renderOutsideSanitizerScope(error.toString),
-      if (log.stackTrace != null) 'stackTrace': log.stackTrace.toString(),
+      if (log.stackTrace case final stackTrace?)
+        'stackTrace': Loggable.renderOutsideSanitizerScope(
+          stackTrace.toString,
+        ),
     });
   }
 

@@ -619,6 +619,27 @@ void main() {
       expect(_logWithTags([_Tag('t')]).tags, {'_Tag(v: "t")'});
       expect(_printTags([_Tag('t')]), contains('#_Tag(v: "t")'));
     });
+
+    test('a Loggable stack trace is rendered the same without a rule', () {
+      expect(_printTrace(_Trace()), contains('_Trace'));
+    });
+
+    test('a root drop rule does not erase a Loggable stack trace', () {
+      // `Trace.from` is lazy: it stringifies the stack trace only when
+      // the frames are read, so the suppression has to survive until
+      // then.
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      expect(_printTrace(_Trace()), contains('_Trace'));
+    });
+
+    test('a root replacement rule leaves a Loggable stack trace alone', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      final out = _printTrace(_Trace());
+      expect(out, contains('_Trace'));
+      expect(out, isNot(contains('***')));
+    });
   });
 }
 
@@ -656,6 +677,23 @@ String _printTags(Object? tags) {
   return lines.join('\n').trimRight();
 }
 
+/// Runs a log carrying [stackTrace] through a real [ConsoleLogPrinter].
+String _printTrace(StackTrace stackTrace) {
+  final lines = <String>[];
+  Logger('app')
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.noColors,
+      rows: const [
+        LogRow(maxLength: 200, children: [LogMessage()]),
+      ],
+      output: lines.add,
+    )
+    ..i('login', stackTrace: stackTrace);
+
+  return lines.join('\n');
+}
+
 /// The [Log] a tagged call produced, as a non-rendering publisher sees it.
 Log _logWithTags(Object? tags) {
   final publisher = _CapturePublisher();
@@ -690,4 +728,11 @@ final class _Tag with Loggable {
 
   @override
   void collectLoggableData(LoggableData data) => data.prop('v', value);
+}
+
+/// A stack trace that is also [Loggable]: both the printer (through
+/// `Trace.from`) and `FileLogCodec` render it with `toString()`.
+final class _Trace with Loggable implements StackTrace {
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('at', 'main');
 }

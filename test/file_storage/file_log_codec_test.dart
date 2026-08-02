@@ -42,6 +42,13 @@ final class _Tag with Loggable {
   void collectLoggableData(LoggableData data) => data.prop('v', value);
 }
 
+/// A stack trace that is also [Loggable] — the codec writes it with
+/// `toString()`, outside the walkers.
+final class _Trace with Loggable implements StackTrace {
+  @override
+  void collectLoggableData(LoggableData data) => data.prop('at', 'main');
+}
+
 void main() {
   group('FileLogCodec.encode', () {
     test('encodes full schema', () {
@@ -178,6 +185,24 @@ void main() {
       final log = _makeLog((l) => l.i('m', data: {'k': 'topsecret'}));
 
       expect(_decode(FileLogCodec().encode(log))['data'], '"***"');
+    });
+
+    test('a root drop rule does not erase a Loggable stack trace', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', stackTrace: _Trace()));
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map['stackTrace'], '_Trace(at: "main")');
+    });
+
+    test('a root replacement rule leaves a Loggable stack trace alone', () {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '***' : ctx.value;
+
+      final log = _makeLog((l) => l.i('m', stackTrace: _Trace()));
+
+      final map = _decode(FileLogCodec().encode(log));
+      expect(map['stackTrace'], '_Trace(at: "main")');
     });
 
     test('the error and the tags are unchanged without a rule', () {

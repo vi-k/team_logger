@@ -1,5 +1,6 @@
 import 'package:stack_trace/stack_trace.dart';
 
+import '../loggable/loggable.dart';
 import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
 import 'constraints.dart';
@@ -38,12 +39,19 @@ final class LogStackTrace implements LogBlock {
     // var trace = Trace.parse(
     //   '#0      State._update (package:tez_taxi/feature/bottom_sheet_contents/on_map_scopes/track_driver_on_map/aaaaaa_bbbbbb_track_driver_on_map.dart:12:123)',
     // );
-    var trace = Trace.from(stackTrace);
-    if (terse) {
-      trace = trace.terse;
-    }
+    // The stack trace is outside the sanitizer's documented scope (values
+    // inside `data` only), so it is parsed with the root offer suppressed:
+    // a `depth == 0` rule must not be able to erase or rewrite a trace
+    // whose object also happens to be Loggable. `Trace.from` is lazy — it
+    // stringifies the stack trace only when the frames are read — so the
+    // guard has to cover reading them, not just the call.
+    final frames = Loggable.renderOutsideSanitizerScope(() {
+      final trace = Trace.from(stackTrace);
 
-    var lines = trace.frames.indexed.map(
+      return (terse ? trace.terse : trace).frames;
+    });
+
+    var lines = frames.indexed.map(
       (e) {
         final (index, frame) = e;
         final member = frame.member;
