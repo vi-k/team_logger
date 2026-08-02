@@ -182,6 +182,95 @@ void main() {
       );
     });
 
+    test(
+      'a wrapped multi-data root replacement inherits the wrapper config, '
+      'but not units',
+      () {
+        // Same claim as the plain multi-data case above, but the config
+        // now lives on the LoggableWrapper around it, not on the
+        // multi-data itself. All four renderers must still agree —
+        // LoggableWrapper.toString stands in for LoggableMultiData
+        // .toString here, since once wrapped the wrapper is the root, not
+        // the multi-data inside it.
+        Loggable.sanitizer = (ctx) => ctx.depth == 0 ? [1, 2, 3] : ctx.value;
+
+        final wrapper = Loggable.from(
+          LoggableMultiData({'s': 'topsecret'}),
+          config: const LoggableConfig(collectionMaxCount: 1, units: 'kg'),
+        );
+
+        const text = '[₌₃ ₀:1, …]';
+        expect(
+          wrapper.toString(),
+          text,
+          reason: 'LoggableWrapper.toString',
+        );
+        expect(
+          _printData(wrapper),
+          'login: $text',
+          reason: 'ConsoleLogPrinter',
+        );
+        expect(
+          Loggable.objectToString(wrapper),
+          text,
+          reason: 'Loggable.objectToString',
+        );
+        expect(
+          Loggable.objectToJson(wrapper),
+          {
+            ':k': 'list',
+            ':l': 3,
+            ':v': [1],
+          },
+          reason: 'Loggable.objectToJson',
+        );
+      },
+    );
+
+    test(
+      'a wrapped multi-data root replacement inherits the multi-data own '
+      'config, but not units, even when the wrapper carries none',
+      () {
+        // Mirror direction: the config lives on the LoggableMultiData
+        // itself, and the LoggableWrapper around it carries none of its
+        // own. Both directions must land on the same rendering.
+        Loggable.sanitizer = (ctx) => ctx.depth == 0 ? [1, 2, 3] : ctx.value;
+
+        final wrapper = Loggable.from(
+          LoggableMultiData(
+            {'s': 'topsecret'},
+            config: const LoggableConfig(collectionMaxCount: 1, units: 'kg'),
+          ),
+        );
+
+        const text = '[₌₃ ₀:1, …]';
+        expect(
+          wrapper.toString(),
+          text,
+          reason: 'LoggableWrapper.toString',
+        );
+        expect(
+          _printData(wrapper),
+          'login: $text',
+          reason: 'ConsoleLogPrinter',
+        );
+        expect(
+          Loggable.objectToString(wrapper),
+          text,
+          reason: 'Loggable.objectToString',
+        );
+        expect(
+          Loggable.objectToJson(wrapper),
+          {
+            ':k': 'list',
+            ':l': 3,
+            ':v': [1],
+          },
+          reason: 'Loggable.objectToJson',
+        );
+      },
+    );
+
     test('every renderer offers the multi-data root exactly once', () {
       var roots = 0;
       Loggable.sanitizer = (ctx) {
