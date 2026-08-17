@@ -1,3 +1,9 @@
+> **Состояние на 2026-08-17:** сделано и смержено (ветка `fix/package-review`,
+> влилась в `main` перед 0.4.1); отложенные пункты дожили до `docs/backlog.md`
+> и раздела «Известные ограничения» в `docs/handoff.md`.
+> **Что это:** план исправлений по итогам полного ревью пакета 0.4.0.
+> **Связанные записи:** `2026-07-27[2]-file-log-storage-design.md`.
+
 # Полное ревью пакета team_logger 0.4.0 — план исправлений
 
 Дата: 2026-07-27
@@ -26,7 +32,7 @@ theme + utils, (4) пакет как продукт (API, доки, публик
   Отмечено в TODO.md, но не сделано.
 - **PKG-M3 (major)** — `pub publish --dry-run` даёт warning (папка `docs`
   вместо `doc`); в архив попадают CLAUDE.md, TODO.md, внутренние спеки
-  `docs/superpowers/*`, `scripts/`, 3 МБ скриншотов. Нужен `.pubignore`.
+  `docs/`, `scripts/`, 3 МБ скриншотов. Нужен `.pubignore`.
 - **PKG-M1 (major)** — CHANGELOG 0.4.0 не фиксирует волну breaking
   changes: `sequenceNum`→`num` (Log/LogSequenceNum→LogNum/numStyle/
   indexByNum), `collectionShowLength`→`collectionShowCount`,

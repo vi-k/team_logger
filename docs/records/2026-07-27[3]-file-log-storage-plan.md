@@ -1,8 +1,13 @@
+> **Состояние на 2026-08-17:** выполнен полностью (`12edda6`), релиз 0.4.0.
+> **Что это:** пошаговый план реализации `FileLogStorage` по спеке
+> `2026-07-27[2]-file-log-storage-design.md`.
+> **Связанные записи:** `2026-07-27[2]-file-log-storage-design.md`.
+
 # FileLogStorage Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Сессионное сохранение логов в JSONL-файлы с ротацией чанков, очисткой по TTL/суммарному размеру, листингом, экспортом и ZIP-архивацией — по спеке `docs/superpowers/specs/2026-07-27-file-log-storage-design.md`.
+**Goal:** Сессионное сохранение логов в JSONL-файлы с ротацией чанков, очисткой по TTL/суммарному размеру, листингом, экспортом и ZIP-архивацией — по спеке `docs/records/2026-07-27[2]-file-log-storage-design.md`.
 
 **Architecture:** Новый publisher `FileLogStorage extends AsyncPublisherWithBufferBase<Log>` (батчевая асинхронная запись). Кодек Log→JSONL и meta-строка — отдельный модуль. Листинг/чтение/экспорт/архив — `FileLogSessions`/`FileLogSession`. Всё в `lib/src/file_storage/`, экспортируется новым `lib/team_logger_io.dart` (dart:io недопустим в `team_logger.dart`).
 

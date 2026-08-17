@@ -1,6 +1,6 @@
 # Внутренняя кухня — не для pub-архива.
+AGENTS.md
 CLAUDE.md
-TODO.md
 docs/
 scripts/
 # Картинки README pub.dev резолвит через repository (GitHub).

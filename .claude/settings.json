@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== docs/handoff.md (текущее состояние проекта) ==='; cat \"${CLAUDE_PROJECT_DIR:-.}/docs/handoff.md\" 2>/dev/null || true",
+            "statusMessage": "Читаю docs/handoff.md"
+          }
+        ]
+      }
+    ]
+  }
+}

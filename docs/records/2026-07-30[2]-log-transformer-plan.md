@@ -1,3 +1,7 @@
+> **Состояние на 2026-08-17:** выполнен полностью, релиз 0.5.2.
+> **Что это:** пошаговый план реализации `Logger.transformer`.
+> **Связанные записи:** `2026-07-30[1]-log-transformer-design.md`.
+
 # LogTransformer (обработка лога до публикации) — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -16,7 +20,7 @@
 **Tech Stack:** Pure Dart. Репозитории: `/Users/user/development/my/logger_builder`
 (релиз 0.5.0) и `/Users/user/development/my/team_logger` (релиз 0.5.2).
 
-**Спека:** `docs/superpowers/specs/2026-07-30-log-transformer-design.md`
+**Спека:** `docs/records/2026-07-30[1]-log-transformer-design.md`
 (в репо team_logger). При расхождении плана и спеки — спека главнее.
 
 ## Global Constraints

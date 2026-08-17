@@ -1,3 +1,8 @@
+> **Состояние на 2026-08-17:** выполнен полностью, релиз 0.6.0; продолжение —
+> кросс-ревью и правки, вошедшие в 0.7.0.
+> **Что это:** пошаговый план реализации `Loggable.sanitizer`.
+> **Связанные записи:** `2026-07-30[3]-data-sanitizer-design.md`.
+
 # Санитайзация значений data при выводе — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -18,7 +23,7 @@ multi-data), плюс точками входа для корня. Регист�
 (/Users/user/development/my/team_logger). Релиз 0.6.0. `logger_builder`
 не трогаем.
 
-**Спека:** `docs/superpowers/specs/2026-07-30-data-sanitizer-design.md`
+**Спека:** `docs/records/2026-07-30[3]-data-sanitizer-design.md`
 (редакция v2). При расхождении плана и спеки — спека главнее. Обрати
 внимание на раздел «История решения»: вариант с пересборкой структуры
 при создании лога рассмотрен и отклонён, возвращаться к нему не надо.
