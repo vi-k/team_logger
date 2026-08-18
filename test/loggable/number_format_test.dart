@@ -27,11 +27,11 @@ void main() {
       '+d': '+42',
     };
 
-    cases.forEach((spec, expected) {
+    for (final MapEntry(key: spec, value: expected) in cases.entries) {
       test('{:$spec} renders $expected', () {
         expect(render(42, LoggableConfig(intFormat: spec)), expected);
       });
-    });
+    }
 
     test('groups thousands', () {
       expect(
@@ -62,14 +62,14 @@ void main() {
       'g': '1234.5678',
     };
 
-    cases.forEach((spec, expected) {
+    for (final MapEntry(key: spec, value: expected) in cases.entries) {
       test('{:$spec} renders $expected', () {
         expect(
           render(1234.5678, LoggableConfig(doubleFormat: spec)),
           expected,
         );
       });
-    });
+    }
 
     test('rounds half to even the same way in every branch', () {
       expect(render(2.675, const LoggableConfig(doubleFormat: '.2f')), '2.67');
