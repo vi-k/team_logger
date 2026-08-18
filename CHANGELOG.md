@@ -45,6 +45,36 @@
   it, so such entries are redacted by value rather than by key text; a
   [Prop] rendered on its own prints `'<dropped>'`, having no container to
   remove it from.
+- [breaking changes] Require `ansi_escape_codes` ^4.0.1, up from ^3.1.2.
+  Its 530 top-level style constants are gone: the table is one class now,
+  so a theme written as `ansi.rgb030` is written `Styles.rgb030`, and
+  `ansi.bold` is `Styles.bold`. The names this package hands on are
+  otherwise unchanged, and `Styles` is re-exported beside [Style],
+  [NoStyle], [Color16] and [Color256] — a theme needs no direct dependency
+  on the package that defines them. Code that reaches into
+  `ansi_escape_codes` directly for other reasons also loses the `parsing`
+  entry point (`style.dart` carries the same names), and finds `Match` as
+  `Piece`, `Link` as `OscLink` and `rgb`/`gray` as `rgb256`/`gray256`; see
+  its own changelog for the rest.
+- [breaking changes] Require `logger_builder` ^0.6.1, up from ^0.5.0 (the
+  changes flow through the re-export). A transformer that logs through its
+  own logger is now caught by a reentrancy guard — the nested log is
+  dropped and a [StateError] is reported — where before the call recursed
+  into a `StackOverflowError`; the dartdoc on [Logger] said the old thing
+  and now says this one. A level logger is rejected at a threshold
+  (`Levels.all`/`Levels.off`), registering one level logger in two loggers
+  throws, `TransformPublisher.close()` is terminal and idempotent, and a
+  sublogger holds its parent strongly, so an intermediate logger nobody
+  kept no longer stops passing `level`/`publisher` changes down.
+- New from that upgrade, without any work here: `CustomLogger.onError` —
+  one hook for a throwing transformer, a reentrancy violation and a
+  throwing publisher, resolved through the parent chain — plus
+  `CustomLevelLogger.hasPublisher`, `AsyncPublisherWithBufferBase.onDropped`
+  and a `retryDelay` on the buffered publishers [FileLogStorage] is built
+  on. That upgrade also carries the buffered-publisher fixes that matter
+  most to file storage: `flush()` during a `close()` returns the close
+  instead of a false all-clear, `close()` no longer sleeps through a
+  pending retry, and a failing sink no longer starves the event loop.
 
 ## 0.6.0
 

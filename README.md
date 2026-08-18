@@ -258,7 +258,7 @@ so it doesn't interfere with log analysis:
 
 ```dart
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
-  hiddenStyle: ansi.rgb050,
+  hiddenStyle: Styles.rgb050,
 );
 ```
 
@@ -382,6 +382,9 @@ final log = Logger('app')
 
 `team_logger` supports color-coded and structured console output using
 the [ansi_escape_codes](https://pub.dev/packages/ansi_escape_codes) package.
+`Style`, `NoStyle`, `Color16`, `Color256` and the `Styles` table of
+ready-made styles (`Styles.red`, `Styles.rgb050`, `Styles.bold`) are
+re-exported, so theming needs no direct dependency on it.
 
 #### Color Themes & Palettes
 
@@ -416,10 +419,10 @@ Or create your own palette:
 ```dart
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
   info: LogThemeData.seed(
-    normal: ansi.rgb030,
-    emphasis: ansi.rgb252,
-    dim: ansi.rgb020,
-    punctuation: ansi.rgb550,
+    normal: Styles.rgb030,
+    emphasis: Styles.rgb252,
+    dim: Styles.rgb020,
+    punctuation: Styles.rgb550,
     // ...
   ),
 );
@@ -456,24 +459,24 @@ final theme = LogMainTheme.defaultActiveTheme.copyWith(
     // ...
     depthThemes: [
       LogDepthTheme(
-        brackets: ansi.gray20,
-        punctuation: ansi.gray20,
-        description: ansi.gray20,
+        brackets: Styles.gray20,
+        punctuation: Styles.gray20,
+        description: Styles.gray20,
       ),
       LogDepthTheme(
-        brackets: ansi.gray16,
-        punctuation: ansi.gray16,
-        description: ansi.gray16,
+        brackets: Styles.gray16,
+        punctuation: Styles.gray16,
+        description: Styles.gray16,
       ),
       LogDepthTheme(
-        brackets: ansi.gray12,
-        punctuation: ansi.gray12,
-        description: ansi.gray12,
+        brackets: Styles.gray12,
+        punctuation: Styles.gray12,
+        description: Styles.gray12,
       ),
       LogDepthTheme(
-        brackets: ansi.gray8,
-        punctuation: ansi.gray8,
-        description: ansi.gray8,
+        brackets: Styles.gray8,
+        punctuation: Styles.gray8,
+        description: Styles.gray8,
       ),
     ],
   ),
@@ -801,10 +804,10 @@ You can add your own tags:
 ```dart
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
   messageStyles: {
-    'b': LogStyle(ansi.bold),
-    'i': LogStyle(ansi.italic),
-    's': LogStyle(ansi.strikethrough),
-    'u': LogStyle(ansi.underline),
+    'b': LogStyle(Styles.bold),
+    'i': LogStyle(Styles.italic),
+    's': LogStyle(Styles.strikethrough),
+    'u': LogStyle(Styles.underline),
   },
 );
 

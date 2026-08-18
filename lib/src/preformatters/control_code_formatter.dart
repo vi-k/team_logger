@@ -1,4 +1,4 @@
-import 'package:ansi_escape_codes/parsing.dart' as ansi;
+import 'package:ansi_escape_codes/style.dart' as ansi;
 
 import '../loggable/loggable.dart';
 import '../theme/log_main_theme.dart';

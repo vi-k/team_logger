@@ -117,8 +117,8 @@ final class LevelLogger
 /// inherited by subloggers the same way as `level` and `publisher`.
 /// Write transformers with [Log.copyWith] — it preserves the log's
 /// number and time. Do not log through the same logger from inside a
-/// transformer: the call re-enters the transformer and recurses until
-/// [StackOverflowError].
+/// transformer: the reentrancy guard drops the nested log and reports a
+/// [StateError] to `onError` (or to the current zone, with no handler set).
 ///
 /// For per-value redaction inside `data` — nested objects, maps,
 /// collections — use [Loggable.sanitizer] instead: it is offered every

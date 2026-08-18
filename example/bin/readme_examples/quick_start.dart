@@ -26,7 +26,7 @@ final log = Logger('app')
 Future<void> main() async {
   // For README: add filter field
   // print(
-  //   ansi.rgb122('''
+  //   Styles.rgb122('''
   //                                                                                 ╭────────────────────────────────────╮
   //                                                                         Filter: │ (4)                                │
   //                                                                                 ╰────────────────────────────────────╯'''),
@@ -46,7 +46,7 @@ Future<void> main() async {
 
 // For README: add description of log line
 //   print(
-//     ansi.rgb311('''
+//     Styles.rgb311('''
 //  ┬   ┬                ┬──────────   ┬────────  ──────┬────────────────────────────────────────────╯ ╰──────────────────┬
 //  │   ╰─ level         │             ╰─ trace ID      ╰─ message with data                                        tags ─╯
 //  ╰─ sequence number   ╰─ namespace path

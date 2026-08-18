@@ -218,10 +218,10 @@ final class LogMainTheme with Loggable {
         _ => throw Exception('Unknown log level: $level'),
       };
 
-  static const _activeTraceIdStyle = ansi.rgb530;
-  static const _inactiveTraceIdStyle = ansi.rgb210;
+  static const _activeTraceIdStyle = ansi.Styles.rgb530;
+  static const _inactiveTraceIdStyle = ansi.Styles.rgb210;
 
-  static const _tagsStyle = ansi.gray5;
+  static const _tagsStyle = ansi.Styles.gray5;
   static const _hiddenStyle =
       ansi.Style(foreground: ansi.Color256.rgb000, invisible: true);
 
@@ -235,28 +235,28 @@ final class LogMainTheme with Loggable {
     traceIdStyle: _activeTraceIdStyle,
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,
-    cycleStyle: ansi.rgb431,
+    cycleStyle: ansi.Styles.rgb431,
   );
 
   static final LogMainTheme defaultInactiveTheme = LogMainTheme._(
-    verbose: LogThemeData.inactiveSeed(normal: ansi.gray5),
-    debug: LogThemeData.inactiveSeed(normal: ansi.gray7),
-    info: LogThemeData.inactiveSeed(normal: ansi.rgb123),
-    warning: LogThemeData.inactiveSeed(normal: ansi.rgb320),
-    error: LogThemeData.inactiveSeed(normal: ansi.rgb300),
-    critical: LogThemeData.inactiveSeed(normal: ansi.rgb303),
+    verbose: LogThemeData.inactiveSeed(normal: ansi.Styles.gray5),
+    debug: LogThemeData.inactiveSeed(normal: ansi.Styles.gray7),
+    info: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb123),
+    warning: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb320),
+    error: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb300),
+    critical: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb303),
     traceIdStyle: _inactiveTraceIdStyle,
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,
   );
 
   static final LogMainTheme defaultInactiveTheme2 = LogMainTheme._(
-    verbose: LogThemeData.inactiveSeed(normal: ansi.gray4),
-    debug: LogThemeData.inactiveSeed(normal: ansi.gray6),
-    info: LogThemeData.inactiveSeed(normal: ansi.rgb012),
-    warning: LogThemeData.inactiveSeed(normal: ansi.rgb210),
-    error: LogThemeData.inactiveSeed(normal: ansi.rgb200),
-    critical: LogThemeData.inactiveSeed(normal: ansi.rgb202),
+    verbose: LogThemeData.inactiveSeed(normal: ansi.Styles.gray4),
+    debug: LogThemeData.inactiveSeed(normal: ansi.Styles.gray6),
+    info: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb012),
+    warning: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb210),
+    error: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb200),
+    critical: LogThemeData.inactiveSeed(normal: ansi.Styles.rgb202),
     traceIdStyle: _inactiveTraceIdStyle,
     tagsStyle: _tagsStyle,
     hiddenStyle: _hiddenStyle,

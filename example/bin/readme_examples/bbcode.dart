@@ -1,4 +1,3 @@
-import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:example/readme_examples/init_log.dart';
 import 'package:team_logger/team_logger.dart';
 
@@ -17,10 +16,10 @@ void main() {
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(
       messageStyles: {
-        'b': LogStyle(ansi.bold),
-        'i': LogStyle(ansi.italic),
-        's': LogStyle(ansi.strikethrough),
-        'u': LogStyle(ansi.underline),
+        'b': LogStyle(Styles.bold),
+        'i': LogStyle(Styles.italic),
+        's': LogStyle(Styles.strikethrough),
+        'u': LogStyle(Styles.underline),
       },
     ),
   );

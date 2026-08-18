@@ -1,4 +1,3 @@
-import 'package:ansi_escape_codes/style.dart' as ansi;
 import 'package:example/readme_examples/init_log.dart';
 import 'package:team_logger/team_logger.dart';
 
@@ -54,7 +53,7 @@ Future<void> main() async {
 
   print('----- Hidden key info -----');
   initLog(
-    theme: LogMainTheme.defaultActiveTheme.copyWith(hiddenStyle: ansi.rgb050),
+    theme: LogMainTheme.defaultActiveTheme.copyWith(hiddenStyle: Styles.rgb050),
   );
   log.d('User info', traceId: TraceId.auto('user'), data: person);
 

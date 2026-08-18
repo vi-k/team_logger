@@ -32,7 +32,7 @@ Future<void> main() async {
 
   // For README: add description
   // print(
-  //   ansi.rgb311('''
+  //   Styles.rgb311('''
   //                           ─────┬
   //                                ╰─ lazy-4, not lazy-6'''),
   // );
