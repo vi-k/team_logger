@@ -3,11 +3,11 @@ include: package:lints/recommended.yaml
 analyzer:
   exclude:
     # Web
-    "web/**": true
+    - "web/**"
     # Build
-    "build/**": true
+    - "build/**"
     # Assets
-    "assets/**": true
+    - "assets/**"
 
   language:
     strict-casts: true
