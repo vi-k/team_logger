@@ -25,9 +25,11 @@ dependencies:
   # the `@internal`, `@nonVirtual` and `@visibleForTesting` annotations all
   # predate them.
   clock: ^1.1.1
-  # Stays on 1.x: format 3.0.0 raised its own floor to Dart ^3.7.2, which
-  # would take the first usable Flutter from 3.27 to 3.29.2.
-  format: '>=1.5.2 <2.0.0'
+  # 4.1.0 lowered its own floor back to Dart ^3.6.0 and, since 3.0.0, no
+  # longer depends on `intl` — which is what kept this package out of a
+  # localized Flutter app: `flutter_localizations` pins intl 0.19.0 on
+  # Flutter 3.27 and 3.29, where format 1.6.0 wanted ^0.20.2.
+  format: ^4.1.0
   logger_builder: ^0.6.1
   meta: ^1.15.0
   stack_trace: ^1.12.0

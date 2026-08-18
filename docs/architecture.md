@@ -14,10 +14,10 @@
 версией из своего SDK, поэтому floor выше такого пина — не «более свежий
 резолв», а отказ version solving. Отсюда правило: floor'ы `clock`, `meta`,
 `stack_trace` держатся на пинах самой старой поддерживаемой линии Flutter,
-а ограничение на `format` учитывает ещё и его собственные зависимости
-(`characters` пиннит Flutter, `intl` — `flutter_localizations`). Матрицу
-проверяют вручную: `flutter pub get` в пробном приложении, с
-`flutter_localizations` и без, на каждой поддерживаемой линии.
+а зависимости зависимостей проверяются так же (`characters` пиннит сам
+Flutter, `intl` — `flutter_localizations`). Матрицу проверяют вручную:
+`flutter pub get` в пробном приложении, с `flutter_localizations` и без, на
+каждой поддерживаемой линии.
 
 Две точки входа:
 

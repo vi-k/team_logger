@@ -82,16 +82,19 @@
   than a newer resolve. `clock`, `meta` and `stack_trace` now sit at the
   3.27 pins (^1.1.1, ^1.15.0, ^1.12.0) instead of the 3.29 ones, and
   nothing here needs anything newer.
-- `format` is `>=1.5.2 <2.0.0` instead of `^1.6.0`, for the same reason one
-  level down: 1.6.0 wants `characters` ^1.4.0 where Flutter 3.27 pins
-  1.3.0, and `intl` ^0.20.2 where `flutter_localizations` pins 0.19.0 on
-  both 3.27 and 3.29 — a localized application could not take this package
-  at all on those. Which of 1.5.2 and 1.6.0 an application resolves is now
-  its own SDK's business, and `test/loggable/number_format_test.dart` pins
-  `intFormat`/`doubleFormat` output on both so the branch cannot change
-  what a log looks like. The upper bound is deliberate: `format` 3.0.0 and
-  4.0.0 raise their own floor to Dart ^3.7.2 (Flutter 3.29.2), and they
-  render `{:g}` as `1234.5678` where 1.x renders `1234.57`.
+- [breaking changes] Require `format` ^4.1.0, up from ^1.6.0, which is what
+  made the above possible one level down. 1.6.0 wanted `characters` ^1.4.0
+  where Flutter 3.27 pins 1.3.0, and `intl` ^0.20.2 where
+  `flutter_localizations` pins 0.19.0 on both 3.27 and 3.29 — a localized
+  application could not take this package at all on those lines. `format`
+  4.1.0 lowered its own floor to Dart ^3.6.0 and has had no `intl`
+  dependency since 3.0.0, so `intl` leaves the dependency graph of every
+  application that takes this package. One rendering moves with the
+  upgrade: `doubleFormat: 'g'` prints `1234.5678` for 1234.5678 where the
+  1.x branch printed `1234.57`. Everything else — padding, grouping,
+  radices, fixed and exponential forms, rounding — is unchanged, and
+  `test/loggable/number_format_test.dart` now pins all of it; that file
+  covers `intFormat`/`doubleFormat` for the first time.
 
 ## 0.6.0
 
