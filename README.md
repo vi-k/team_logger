@@ -2,6 +2,7 @@
 
 [![Pub Version](https://img.shields.io/pub/v/team_logger)](https://pub.dev/packages/team_logger)
 [![Dart SDK](https://img.shields.io/badge/dart-3.6.0-blue.svg)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/flutter-3.27.0-blue.svg)](https://flutter.dev)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A highly-configurable, trace-aware, structured logging library designed for

@@ -16,12 +16,23 @@ environment:
 dependencies:
   ansi_escape_codes: ^4.0.1
   archive: ^4.0.9
-  clock: ^1.1.2
-  format: ^1.6.0
+  # clock, meta and stack_trace come out of the Flutter SDK, which pins them
+  # to an *exact* version, so a floor above that pin is a version-solving
+  # failure on that Flutter — not a newer resolve. Flutter 3.27, the line
+  # carrying Dart 3.6 (the floor declared above), pins clock 1.1.1,
+  # meta 1.15.0 and stack_trace 1.12.0, and these floors are those pins.
+  # Nothing here needs anything newer: `clock.now()`, `Trace`/`Chain`, and
+  # the `@internal`, `@nonVirtual` and `@visibleForTesting` annotations all
+  # predate them.
+  clock: ^1.1.1
+  # Stays on 1.x: format 3.0.0 raised its own floor to Dart ^3.7.2, which
+  # would take the first usable Flutter from 3.27 to 3.29.2.
+  format: '>=1.5.2 <2.0.0'
   logger_builder: ^0.6.1
-  meta: ^1.16.0
-  stack_trace: ^1.12.1
+  meta: ^1.15.0
+  stack_trace: ^1.12.0
 
 dev_dependencies:
   lints: ^5.0.0
   test: ^1.24.0
+

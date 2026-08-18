@@ -75,6 +75,23 @@
   most to file storage: `flush()` during a `close()` returns the close
   instead of a false all-clear, `close()` no longer sleeps through a
   pending retry, and a failing sink no longer starves the event loop.
+- The package installs into a Flutter application again, from Flutter 3.27
+  — the line that carries Dart 3.6, the floor this package declares. It
+  did not: Flutter pins several packages to an *exact* version out of its
+  own SDK, so a floor above such a pin is a version-solving failure rather
+  than a newer resolve. `clock`, `meta` and `stack_trace` now sit at the
+  3.27 pins (^1.1.1, ^1.15.0, ^1.12.0) instead of the 3.29 ones, and
+  nothing here needs anything newer.
+- `format` is `>=1.5.2 <2.0.0` instead of `^1.6.0`, for the same reason one
+  level down: 1.6.0 wants `characters` ^1.4.0 where Flutter 3.27 pins
+  1.3.0, and `intl` ^0.20.2 where `flutter_localizations` pins 0.19.0 on
+  both 3.27 and 3.29 — a localized application could not take this package
+  at all on those. Which of 1.5.2 and 1.6.0 an application resolves is now
+  its own SDK's business, and `test/loggable/number_format_test.dart` pins
+  `intFormat`/`doubleFormat` output on both so the branch cannot change
+  what a log looks like. The upper bound is deliberate: `format` 3.0.0 and
+  4.0.0 raise their own floor to Dart ^3.7.2 (Flutter 3.29.2), and they
+  render `{:g}` as `1234.5678` where 1.x renders `1234.57`.
 
 ## 0.6.0
 
