@@ -1,3 +1,51 @@
+## 0.7.0
+
+- [breaking changes] A root-position rule (`ctx.depth == 0`) now also
+  applies to a plain `toString()`: `'$obj'` and `print(obj)` for a
+  [Loggable] or [LoggableData] go through the sanitizer, where before only
+  their properties did. Everything the library renders outside the
+  sanitizer's documented scope — the message, the error, the stack trace,
+  the tags and the namespace path — is explicitly kept out of it, so a
+  rule can no longer erase an error or rewrite the cached [Log.tags] that
+  `activeTags` filters on.
+- [breaking changes] A replacement no longer inherits `units` anywhere:
+  units describe the original quantity and a mask is not it. Properties
+  already behaved this way; the root now matches. The rest of a
+  container's config (`collectionMaxCount` and friends) is still
+  inherited, since that describes how to print rather than what the value
+  is.
+- Two leaks found by a two-reviewer cross-review of 0.6.0 are closed. The
+  console printer and the public [LoggableMultiData.toString] rendered
+  multi-data sections themselves and never offered the ROOT value, so a
+  root-level rule was honoured in JSONL files and silently ignored on the
+  console. And a `view` that re-enters the walkers (a raw
+  [Loggable]/[LoggableWrapper], or a [LoggableView] converter that
+  renders) restarted at an empty path, so a path-based rule both missed it
+  and could over-redact an unrelated top-level property of the same name.
+- A [Map] key is now rendered once instead of twice. It used to be
+  rendered a first time to derive `ctx.name` and a second time for the
+  output, the two firing the rule at different paths — and the printed one
+  was the unsanitized second. The derivation also ran with no sanitizer
+  installed, doubling `toString()` calls and breaking a key whose
+  `toString()` throws; that path is back to its 0.5.2 behaviour.
+- A rule that throws no longer persists what it refused: [FileLogStorage]
+  writes only the error TYPE into the fallback line (`ArgumentError.value`
+  puts the offending value into the message, and the file is where it must
+  not end up). The full error still reaches `onError`.
+- `collectionMaxCount` no longer offers the element it then discards;
+  [LoggableData.toJson] no longer allocates a sanitizer-only list when no
+  rule is installed; the printer and the file codec decide on an exact
+  dropped signal instead of inferring one from an empty rendering, so data
+  that legitimately renders empty keeps its colon while a multi-data whose
+  sections were all dropped prints no data block at all.
+- Documented boundaries that 0.6.0 stated too broadly: a [Map] key is not
+  offered to the rule (its contents are, but only where the key's
+  rendering enters the walkers, and under the container's path); for a
+  non-`String` key `ctx.name` is the key as that particular output renders
+  it, so such entries are redacted by value rather than by key text; a
+  [Prop] rendered on its own prints `'<dropped>'`, having no container to
+  remove it from.
+
 ## 0.6.0
 
 - Per-value sanitization of logged data: assign [Loggable.sanitizer] to
