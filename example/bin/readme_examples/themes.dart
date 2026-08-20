@@ -1,18 +1,26 @@
-import 'package:ansi_escape_codes/extensions.dart';
+import 'package:example/readme_examples/frames.dart';
 import 'package:example/readme_examples/init_log.dart';
 import 'package:team_logger/team_logger.dart';
 
-void main() {
-  const person = {'firstName': 'John', 'lastName': 'Smith', 'age': 42};
+const _person = {'firstName': 'John', 'lastName': 'Smith', 'age': 42};
 
-  print('----- Color theme -----');
+final frames = <String, Frame>{
+  'themes_1': _colorTheme,
+  'themes_2': _depthThemes,
+  'themes_3': _noColorTheme,
+};
+
+void main(List<String> args) => runFrames(frames, args);
+
+/// Готовые палитры и своя, собранная из семени.
+void _colorTheme() {
   initLog();
-  log.i('color theme', data: person);
+  log.i('color theme', data: _person);
 
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(info: LogThemeData.rgb122),
   );
-  log.i('color theme', data: person);
+  log.i('color theme', data: _person);
 
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(
@@ -26,9 +34,11 @@ void main() {
       ),
     ),
   );
-  log.i('color theme', data: person);
+  log.i('color theme', data: _person);
+}
 
-  print('----- Depth themes -----');
+/// Раскраска скобок по глубине.
+void _depthThemes() {
   const deeplyNested = [
     123,
     [
@@ -83,15 +93,10 @@ void main() {
     ),
   );
   log.i('depth themes', data: deeplyNested);
+}
 
-  print('----- No color theme -----');
+/// Бесцветная тема и показ самих escape-кодов.
+void _noColorTheme() {
   initLog(theme: LogMainTheme.noColors);
-  log.d('no colors', data: person);
-
-  // No ANSI escape codes.
-  initLog(
-    theme: LogMainTheme.noColors,
-    output: (str) => print(str.ansiShowEscapeSequences()),
-  );
-  log.d('no colors', data: person);
+  log.d('no colors', data: _person);
 }
