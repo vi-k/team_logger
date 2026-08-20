@@ -18,6 +18,18 @@ typedef LogThemeFormatter<T extends Object?> = String Function(
   T,
 );
 
+/// A theme's number formatter: it receives the value and the **opaque
+/// pattern** from `LoggableConfig.intFormat`/`LoggableConfig.doubleFormat`
+/// and returns the rendered string.
+///
+/// The package does not parse the pattern and defines no syntax for it —
+/// the formatter does. See [LogMainTheme.numberFormatter].
+typedef LogNumberFormatter = String Function(
+  LogTheme theme,
+  num value,
+  String pattern,
+);
+
 /// The root theme: six per-level [LogThemeData]s plus shared styling
 /// (quotes, ellipsis, message/value formatters, trace id and tag styles).
 ///
@@ -63,6 +75,26 @@ final class LogMainTheme with Loggable {
   final LogPreFormatter messageFormatter;
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
+
+  /// Renders a number whose `LoggableConfig.intFormat` or
+  /// `LoggableConfig.doubleFormat` is set; the pattern arrives here exactly
+  /// as it was written, together with the value.
+  ///
+  /// The default ignores the pattern and prints `value.toString()`: this
+  /// package depends on no number formatter and knows no pattern syntax.
+  /// Install one to make patterns work — for example over
+  /// [`package:format`](https://pub.dev/packages/format), which is what the
+  /// README documents:
+  ///
+  /// ```dart
+  /// LogMainTheme.defaultActiveTheme.copyWith(
+  ///   numberFormatter: (theme, value, pattern) => format(pattern, value),
+  /// )
+  /// ```
+  ///
+  /// An exception thrown here reaches the publisher that was rendering, the
+  /// same way a throwing [Loggable.sanitizer] rule does.
+  final LogNumberFormatter numberFormatter;
   final Set<String> tags;
   final String errorTitle;
   final String stackTraceTitle;
@@ -105,6 +137,7 @@ final class LogMainTheme with Loggable {
     this.messageFormatter = const BbCodeFormatter(),
     this.countFormatter = _defaultCountFormatter,
     this.indexFormatter = _defaultIndexFormatter,
+    this.numberFormatter = _defaultNumberFormatter,
     this.tags = const {},
     this.errorTitle = defaultErrorTitle,
     this.stackTraceTitle = defaultStackTraceTitle,
@@ -161,6 +194,7 @@ final class LogMainTheme with Loggable {
         messageFormatter = const BbCodeFormatter(),
         countFormatter = _defaultCountFormatter,
         indexFormatter = _defaultIndexFormatter,
+        numberFormatter = _defaultNumberFormatter,
         tags = const {},
         errorTitle = defaultErrorTitle,
         stackTraceTitle = defaultStackTraceTitle,
@@ -294,6 +328,13 @@ final class LogMainTheme with Loggable {
   static String _defaultCountFormatter(LogTheme theme, int count) =>
       '₌${subscript(count)}';
 
+  static String _defaultNumberFormatter(
+    LogTheme theme,
+    num value,
+    String pattern,
+  ) =>
+      value.toString();
+
   static String _defaultCycleFormatter(LogTheme theme, int levelsUp) =>
       '↺${subscript(levelsUp)}';
 
@@ -336,6 +377,7 @@ final class LogMainTheme with Loggable {
     LogPreFormatter? messageFormatter,
     LogThemeFormatter<int>? countFormatter,
     LogThemeFormatter<int>? indexFormatter,
+    LogNumberFormatter? numberFormatter,
     Set<String>? tags,
     String? errorTitle,
     String? stackTraceTitle,
@@ -371,6 +413,7 @@ final class LogMainTheme with Loggable {
         messageFormatter: messageFormatter ?? this.messageFormatter,
         countFormatter: countFormatter ?? this.countFormatter,
         indexFormatter: indexFormatter ?? this.indexFormatter,
+        numberFormatter: numberFormatter ?? this.numberFormatter,
         tags: tags ?? this.tags,
         errorTitle: errorTitle ?? this.errorTitle,
         stackTraceTitle: stackTraceTitle ?? this.stackTraceTitle,
@@ -424,6 +467,10 @@ final class LogMainTheme with Loggable {
               '${theme.styledClosingQuote}',
         ),
       )
+      // Без сэмпла, в отличие от соседей: любой пример шаблона был бы
+      // синтаксисом конкретного форматтера, а пакет как раз это знание
+      // и не держит.
+      ..prop('numberFormatter', numberFormatter)
       ..prop('tags', tags)
       ..prop('errorTitle', errorTitle)
       ..prop('stackTraceTitle', stackTraceTitle)

@@ -16,4 +16,12 @@ void main() {
     expect(color16, isA<Color16>());
     expect(namedStyle.foreground, isNotNull);
   });
+
+  test('team_logger exports the number formatter typedef', () {
+    expect(_plainNumber, isA<LogNumberFormatter>());
+    expect(_plainNumber(LogTheme.noColors, 42, 'ignored'), '42');
+  });
 }
+
+String _plainNumber(LogTheme theme, num value, String pattern) =>
+    value.toString();

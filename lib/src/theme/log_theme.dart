@@ -47,6 +47,9 @@ final class LogTheme with Loggable {
 
   String formatCycle(int levelsUp) => main.cycleFormatter(this, levelsUp);
 
+  String formatNumber(num value, String pattern) =>
+      main.numberFormatter(this, value, pattern);
+
   // Пустой depthThemes деградирует в бесстилевой вариант, а не роняет
   // форматирование первого же объекта.
   LogDepthTheme depthTheme(int depth) => data.depthThemes.isNotEmpty
