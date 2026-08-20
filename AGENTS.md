@@ -156,8 +156,21 @@ dart run build_runner build               # перегенерировать *.f
 dart run tool/playground.dart
 ```
 
-`scripts/ansi_screenshot.sh` рендерит ANSI-вывод в PNG для `screenshots/`
-(используются в README).
+Скриншоты README собираются из кадров: файл в
+`example/bin/readme_examples/` объявляет карту «имя картинки → функция», и
+каждый кадр снимается отдельным процессом под фиксированными часами,
+поэтому пересъёмка воспроизводима — и `.ansi`, и `.png` возвращаются
+байт-в-байт теми же, пока не изменился сам кадр.
+
+```bash
+scripts/screenshots.sh                 # пересобрать переведённые группы
+scripts/screenshots.sh --only trace    # одну группу
+scripts/screenshots.sh --check         # сверить .ansi, ничего не писать
+```
+
+Переведена пока одна группа — `trace`; остальные семь снимались вручную и
+пропускаются с `skip:`. `scripts/ansi_screenshot.sh` остаётся под скриптом
+выше и для ручных снимков.
 
 ## Язык
 
