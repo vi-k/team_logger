@@ -123,6 +123,36 @@ void main() {
       expect(out.logs.single.tags, contains('io'));
     });
 
+    test('a per-level publisher pins that level and leaves the rest linked',
+        () {
+      final (parent, parentOut) = _logger();
+      final child = parent.createChild(name: 'net');
+      final pinned = _Capture();
+
+      child[LogLevels.error].publisher = pinned;
+
+      child.i('info');
+      child.e('error');
+
+      expect(parentOut.logs.map((e) => e.message), ['info']);
+      expect(pinned.logs.map((e) => e.message), ['error']);
+      expect(child.publisherLinked, isTrue);
+
+      // Приколотый уровень не отвязывает ребёнка целиком: смена publisher'а
+      // у родителя по-прежнему доходит до остальных уровней.
+      final replaced = _Capture();
+      parent.publisher = replaced;
+
+      child.i('after');
+      child.e('after error');
+
+      expect(replaced.logs.map((e) => e.message), ['after']);
+      expect(
+        pinned.logs.map((e) => e.message),
+        ['error', 'after error'],
+      );
+    });
+
     test('copyWith keeps the path without extending it', () {
       final (log, out) = _logger();
       final copy = log.copyWith(tags: {'copy'});

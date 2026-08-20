@@ -1414,6 +1414,24 @@ is never limited — only sizes are):
 - **Per chunk** (`maxChunkSize`): when a chunk file reaches the limit, the
   next chunk is started. Must fit into `maxSessionSize` at least twice.
 
+Writing happens in the background, in batches, and the queue in front of it
+is bounded by `maxQueueSize` — 100 000 logs accepted and not yet written by
+default. At the limit it is the *incoming* log that is refused, so a disk
+that cannot keep up costs the newest logs rather than the process:
+everything already accepted is still written and `flush()`/`close()` keep
+their meaning. A refused log is handed to `onDropped`, and with no
+`onDropped` set the loss is announced on stdout rather than hidden — pass
+`onDropped: (_) {}` for a storage that must stay quiet, or
+`maxQueueSize: null` to give the bound up entirely.
+
+```dart
+FileLogStorage(
+  directory: '...',
+  maxQueueSize: 100000,                  // null — unbounded (grows till OOM)
+  onDropped: (logs) => metrics.lostLogs += logs.length,
+);
+```
+
 The `data` parameter of a log is saved as text by
 `Loggable.objectToString` (default) or as structured JSON by
 `Loggable.objectToJson`:

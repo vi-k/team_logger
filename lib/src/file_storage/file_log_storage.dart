@@ -30,6 +30,18 @@ import 'file_log_sessions.dart';
 ///
 /// [onError] is called on initialization, encoding and write errors. Errors
 /// are never thrown; exceptions thrown by the callback itself are ignored.
+///
+/// The queue between `publish` and the disk is bounded by [maxQueueSize] —
+/// 100 000 logs accepted and not yet written, the batch in flight included.
+/// At the limit it is the *incoming* log that is refused, so a disk that
+/// cannot keep up costs the newest logs rather than the process; everything
+/// already accepted is still written, and [flush] and [close] keep their
+/// meaning. A refused log goes to [onDropped], and with no [onDropped] set
+/// the loss is announced on stdout rather than hidden — pass
+/// `onDropped: (_) {}` for silence. This is the only way a log is lost
+/// after being accepted: a failed write is reported to [onError] and never
+/// retried, so the retry budget of the base class does not come into play
+/// here.
 final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   /// The directory the session files are stored in (created recursively).
   final String directory;
@@ -86,6 +98,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     LoggableConfig config = const LoggableConfig(),
     LoggableJsonConfig jsonConfig = const LoggableJsonConfig(),
     super.onError,
+    super.onDropped,
+    super.maxQueueSize,
   })  : assert(maxChunkSize > 0, 'maxChunkSize must be positive'),
         assert(
           maxSessionSize >= 2 * maxChunkSize,

@@ -543,6 +543,35 @@ void main() {
       await storage.close();
     });
 
+    test('maxQueueSize refuses the newest logs and reports them', () async {
+      final dropped = <Log>[];
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 's1',
+        maxQueueSize: 1,
+        onDropped: dropped.addAll,
+      );
+      final log = _logger(storage);
+
+      // Очередь не разгружается, пока не провернётся event loop, так что
+      // из трёх синхронных публикаций принята будет только первая.
+      log.i('accepted');
+      log.i('refused1');
+      log.i('refused2');
+      await storage.flush().timeout(_timeout);
+
+      expect(
+        dropped.map((log) => log.message),
+        ['refused1', 'refused2'],
+      );
+
+      final lines = _lines(File('${tmp.path}/s1.1.jsonl'));
+      expect(lines, hasLength(2));
+      expect(_json(lines.last)['message'], 'accepted');
+
+      await storage.close();
+    });
+
     test('maxTotalSize must not be smaller than maxSessionSize', () {
       expect(
         () => FileLogStorage(

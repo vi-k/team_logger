@@ -56,25 +56,70 @@
   entry point (`style.dart` carries the same names), and finds `Match` as
   `Piece`, `Link` as `OscLink` and `rgb`/`gray` as `rgb256`/`gray256`; see
   its own changelog for the rest.
-- [breaking changes] Require `logger_builder` ^0.6.1, up from ^0.5.0 (the
-  changes flow through the re-export). A transformer that logs through its
-  own logger is now caught by a reentrancy guard — the nested log is
-  dropped and a [StateError] is reported — where before the call recursed
-  into a `StackOverflowError`; the dartdoc on [Logger] said the old thing
-  and now says this one. A level logger is rejected at a threshold
-  (`Levels.all`/`Levels.off`), registering one level logger in two loggers
-  throws, `TransformPublisher.close()` is terminal and idempotent, and a
-  sublogger holds its parent strongly, so an intermediate logger nobody
-  kept no longer stops passing `level`/`publisher` changes down.
+- [breaking changes] Require `logger_builder` ^0.7.0, up from ^0.5.0 (the
+  changes flow through the re-export). The one that changes behaviour of
+  code written against this package is publisher inheritance:
+  `child[level].publisher = ...` now pins that one level and leaves the
+  others following the parent, where before the coarse linked flag cut the
+  whole sublogger — and everything under it — off the parent for good.
+  That was a documented limitation here; it is gone. `publisherLinked`
+  therefore stays `true` in cases that used to clear it, a common
+  `logger.publisher = ...` no longer overwrites a pinned level (so the
+  order of the two assignments stopped mattering), a linked sublogger
+  takes the parent's publisher *for that level* instead of flattening the
+  parent's exceptions, and `relink()` drops every pin rather than the
+  logger's own links. There is no idiom left for detaching all levels
+  without changing a value —
+  `child[level].publisher = child[level].publisher` now pins the level
+  instead — and `hasPublisher` can consequently go back to `false` on a
+  level that once had a real publisher: read it as "publishes somewhere
+  right now", which is what it says.
+- [breaking changes] The queue behind [FileLogStorage] is bounded now,
+  because the base class it is built on bounds every asynchronous queue:
+  `maxQueueSize` defaults to 100 000 logs accepted and not yet written. At
+  the limit it is the *incoming* log that is refused, so a disk that
+  cannot keep up costs the newest logs rather than the process, and
+  everything already accepted is still written — `flush()` and `close()`
+  promise what they promised before. Before this, an unwritable directory
+  grew the queue until memory ran out.
+- [FileLogStorage] takes `onDropped` and `maxQueueSize` and hands both to
+  the base class. A refused log reaches `onDropped` as a one-element batch
+  — the callback takes a list, the same one a spent retry budget would
+  hand it; with no handler set, the loss is announced on stdout rather
+  than hidden — the first one at once and the rest as a count, at most
+  once every five seconds — so pass `onDropped: (_) {}` for a storage that
+  must stay quiet. This is the only way a log is lost after being
+  accepted: a failed write is reported to `onError` and never retried, so
+  the retry budget of the base class (`maxRetries`, `retryDelay`) never
+  comes into play here and neither knob is exposed.
+- Also from that upgrade, from the 0.6.x part of it: a transformer that
+  logs through its own logger is caught by a reentrancy guard — the nested
+  log is dropped and a [StateError] is reported — where before the call
+  recursed into a `StackOverflowError`; the dartdoc on [Logger] said the
+  old thing and now says this one. A level logger is rejected at a
+  threshold (`Levels.all`/`Levels.off`), registering one level logger in
+  two loggers throws, `TransformPublisher.close()` is terminal and
+  idempotent, and a sublogger holds its parent strongly, so an
+  intermediate logger nobody kept no longer stops passing
+  `level`/`publisher` changes down.
 - New from that upgrade, without any work here: `CustomLogger.onError` —
   one hook for a throwing transformer, a reentrancy violation and a
   throwing publisher, resolved through the parent chain — plus
-  `CustomLevelLogger.hasPublisher`, `AsyncPublisherWithBufferBase.onDropped`
-  and a `retryDelay` on the buffered publishers [FileLogStorage] is built
-  on. That upgrade also carries the buffered-publisher fixes that matter
-  most to file storage: `flush()` during a `close()` returns the close
-  instead of a false all-clear, `close()` no longer sleeps through a
-  pending retry, and a failing sink no longer starves the event loop.
+  `CustomLevelLogger.hasPublisher`, its new companion `hasOwnPublisher`
+  (a pinned level against one that takes its publisher from above) and a
+  per-level `relink()` that drops the pin and takes from the chain again.
+  `LevelLogger` declares neither name, so nothing here silently overrides
+  them.
+- That upgrade also carries the fixes that matter most under this package:
+  `flush()` during a `close()` returns the close instead of a false
+  all-clear, `close()` no longer sleeps through a pending retry, a failing
+  sink no longer starves the event loop, a buffered publisher reports
+  handler errors into the zone that *built* it rather than whichever scope
+  logged first, registering a sublogger from inside `processLog` no longer
+  throws a `ConcurrentModificationError`, a `CustomLogger.onError` handler
+  that logs no longer recurses until the stack is gone, and `TypedLazy`
+  memoizes a throwing `convert` — which is what [Logger] resolves a
+  namespace path and a lazy message through.
 - The package installs into a Flutter application again, from Flutter 3.27
   — the line that carries Dart 3.6, the floor this package declares. It
   did not: Flutter pins several packages to an *exact* version out of its
