@@ -1,0 +1,4 @@
+(1) [d] 09:26:53.589 [app] This is a [b]bold[/b] text                                           #log
+(2) [d] 09:26:53.626 [app] This is a [i]italic[/i] text                                         #log
+(3) [d] 09:26:53.663 [app] This is a [s]strikethrough[/s] text                                  #log
+(4) [d] 09:26:53.700 [app] This is a [u]underline[/u] text                                      #log

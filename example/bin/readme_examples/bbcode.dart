@@ -1,8 +1,20 @@
+import 'package:example/readme_examples/frames.dart';
 import 'package:example/readme_examples/init_log.dart';
 import 'package:team_logger/team_logger.dart';
 
-void main() {
-  print('----- BBCodes -----');
+final frames = <String, LogFrame>{
+  'bbcode_1': _bbCodes,
+  'bbcode_2': _userDefinedTags,
+  'bbcode_3': _logLazyStyle,
+  'bbcode_4': _noColors,
+  'bbcode_5': _noColorsNoTags,
+  'bbcode_6': _noColorsNoTagsTheme,
+};
+
+void main(List<String> args) => runFrames(frames, args);
+
+/// Встроенные bb-коды.
+void _bbCodes() {
   initLog();
   log.d('This is a [b]bold[/b] text');
   log.d('This is a [success]success[/success] text');
@@ -11,8 +23,10 @@ void main() {
   );
   log.d('This is a [error]error[/error] text within the not-error text');
   log.d('This is a [signal]signal[/signal] to get attention');
+}
 
-  print('----- User defined tags -----');
+/// Свои теги оформления.
+void _userDefinedTags() {
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(
       messageStyles: {
@@ -27,8 +41,10 @@ void main() {
   log.d('This is a [i]italic[/i] text');
   log.d('This is a [s]strikethrough[/s] text');
   log.d('This is a [u]underline[/u] text');
+}
 
-  print('----- LogLazyStyle -----');
+/// Стиль, вычисляемый по теме.
+void _logLazyStyle() {
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(
       messageStyles: {
@@ -37,15 +53,19 @@ void main() {
     ),
   );
   log.d('This is [fatal]a fatal error[/fatal]');
+}
 
-  print('----- No Colors -----');
+/// Бесцветная тема: теги остаются, оформления нет.
+void _noColors() {
   initLog(theme: LogMainTheme.noColors);
   log.d('This is a [b]bold[/b] text');
   log.d('This is a [i]italic[/i] text');
   log.d('This is a [s]strikethrough[/s] text');
   log.d('This is a [u]underline[/u] text');
+}
 
-  print('----- No Colors, no tags -----');
+/// Теги погашены поимённо.
+void _noColorsNoTags() {
   initLog(
     theme: LogMainTheme.noColors.copyWith(
       messageStyles: const {
@@ -60,7 +80,10 @@ void main() {
   log.d('This is a [i]italic[/i] text');
   log.d('This is a [s]strikethrough[/s] text');
   log.d('This is a [u]underline[/u] text');
+}
 
+/// Готовая тема `noColorsNoTags` — то же самое одной строкой.
+void _noColorsNoTagsTheme() {
   initLog(theme: LogMainTheme.noColorsNoTags);
   log.d('This is a [b]bold[/b] text');
   log.d('This is a [success]success[/success] text');

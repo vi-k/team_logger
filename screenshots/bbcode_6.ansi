@@ -1,0 +1,5 @@
+(1) [d] 09:26:53.589 [app] This is a bold text                                                  #log
+(2) [d] 09:26:53.626 [app] This is a success text                                               #log
+(3) [d] 09:26:53.663 [app] This is a warning text                                               #log
+(4) [d] 09:26:53.700 [app] This is a error text                                                 #log
+(5) [d] 09:26:53.737 [app] This is a signal                                                     #log
