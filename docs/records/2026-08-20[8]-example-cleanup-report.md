@@ -100,6 +100,12 @@ library code in `lib/`, and example unit test in `test/`», причём кат�
 после переезда это неправда, обе строки поправлены. В `AGENTS.md` заодно
 добавлены `bin/file_storage_example.dart` и `tool/playground.dart`.
 
+`.vscode/launch.json` — конфигурация «example» указывала на
+`bin/example.dart` и после переезда просто не запускалась. Указывает на
+`example.dart`; добавлена конфигурация для `tool/playground.dart` (без
+`cwd`, из корня). Все одиннадцать целей проверены на существование файла.
+Ни спека, ни план этот файл не заметили — нашёл владелец.
+
 Записи в `docs/records/` не правились, хотя пути в них устарели: по
 `docs/conventions.md` текст записи — история и не переписывается.
 

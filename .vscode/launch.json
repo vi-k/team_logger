@@ -9,7 +9,7 @@
             "request": "launch",
             "type": "dart",
             "cwd": "example",
-            "program": "bin/example.dart",
+            "program": "example.dart",
         },
         {
             "name": "file_storage_example",
@@ -73,6 +73,12 @@
             "type": "dart",
             "cwd": "example",
             "program": "bin/readme_examples/trace.dart",
+        },
+        {
+            "name": "playground (не публикуется)",
+            "request": "launch",
+            "type": "dart",
+            "program": "tool/playground.dart",
         },
     ]
 }
