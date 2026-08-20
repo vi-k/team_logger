@@ -173,6 +173,14 @@ SanitizeContext ctx)`, которому по пути к выводу предл
 глубине. `log_theme_data.dart` — самый большой файл пакета: значения тем по
 умолчанию.
 
+Тема — ещё и точка расширения для форматирования чисел, а не только для
+цвета. `LoggableConfig.intFormat`/`doubleFormat` хранят непрозрачный
+шаблон, `LogMainTheme.numberFormatter` его исполняет,
+`LogTheme.formatNumber` — точка вызова из рендереров `Loggable`. Дефолт
+шаблон игнорирует и печатает `value.toString()`, поэтому `lib/` не зависит
+ни от `package:format`, ни от какого-либо синтаксиса шаблонов; рецепт
+поверх `format` живёт в README и в `example/`.
+
 ### `src/storage/` — буфер в памяти
 
 `LogStorage` — альтернативный публишер: кольцевой буфер (`maxCount`,

@@ -140,6 +140,21 @@
   radices, fixed and exponential forms, rounding — is unchanged, and
   `test/loggable/number_format_test.dart` now pins all of it; that file
   covers `intFormat`/`doubleFormat` for the first time.
+- [breaking changes] `format` is no longer a dependency of this package,
+  and number formatting is a theme's job. `intFormat` and `doubleFormat`
+  keep their names and their `String?` type, but the package no longer
+  reads them: the string goes to [LogMainTheme.numberFormatter] together
+  with the value, and what it means is that formatter's business. A theme
+  without one prints the number as it is — no exception, and no pattern
+  applied, where an invalid specifier used to throw from inside `format`
+  at the logging call site. Two changes to make on the way up: install the
+  formatter — `numberFormatter: (theme, value, pattern) =>
+  format(pattern, value)`, with `format` in your own pubspec — and write
+  the whole template where a bare specifier used to go, `'{:,d}'` for
+  `',d'` and `'{:.4f}'` for `'.4f'`. Nothing else here took `format`, so
+  it leaves the dependency graph of every application that takes this
+  package; a formatter over `sprintf` (`'%d'` in the config then), or one
+  with nothing to do with `format` at all, is now equally installable.
 - [breaking changes] A locale-aware `intFormat`/`doubleFormat` no longer
   works by setting `Intl.defaultLocale`, because the specifier is handed
   to `format` and `format` stopped reading an ambient `intl` locale when
