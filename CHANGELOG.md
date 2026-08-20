@@ -167,6 +167,14 @@
   replacement for the locale-aware form here: `format` reads its
   `NumberLocale` from a `Format` instance, and this package calls the
   top-level `format()`.
+- The example package is one example again. `example/example.dart` is a
+  single request through the logger — a namespace sublogger with a tag, a
+  trace id across an async flow, a request as headers and body, a response
+  object that prints itself, a redacted header, a failure with its stack
+  trace — and it is what pub.dev shows on the Example tab, where the
+  `dart create` boilerplate used to be. The 288-line "print everything"
+  program that lived there has moved to `tool/` and is not published; the
+  per-section code behind the README screenshots stays where it was.
 
 ## 0.6.0
 

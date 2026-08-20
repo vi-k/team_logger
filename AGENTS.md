@@ -145,8 +145,15 @@ dart format .                             # форматирование
 
 ```bash
 cd example && dart pub get
-dart run bin/example.dart                 # основной пример
+dart run example.dart                     # основной пример
+dart run bin/file_storage_example.dart    # файловое хранилище
 dart run build_runner build               # перегенерировать *.freezed.dart
+```
+
+Ручная проверочная кухня («всё подряд», не публикуется) — из корня:
+
+```bash
+dart run tool/playground.dart
 ```
 
 `scripts/ansi_screenshot.sh` рендерит ANSI-вывод в PNG для `screenshots/`
