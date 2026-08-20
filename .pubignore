@@ -5,3 +5,6 @@ docs/
 scripts/
 # Картинки README pub.dev резолвит через repository (GitHub).
 screenshots/
+
+# Ручная проверочная кухня — не для pub-архива.
+tool/

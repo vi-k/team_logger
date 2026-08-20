@@ -1,9 +1,10 @@
 import 'dart:async';
 
-import 'package:example/data.dart';
 import 'package:format/format.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:team_logger/team_logger.dart';
+
+import 'playground_data.dart';
 
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
   // hiddenStyle: LogMainTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
@@ -108,10 +109,13 @@ void f() {
         httpLog[level].log(
           Data.postUrl,
           traceId: httpTraceId,
-          data: LoggableMultiData({
-            '': Data.postBody,
-            'HEADERS': Data.postHeaders,
-          }, config: const LoggableConfig(collectionMaxCount: 2)),
+          data: LoggableMultiData(
+            {
+              '': Data.postBody,
+              'HEADERS': Data.postHeaders,
+            },
+            config: const LoggableConfig(collectionMaxCount: 2),
+          ),
           tags: ['post'],
         );
         httpLog[level].log(
@@ -139,9 +143,12 @@ void f() {
   );
   log.d(
     '',
-    data: LoggableMultiData({
-      'JSON': Data.json,
-    }, config: const LoggableConfig(collectionMaxCount: 2)),
+    data: LoggableMultiData(
+      {
+        'JSON': Data.json,
+      },
+      config: const LoggableConfig(collectionMaxCount: 2),
+    ),
   );
 
   log.d(
@@ -269,19 +276,23 @@ void f() {
     config: const LoggableConfig(stringInQuotes: false, units: 'kg'),
   );
 
-  log.d('map',
-      data: Loggable.mapBuilder(config: LoggableConfig(units: 'm'))
-        ..prop('a', 1)
-        ..prop('b', 2)
-        ..prop('c', 3));
+  log.d(
+    'map',
+    data: Loggable.mapBuilder(config: const LoggableConfig(units: 'm'))
+      ..prop('a', 1)
+      ..prop('b', 2)
+      ..prop('c', 3),
+  );
 
-  final point = Point(27.988056, 86.925278);
+  const point = Point(27.988056, 86.925278);
   log.d(
     'Mount Everest',
-    data: Loggable.builder(point,
-        showName: false,
-        showBrackets: false,
-        config: LoggableConfig(units: 'm'))
+    data: Loggable.builder(
+      point,
+      showName: false,
+      showBrackets: false,
+      config: const LoggableConfig(units: 'm'),
+    )
       ..prop('lat', point.lat, showName: false)
       ..prop('lon', point.lon, showName: false),
   );
