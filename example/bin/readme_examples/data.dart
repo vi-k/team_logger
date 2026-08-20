@@ -1,5 +1,4 @@
 import 'package:example/readme_examples/default_log.dart';
-import 'package:intl/intl.dart';
 import 'package:team_logger/team_logger.dart';
 
 Future<void> main() async {
@@ -75,13 +74,11 @@ Future<void> main() async {
     config: const LoggableConfig(intFormat: ',d'),
   );
 
-  Intl.defaultLocale = 'bn';
   log.d(
-    'Integer number (Bengali locale)',
+    'Integer number in hexadecimal',
     data: 123456789,
-    config: const LoggableConfig(intFormat: ',n'),
+    config: const LoggableConfig(intFormat: '#x'),
   );
-  Intl.defaultLocale = null;
 
   log.d(
     'String',

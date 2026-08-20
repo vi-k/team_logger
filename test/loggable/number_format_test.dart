@@ -46,6 +46,21 @@ void main() {
         '00042ms',
       );
     });
+
+    // Локалезависимого варианта у нас нет: спецификатор уходит в
+    // топ-уровневый `format()`, а свою `NumberLocale` пакет читает из
+    // инстанса `Format`. С версии 3.0.0 он не смотрит и в окружающий
+    // `Intl.defaultLocale`, на котором это когда-то держалось.
+    test('n follows the C locale and does not group', () {
+      expect(render(1234567, const LoggableConfig(intFormat: 'n')), '1234567');
+    });
+
+    test(',n is rejected — n takes no grouping option', () {
+      expect(
+        () => render(1234567, const LoggableConfig(intFormat: ',n')),
+        throwsA(anything),
+      );
+    });
   });
 
   group('doubleFormat', () {

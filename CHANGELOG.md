@@ -140,6 +140,18 @@
   radices, fixed and exponential forms, rounding — is unchanged, and
   `test/loggable/number_format_test.dart` now pins all of it; that file
   covers `intFormat`/`doubleFormat` for the first time.
+- [breaking changes] A locale-aware `intFormat`/`doubleFormat` no longer
+  works by setting `Intl.defaultLocale`, because the specifier is handed
+  to `format` and `format` stopped reading an ambient `intl` locale when
+  it dropped the dependency. `intFormat: ',n'` now throws
+  `InvalidSpecifierException` outright — `n` takes no grouping option —
+  and a bare `n` follows the C locale rather than the application's. The
+  README taught the old form and no longer does: the example that printed
+  123 456 789 in Bengali digits prints it in hexadecimal instead
+  (`intFormat: '#x'`), and `intl` leaves `example/` with it. There is no
+  replacement for the locale-aware form here: `format` reads its
+  `NumberLocale` from a `Format` instance, and this package calls the
+  top-level `format()`.
 
 ## 0.6.0
 

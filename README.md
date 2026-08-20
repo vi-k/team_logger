@@ -996,15 +996,21 @@ log.d(
   config: const LoggableConfig(intFormat: ',d'),
 );
 
-Intl.defaultLocale = 'bn';
 log.d(
-  'Integer number (Bengali locale)',
+  'Integer number in hexadecimal',
   data: 123456789,
-  config: const LoggableConfig(intFormat: ',n'),
+  config: const LoggableConfig(intFormat: '#x'),
 );
 ```
 
 ![Formatting settings. Numbers](screenshots/data_6.png)
+
+The specifier is handed to `format` as it is written, so its rules apply
+verbatim — including the locale ones. `format` groups with `,` and `_` under
+every locale and reserves `n` for the locale-aware form, and since it stopped
+depending on `intl` it no longer reads an ambient locale: `n` follows the C
+locale, and setting `Intl.defaultLocale` changes nothing. `intFormat: ',n'`
+throws `InvalidSpecifierException` — `n` takes no grouping option.
 
 String can be displayed with or without quotation marks:
 
