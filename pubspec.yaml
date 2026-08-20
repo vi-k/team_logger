@@ -25,16 +25,15 @@ dependencies:
   # the `@internal`, `@nonVirtual` and `@visibleForTesting` annotations all
   # predate them.
   clock: ^1.1.1
-  # 4.1.0 lowered its own floor back to Dart ^3.6.0 and, since 3.0.0, no
-  # longer depends on `intl` — which is what kept this package out of a
-  # localized Flutter app: `flutter_localizations` pins intl 0.19.0 on
-  # Flutter 3.27 and 3.29, where format 1.6.0 wanted ^0.20.2.
-  format: ^4.1.0
   logger_builder: ^0.7.0
   meta: ^1.15.0
   stack_trace: ^1.12.0
 
 dev_dependencies:
+  # Tests only: `lib/` formats no numbers of its own — a pattern is executed
+  # by the theme's `numberFormatter`, which the application installs. The
+  # tests pin exactly the recipe the README documents.
+  format: ^4.1.0
   # Not ^6.1.0: lints 6 needs Dart ^3.8.0, and a dev dependency that cannot
   # resolve on the declared floor takes `pub get` on Dart 3.6 with it — the
   # one SDK on which this package must still be checkable. The range gives

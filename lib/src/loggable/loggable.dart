@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:ansi_escape_codes/extensions.dart';
-import 'package:format/format.dart';
 import 'package:meta/meta.dart';
 
 import '../theme/log_main_theme.dart';
@@ -1910,7 +1909,7 @@ abstract mixin class Loggable {
   }) =>
       '${switch (config.intFormat) {
         null => obj.toString(),
-        final f => format('{:$f}', obj),
+        final f => theme.formatNumber(obj, f),
       }}'
       '${unitsToString(config.units, theme)}';
 
@@ -1922,7 +1921,7 @@ abstract mixin class Loggable {
     if (obj.isFinite) {
       return '${switch (config.doubleFormat) {
         null => obj.toString(),
-        final f => format('{:$f}', obj),
+        final f => theme.formatNumber(obj, f),
       }}'
           '${unitsToString(config.units, theme)}';
     }
