@@ -1,16 +1,19 @@
 import 'dart:async';
 
 import 'package:example/data.dart';
+import 'package:format/format.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:team_logger/team_logger.dart';
 
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
-    // hiddenStyle: LogMainTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
-    );
+  // hiddenStyle: LogMainTheme.defaultActiveTheme.hiddenStyle.resetInvisible,
+  numberFormatter: (theme, value, pattern) => format(pattern, value),
+);
 final inactiveTheme = LogMainTheme.defaultInactiveTheme.copyWith(
-    // hiddenStyle: LogMainTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
-    // minLevel: LogLevels.debug,
-    );
+  // hiddenStyle: LogMainTheme.defaultInactiveTheme.hiddenStyle.resetInvisible,
+  // minLevel: LogLevels.debug,
+  numberFormatter: (theme, value, pattern) => format(pattern, value),
+);
 
 final logStorage = LogStorage(maxCount: 100);
 
@@ -248,13 +251,13 @@ void f() {
   log.d(
     'double',
     data: 123456.0,
-    config: const LoggableConfig(doubleFormat: '.2f', units: 'kg'),
+    config: const LoggableConfig(doubleFormat: '{:.2f}', units: 'kg'),
   );
 
   log.d(
     'int',
     data: 123456,
-    config: const LoggableConfig(intFormat: ' d', units: 'items'),
+    config: const LoggableConfig(intFormat: '{: d}', units: 'items'),
   );
 
   log.d(

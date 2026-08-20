@@ -66,18 +66,18 @@ Future<void> main() async {
   log.d(
     'Float number with fixed precision',
     data: 1.23456789,
-    config: const LoggableConfig(doubleFormat: '.4f'),
+    config: const LoggableConfig(doubleFormat: '{:.4f}'),
   );
   log.d(
     'Integer number with grouping',
     data: 123456789,
-    config: const LoggableConfig(intFormat: ',d'),
+    config: const LoggableConfig(intFormat: '{:,d}'),
   );
 
   log.d(
     'Integer number in hexadecimal',
     data: 123456789,
-    config: const LoggableConfig(intFormat: '#x'),
+    config: const LoggableConfig(intFormat: '{:#x}'),
   );
 
   log.d(

@@ -979,38 +979,47 @@ log.d(
 
 ![Formatting settings. Enum](screenshots/data_5.png)
 
-Numbers can be formatted in the
-[format](https://docs.python.org/3/library/string.html#format-string-syntax)/[sprintf](https://en.cppreference.com/w/c/io/fprintf)
-style (using the [format](https://pub.dev/packages/format) package):
+Numbers take a formatting pattern, but the package does not interpret it:
+`intFormat`/`doubleFormat` are handed to the theme's `numberFormatter`
+along with the value, and a theme without one prints the number as it is.
+Install a formatter to make patterns work — for example over the
+[format](https://pub.dev/packages/format) package, which then belongs to
+your `pubspec.yaml`, not to this one:
 
 ```dart
+final theme = LogMainTheme.defaultActiveTheme.copyWith(
+  numberFormatter: (theme, value, pattern) => format(pattern, value),
+);
+
 log.d(
   'Float number with fixed precision',
   data: 1.23456789,
-  config: const LoggableConfig(doubleFormat: '.4f'),
+  config: const LoggableConfig(doubleFormat: '{:.4f}'),
 );
 
 log.d(
   'Integer number with grouping',
   data: 123456789,
-  config: const LoggableConfig(intFormat: ',d'),
+  config: const LoggableConfig(intFormat: '{:,d}'),
 );
 
 log.d(
   'Integer number in hexadecimal',
   data: 123456789,
-  config: const LoggableConfig(intFormat: '#x'),
+  config: const LoggableConfig(intFormat: '{:#x}'),
 );
 ```
 
 ![Formatting settings. Numbers](screenshots/data_6.png)
 
-The specifier is handed to `format` as it is written, so its rules apply
-verbatim — including the locale ones. `format` groups with `,` and `_` under
-every locale and reserves `n` for the locale-aware form, and since it stopped
-depending on `intl` it no longer reads an ambient locale: `n` follows the C
-locale, and setting `Intl.defaultLocale` changes nothing. `intFormat: ',n'`
-throws `InvalidSpecifierException` — `n` takes no grouping option.
+The pattern means whatever the installed formatter says it means — the one
+above is a `format` template, and
+`(theme, value, pattern) => sprintf(pattern, [value])` would make `'%d'` the
+way to write it instead. With `format` the locale rules are its own: `,` and
+`_` group under every locale, `n` is the locale-aware form, and since it
+stopped depending on `intl` it reads no ambient locale — `n` follows the C
+locale and `Intl.defaultLocale` changes nothing. `'{:,n}'` throws there,
+because `n` takes no grouping option.
 
 String can be displayed with or without quotation marks:
 

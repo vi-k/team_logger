@@ -1,9 +1,12 @@
+import 'package:format/format.dart';
 import 'package:team_logger/team_logger.dart';
 
 final log = Logger('app')
   ..level = LogLevels.all
   ..publisher = ConsoleLogPrinter(
-    theme: LogMainTheme.defaultActiveTheme,
+    theme: LogMainTheme.defaultActiveTheme.copyWith(
+      numberFormatter: (theme, value, pattern) => format(pattern, value),
+    ),
     rows: const [
       LogRow(
         maxLength: 100,
