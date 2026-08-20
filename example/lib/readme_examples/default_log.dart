@@ -1,7 +1,7 @@
 import 'package:format/format.dart';
 import 'package:team_logger/team_logger.dart';
 
-final log = Logger('app')
+final log = Logger('app', tags: {'log'})
   ..level = LogLevels.all
   ..publisher = ConsoleLogPrinter(
     theme: LogMainTheme.defaultActiveTheme.copyWith(

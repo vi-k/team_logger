@@ -15,7 +15,7 @@ void initLog({
   int? maxLength,
   List<LogRow>? rows,
 }) {
-  log = Logger('app')
+  log = Logger('app', tags: {'log'})
     ..level = level ?? LogLevels.all
     ..publisher = ConsoleLogPrinter(
       theme: theme ?? LogMainTheme.defaultActiveTheme,
