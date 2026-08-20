@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 
-typedef Frame = FutureOr<void> Function();
+typedef LogFrame = FutureOr<void> Function();
 
 /// Точка входа файла-группы примеров README.
 ///
@@ -12,7 +12,7 @@ typedef Frame = FutureOr<void> Function();
 /// - без аргументов — исполняет все кадры подряд, с заголовками.
 ///
 /// Имя кадра — имя картинки в `screenshots/` без расширения.
-Future<void> runFrames(Map<String, Frame> frames, List<String> args) async {
+Future<void> runFrames(Map<String, LogFrame> frames, List<String> args) async {
   if (args.contains('--list')) {
     frames.keys.forEach(print);
 

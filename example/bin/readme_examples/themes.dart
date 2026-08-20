@@ -4,7 +4,7 @@ import 'package:team_logger/team_logger.dart';
 
 const _person = {'firstName': 'John', 'lastName': 'Smith', 'age': 42};
 
-final frames = <String, Frame>{
+final frames = <String, LogFrame>{
   'themes_1': _colorTheme,
   'themes_2': _depthThemes,
   'themes_3': _noColorTheme,

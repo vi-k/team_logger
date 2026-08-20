@@ -1,0 +1,6 @@
+[0m[38;5;244m(1) [38;5;232m[48;5;244m[d][49m[38;5;244m 09:26:53.589 [38;5;248m[app][38;5;244m Operation failed[38;5;37m:[38;5;244m [38;5;167mIntegerDivisionByZeroException[38;5;44m                    [38;5;244m [38;5;237m#log[0m
+[0m[38;5;16m[8m(1)[28m[38;5;244m [38;5;210m[1mSTACKTRACE[38;5;44m:[22m[38;5;37m                                                [38;5;44m                                [38;5;244m [38;5;16m[8m#log[0m
+[0m[38;5;16m[8m(1) [28m[38;5;124mint.~/ (dart:core)[38;5;37m                                         [38;5;44m                                [38;5;16m[8m #log[0m
+[0m[38;5;16m[8m(1) [28m[38;5;210mcalcResult (bin/readme_examples/layout.dart:195:12)[38;5;37m        [38;5;44m                                [38;5;16m[8m #log[0m
+[0m[38;5;16m[8m(1) [28m[38;5;210msomeOperation (bin/readme_examples/layout.dart:164:5)[38;5;37m      [38;5;44m                                [38;5;16m[8m #log[0m
+[0m[38;5;16m[8m(1) [28m[38;5;210m_separateStackTrace (bin/readme_examples/layout.dart:115:3)[38;5;44m                                [38;5;16m[8m #log[0m

@@ -2,7 +2,7 @@ import 'package:example/readme_examples/default_log.dart';
 import 'package:example/readme_examples/frames.dart';
 import 'package:team_logger/team_logger.dart';
 
-final frames = <String, Frame>{
+final frames = <String, LogFrame>{
   'trace_1': _searchTrace,
   'trace_2': _traceIdConfigurations,
   'trace_3': _traceIdWithSuffix,

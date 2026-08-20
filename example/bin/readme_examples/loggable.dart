@@ -12,7 +12,7 @@ import 'package:example/readme_examples/loggable/point2.dart' as point2;
 import 'package:example/readme_examples/loggable/speed1.dart' as speed1;
 import 'package:example/readme_examples/loggable/speed2.dart' as speed2;
 
-final frames = <String, Frame>{
+final frames = <String, LogFrame>{
   'loggable_1': _person,
   'loggable_2': _fullShortView,
   'loggable_3': _multiView,
