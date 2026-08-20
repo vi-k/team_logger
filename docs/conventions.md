@@ -71,7 +71,9 @@ dart test        # все тесты зелёные
 
 1. Проверки зелёные в обоих пакетах: `dart analyze`, `dart test`,
    `dart format --output=none --set-exit-if-changed .` в корне и
-   `dart analyze` в `example/`; `dart run example.dart` отрабатывает.
+   `dart analyze` в `example/`; `dart run example.dart` отрабатывает;
+   `scripts/screenshots.sh --check` проходит (картинки README собраны
+   из текущего кода).
 2. Если менялись зависимости или их ограничения — пересобрана матрица
    Flutter: `flutter pub get` в пробном приложении с path-зависимостью,
    с `flutter_localizations` и без, на каждой поддерживаемой линии
