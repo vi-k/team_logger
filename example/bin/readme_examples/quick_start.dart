@@ -1,61 +1,98 @@
+import 'package:example/readme_examples/frames.dart';
 import 'package:team_logger/team_logger.dart';
 
-// Initialize the logger with a custom layout
-final log = Logger('app')
-  ..level = LogLevels.all
-  ..publisher = ConsoleLogPrinter(
-    theme: LogMainTheme.defaultActiveTheme,
-    rows: const [
-      LogRow(
-        maxLength: 120,
-        children: [
-          LogNum(),
-          LogLevelName.short(),
-          LogTime.onlyTime(),
-          LogPath(),
-          LogTraceId(),
-          LogMessage(),
-        ],
-        tail: [
-          LogTags(),
-        ],
-      ),
-    ],
-  );
+final frames = <String, LogFrame>{
+  'quick_start_1': _quickStart,
+  'quick_start_2': _filterByNum,
+  'quick_start_3': _filterByTraceId,
+  'quick_start_4': _filterByTag,
+};
 
-Future<void> main() async {
-  // For README: add filter field
-  // print(
-  //   Styles.rgb122('''
-  //                                                                                 ╭────────────────────────────────────╮
-  //                                                                         Filter: │ (4)                                │
-  //                                                                                 ╰────────────────────────────────────╯'''),
-  // );
+void main(List<String> args) => runFrames(frames, args);
 
+late Logger log;
+
+/// Собирает логгер приложения; [when] решает, какие логи попадут в кадр.
+///
+/// Кадры 2–4 показывают один и тот же прогон, из которого напечатана
+/// только часть логов. Отсеивает именно строка раскладки ([LogRow.when]),
+/// а не логгер: логи создаются все, поэтому их номера в кадре сохраняют
+/// исходный порядок.
+void _initLog({bool Function(Log log)? when}) {
+  log = Logger('app', tags: {'log'})
+    ..level = LogLevels.all
+    ..publisher = ConsoleLogPrinter(
+      theme: LogMainTheme.defaultActiveTheme,
+      rows: [
+        LogRow(
+          when: when,
+          maxLength: 120,
+          children: const [
+            LogNum(),
+            LogLevelName.short(),
+            LogTime.onlyTime(),
+            LogPath(),
+            LogTraceId(),
+            LogMessage(),
+          ],
+          tail: const [
+            LogTags(),
+          ],
+        ),
+      ],
+    );
+}
+
+/// Один платёж целиком: старт, дочерние логгеры, trace-зона.
+Future<void> _quickStart() async {
+  _initLog();
+  await _payment();
+
+  print(Styles.rgb311('''
+  ┬   ┬                ┬──────────   ┬────────  ──────┬────────────────────────────────────────────╯ ╰──────────────────┬
+  │   ╰─ level         │             ╰─ trace ID      ╰─ message with data                                        tags ─╯
+  ╰─ sequence number   ╰─ namespace path
+
+ ╰─────────────────────────────────────────────────── maxLength: 120 ───────────────────────────────────────────────────╯'''));
+}
+
+/// Тот же прогон, из которого принтер оставил один лог по номеру.
+Future<void> _filterByNum() async {
+  print(_filterBox('(4)'));
+  _initLog(when: (log) => log.num == 4);
+  await _payment();
+}
+
+/// …по группе trace id.
+Future<void> _filterByTraceId() async {
+  print(_filterBox('{payment-1}'));
+  _initLog(when: (log) => log.traceIds.isNotEmpty);
+  await _payment();
+}
+
+/// …по тегу.
+Future<void> _filterByTag() async {
+  print(_filterBox('#http'));
+  _initLog(when: (log) => log.tags.contains('http'));
+  await _payment();
+}
+
+Future<void> _payment() async {
   log.i('App started');
 
   // Create child loggers
   final paymentLog = log.createChild(name: 'payment');
 
-  // Execute within a Trace Zone to automatically capture and output the TraceId
+  // Execute within a Trace Zone to automatically capture and output the
+  // TraceId
   await log.trace(TraceId.auto('payment'), () async {
     paymentLog.i('Initiating payment request...');
-    await payment(10, 'USD');
+    await _request(10, 'USD');
     paymentLog.i('Payment processed successfully');
   });
-
-// For README: add description of log line
-//   print(
-//     Styles.rgb311('''
-//  ┬   ┬                ┬──────────   ┬────────  ──────┬────────────────────────────────────────────╯ ╰──────────────────┬
-//  │   ╰─ level         │             ╰─ trace ID      ╰─ message with data                                        tags ─╯
-//  ╰─ sequence number   ╰─ namespace path
-
-// ╰─────────────────────────────────────────────────── maxLength: 120 ───────────────────────────────────────────────────╯'''),
-//   );
 }
 
-Future<void> payment(int amount, String currency) async {
+Future<void> _request(int amount, String currency) async {
   final networkLog = log.createChild(name: 'network', tags: {'http'});
 
   networkLog.d(
@@ -72,3 +109,10 @@ Future<void> payment(int amount, String currency) async {
     data: {'payment_id': 123},
   );
 }
+
+/// Рамка «Filter: …» над кадром: показывает, чем отфильтрован прогон.
+String _filterBox(String value) => Styles.rgb122(
+      '                                                                                ╭────────────────────────────────────╮\n'
+      '                                                                        Filter: │ ${value.padRight(35)}│\n'
+      '                                                                                ╰────────────────────────────────────╯',
+    );
