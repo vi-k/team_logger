@@ -1,7 +1,9 @@
 ## 0.7.0
 
-- Fixed chunk symlinks so they can no longer make reading or appending leave
-  the log directory.
+- Fixed best-effort handling of accidental or pre-existing chunk symlinks in
+  an application-private, trusted log directory: they are ignored rather than
+  making reading or appending leave it. This is not a sandbox against a
+  concurrent hostile actor that can race filesystem operations.
 - Fixed immediate `close()` so it waits for initialization and the active
   chunk handle to close.
 - `BbCodeFormatter` no longer uses a backtracking regular expression: a
