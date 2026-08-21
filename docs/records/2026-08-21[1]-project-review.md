@@ -168,6 +168,13 @@ no-follow/open-handle подход, доступный целевой платф
 **Уверенность:** high для поведения, medium-high для exploitability — она
 зависит от прав на каталог.
 
+**Вердикт (2026-08-21): исправлено в `ac40ae9` и `08aa5c0`.** Реальные
+filesystem-regression tests закрепляют, что reader/list/export/ZIP/delete и
+startup cleanup пропускают symlink/non-regular entries, а writer эксклюзивно
+резервирует каждый chunk и пишет через открытый handle. Это осознанно
+best-effort защита для приватного каталога: полной защиты от hostile
+TOCTOU-гонки или hardlink пакет не заявляет.
+
 ### 3. [Medium / P2] `flush()` подтверждает уже потерянные принятые логи
 
 **Где:** `lib/src/file_storage/file_log_storage.dart:27-44`, `:146-192`,
@@ -420,6 +427,13 @@ close побочных filesystem-операций больше нет.
 создавать первый chunk или отменять ещё не завершившийся init.
 
 **Уверенность:** high.
+
+**Вердикт (2026-08-21): исправлено в `08aa5c0`.** Реальные
+filesystem-regression tests закрепляют, что `close()` ждёт `ready`, drain
+принятых логов и закрытие текущего handle; два вызова возвращают один cached
+Future. Этот вердикт касается завершения lifecycle; синхронное значение
+унаследованного `isClosed` до `super.close()` остаётся отдельным deferred
+Minor для широкого итогового ревью.
 
 ### 13. [Low / P3] Mutable-конфигурации расходятся с identity-кэшами
 

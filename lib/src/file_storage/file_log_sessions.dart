@@ -52,6 +52,9 @@ bool _isRegularFile(File file) =>
     FileSystemEntityType.file;
 
 /// Reader for log sessions stored in a directory by `FileLogStorage`.
+///
+/// Listing, reading, and deletion ignore non-regular entries, including
+/// symlinks.
 final class FileLogSessions {
   final String directory;
 
@@ -59,6 +62,8 @@ final class FileLogSessions {
 
   /// All sessions in [directory], sorted from oldest to newest
   /// (by last activity).
+  ///
+  /// Non-regular directory entries, including symlinks, are ignored.
   Future<List<FileLogSession>> list() async {
     final dir = Directory(directory);
     if (!dir.existsSync()) return const [];
@@ -210,7 +215,8 @@ final class FileLogSession {
   }
 
   /// The whole session as a byte stream: chunks concatenated in order,
-  /// meta lines of chunks after the first are skipped.
+  /// meta lines of chunks after the first are skipped. Non-regular entries
+  /// that replace a chunk after listing are ignored.
   Stream<List<int>> read() async* {
     var first = true;
     for (final file in files) {
@@ -227,7 +233,8 @@ final class FileLogSession {
   /// The whole session as a string (see [read]).
   Future<String> readAsString() => read().transform(utf8.decoder).join();
 
-  /// Deletes all chunk files of this session.
+  /// Deletes all regular chunk files of this session. Non-regular entries
+  /// that replace a chunk after listing are ignored.
   Future<void> delete() async {
     for (final file in files) {
       if (_isRegularFile(file)) {

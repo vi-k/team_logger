@@ -1,5 +1,9 @@
 ## 0.7.0
 
+- Fixed chunk symlinks so they can no longer make reading or appending leave
+  the log directory.
+- Fixed immediate `close()` so it waits for initialization and the active
+  chunk handle to close.
 - `BbCodeFormatter` no longer uses a backtracking regular expression: a
   single left-to-right scan now keeps malformed input from blocking the
   isolate. Properly nested tags, including identical tags, are supported;

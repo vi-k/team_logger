@@ -22,6 +22,12 @@ bool _isRegularFilePath(String path) =>
 
 /// A publisher that stores logs on disk, one session per application run.
 ///
+/// Use an application-private directory. Symlinks and other non-regular
+/// entries are ignored, and each chunk is created exclusively and kept open
+/// while active. This is best-effort protection against accidental or
+/// pre-existing links, not a sandbox against another process that can race
+/// filesystem operations in the same directory.
+///
 /// A session is a chain of chunk files `<sessionId>.<index>.jsonl`, each
 /// limited by [maxChunkSize]. The session is limited by [maxSessionSize]:
 /// when the limit is exceeded, the oldest chunk is deleted, so the most
@@ -32,7 +38,8 @@ bool _isRegularFilePath(String path) =>
 ///
 /// Logs are written in batches in the background; `await flush()` guarantees
 /// everything published so far is on disk. After [close] publications are
-/// silently ignored.
+/// silently ignored. [close] waits for initialization, drains accepted logs,
+/// and closes the active chunk handle.
 ///
 /// [onError] is called on initialization, encoding and write errors. Errors
 /// are never thrown; exceptions thrown by the callback itself are ignored.

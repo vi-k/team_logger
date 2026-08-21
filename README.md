@@ -1405,6 +1405,12 @@ files `<sessionId>.<index>.jsonl` written as JSON Lines, one JSON object per
 log. The first line of every chunk is a metadata line (`":meta"` key) with
 the session id, start time and any fields you pass in `meta`.
 
+Use an application-private directory. Symlinks and other non-regular entries
+are ignored, and each chunk is created exclusively and kept open while active.
+This is best-effort protection against accidental or pre-existing links, not a
+sandbox against another process that can race filesystem operations in the
+same directory.
+
 ```dart
 final storage = FileLogStorage(
   directory: '/path/to/logs',            // e.g. from path_provider
@@ -1442,6 +1448,9 @@ their meaning. A refused log is handed to `onDropped`, and with no
 `onDropped` set the loss is announced on stdout rather than hidden — pass
 `onDropped: (_) {}` for a storage that must stay quiet, or
 `maxQueueSize: null` to give the bound up entirely.
+
+`close()` waits for initialization, drains accepted logs, and closes the active
+chunk handle. Calls to `publish()` after it are ignored.
 
 ```dart
 FileLogStorage(
