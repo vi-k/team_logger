@@ -1,5 +1,9 @@
 ## 0.7.0
 
+- `BbCodeFormatter` no longer uses a backtracking regular expression: a
+  single left-to-right scan now keeps malformed input from blocking the
+  isolate. Properly nested tags, including identical tags, are supported;
+  mismatched closing tags stay literal instead of closing an earlier tag.
 - [breaking changes] A root-position rule (`ctx.depth == 0`) now also
   applies to a plain `toString()`: `'$obj'` and `print(obj)` for a
   [Loggable] or [LoggableData] go through the sanitizer, where before only

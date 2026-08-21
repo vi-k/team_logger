@@ -796,6 +796,10 @@ log.d('This is a [error]error[/error] text within the not-error text');
 log.d('This is a [signal]signal[/signal] to get attention');
 ```
 
+Tags can be nested, including tags with the same name. A closing tag only
+closes the most recently opened tag; unknown, unclosed, and mismatched tag
+tokens remain literal.
+
 ![BBCode tags](screenshots/bbcode_1.png)
 
 #### User tags
