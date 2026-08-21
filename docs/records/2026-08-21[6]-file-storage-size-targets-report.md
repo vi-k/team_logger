@@ -38,6 +38,4 @@ session metadata, сообщений, ошибок, стеков и рендер
 - `dart doc --validate-links` — 0 ошибок, одно прежнее предупреждение из
   находки №16;
 - `git diff --check` — чисто;
-- `dart pub publish --dry-run` до коммита — архив 158 КБ и только ожидаемое
-  предупреждение о dirty tracked files; чистый dry-run повторяется после
-  коммита.
+- `dart pub publish --dry-run` после коммита — 0 предупреждений, архив 158 КБ.
