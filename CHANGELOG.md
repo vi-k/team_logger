@@ -1,5 +1,10 @@
 ## 0.7.0
 
+- [breaking changes] Public configuration preconditions for `LogStorage`,
+  `FileLogStorage`, `ConsoleLogPrinter`, `LogMainTheme`, and the two iterable
+  string renderers now throw `ArgumentError` in production instead of relying
+  on disabled assertions or failing later. The checks run at construction or
+  rendering entry and do not add work to log publication or file I/O paths.
 - [breaking changes] Empty custom file-session ids are now rejected with
   `ArgumentError` instead of creating chunk files that session listing cannot
   discover. Chunk names whose numeric index does not fit in a Dart `int` are

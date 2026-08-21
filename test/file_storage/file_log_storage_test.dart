@@ -924,7 +924,11 @@ void main() {
           maxChunkSize: 500,
           maxTotalSize: 500,
         ),
-        throwsA(isA<AssertionError>()),
+        throwsA(
+          isA<ArgumentError>()
+              .having((error) => error.name, 'name', 'maxTotalSize')
+              .having((error) => error.invalidValue, 'invalidValue', 500),
+        ),
       );
     });
 
@@ -935,7 +939,60 @@ void main() {
           maxSessionSize: 1000,
           maxChunkSize: 600,
         ),
-        throwsA(isA<AssertionError>()),
+        throwsA(
+          isA<ArgumentError>()
+              .having((error) => error.name, 'name', 'maxSessionSize')
+              .having((error) => error.invalidValue, 'invalidValue', 1000),
+        ),
+      );
+    });
+
+    test('maxChunkSize must be positive', () {
+      for (final value in [0, -1]) {
+        expect(
+          () => FileLogStorage(
+            directory: tmp.path,
+            maxChunkSize: value,
+          ),
+          throwsA(
+            isA<ArgumentError>()
+                .having((error) => error.name, 'name', 'maxChunkSize')
+                .having((error) => error.invalidValue, 'invalidValue', value),
+          ),
+        );
+      }
+    });
+
+    test('maxQueueSize must be null or positive', () {
+      for (final value in [0, -1]) {
+        expect(
+          () => FileLogStorage(
+            directory: tmp.path,
+            maxQueueSize: value,
+          ),
+          throwsA(
+            isA<ArgumentError>()
+                .having((error) => error.name, 'name', 'maxQueueSize')
+                .having((error) => error.invalidValue, 'invalidValue', value),
+          ),
+        );
+      }
+    });
+
+    test('size validation precedes maxQueueSize validation', () {
+      expect(
+        () => FileLogStorage(
+          directory: tmp.path,
+          maxChunkSize: 0,
+          maxSessionSize: 0,
+          maxTotalSize: 0,
+          maxQueueSize: 0,
+        ),
+        throwsA(
+          isA<ArgumentError>()
+              .having((error) => error.name, 'name', 'maxChunkSize')
+              .having((error) => error.invalidValue, 'invalidValue', 0),
+        ),
       );
     });
   });

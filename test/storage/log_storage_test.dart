@@ -8,8 +8,20 @@ Logger _logger(LogStorage storage) => Logger('app')
 void main() {
   group('LogStorage', () {
     test('maxCount must be positive', () {
-      expect(() => LogStorage(maxCount: 0), throwsA(isA<AssertionError>()));
-      expect(() => LogStorage(maxCount: -1), throwsA(isA<AssertionError>()));
+      for (final value in [0, -1]) {
+        expect(
+          () => LogStorage(maxCount: value),
+          throwsA(
+            isA<ArgumentError>()
+                .having((error) => error.name, 'name', 'maxCount')
+                .having(
+                  (error) => error.invalidValue,
+                  'invalidValue',
+                  value,
+                ),
+          ),
+        );
+      }
     });
 
     test('publish and clear after dispose are silent no-ops', () async {

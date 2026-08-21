@@ -515,6 +515,9 @@ supports Active and Inactive styling modes:
   printed using lower-contrast colors, keeping background context visible
   without cluttering the output of high-priority events.
 
+Any active filter requires `inactiveTheme`; an invalid combination throws
+`ArgumentError` when the printer is constructed.
+
 If `inactiveTheme` is added, all logs are automatically set to inactive:
 
 ```dart
@@ -964,6 +967,10 @@ log.d(
 
 ![Collections truncation & formatting](screenshots/data_4.png)
 
+For string rendering, `collectionMaxCount` must be non-negative and
+`collectionMaxStringLength`, when set, must be positive. Invalid limits throw
+`ArgumentError` at the rendering boundary.
+
 #### Formatting Settings
 
 You can use dot shorthand syntax for enums (default):
@@ -1371,7 +1378,8 @@ log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-4
 
 `LogStorage` retains a fixed count of logs in memory. This is designed for
 capturing diagnostic snapshots, telemetry display in debug screens, or passing
-logs to local storage.
+logs to local storage. `maxCount` must be positive; invalid values throw
+`ArgumentError` at construction.
 
 ```dart
 final logStorage = LogStorage(maxCount: 1000);
@@ -1443,6 +1451,11 @@ is never limited):
   limit, the oldest chunk is deleted — the most recent logs are always kept.
 - **Per chunk** (`maxChunkSize`): when a chunk file reaches the limit, the
   next chunk is started. Must fit into `maxSessionSize` at least twice.
+
+`maxChunkSize` must be positive, `maxSessionSize` must fit at least two chunks,
+and a non-null `maxTotalSize` must be at least `maxSessionSize`. Invalid size
+configurations throw `ArgumentError` before file initialization starts.
+`maxQueueSize`, when set, must also be positive.
 
 These values are rotation and retention targets, not hard byte ceilings.
 Each JSON Lines record is atomic: it is never split, truncated or dropped

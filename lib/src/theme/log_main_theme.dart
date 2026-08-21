@@ -37,6 +37,9 @@ typedef LogNumberFormatter = String Function(
 /// [noColors], [noColorsNoTags]. For custom colorless themes pass
 /// `ansiCodesEnabled: false`.
 ///
+/// The public constructor rejects ANSI escape codes in its textual punctuation
+/// tokens with [ArgumentError]; [padding] must contain exactly one code unit.
+///
 /// In colorless themes [hiddenStyle] is a no-op, so "hidden" stretch
 /// fillers (time/path/num repeated on continuation lines) show as plain
 /// text — this is expected behavior.
@@ -150,14 +153,21 @@ final class LogMainTheme with Loggable {
         _info = info,
         _warning = warning,
         _error = error,
-        _critical = critical,
-        assert(!openingQuote.ansiHasEscapeCodes),
-        assert(!closingQuote.ansiHasEscapeCodes),
-        assert(!colon.ansiHasEscapeCodes),
-        assert(!ellipsis.ansiHasEscapeCodes),
-        assert(!lineBreak.ansiHasEscapeCodes),
-        assert(!padding.ansiHasEscapeCodes),
-        assert(padding.length == 1);
+        _critical = critical {
+    _validatePlainThemeToken(openingQuote, 'openingQuote');
+    _validatePlainThemeToken(closingQuote, 'closingQuote');
+    _validatePlainThemeToken(colon, 'colon');
+    _validatePlainThemeToken(ellipsis, 'ellipsis');
+    _validatePlainThemeToken(lineBreak, 'lineBreak');
+    _validatePlainThemeToken(padding, 'padding');
+    if (padding.length != 1) {
+      throw ArgumentError.value(
+        padding,
+        'padding',
+        'Must contain exactly one code unit',
+      );
+    }
+  }
 
   const LogMainTheme._({
     LogThemeData verbose = LogThemeData.noColors,
@@ -475,5 +485,15 @@ final class LogMainTheme with Loggable {
       ..prop('errorTitle', errorTitle)
       ..prop('stackTraceTitle', stackTraceTitle)
       ..prop('stringInQuotes', stringInQuotes);
+  }
+}
+
+void _validatePlainThemeToken(String value, String name) {
+  if (value.ansiHasEscapeCodes) {
+    throw ArgumentError.value(
+      value,
+      name,
+      'Must not contain ANSI escape codes',
+    );
   }
 }

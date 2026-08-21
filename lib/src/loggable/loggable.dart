@@ -1051,6 +1051,9 @@ abstract mixin class Loggable {
   ///   - (₌₄ ₀:a, …, ₃:d)
   ///   - (₌₄ ₀:a, ₁:b, …, ₃:d)
   ///   - (₌₄ ₀:a, ₁:b, ₂:c, ₃:d)
+  ///
+  /// Бросает [ArgumentError], если лимит количества отрицательный, лимит
+  /// длины не положительный или разделители содержат управляющие коды.
   @visibleForTesting
   static String efficientLengthIterableToString(
     Iterable<Object?> iterable, {
@@ -1063,10 +1066,12 @@ abstract mixin class Loggable {
     final maxCount = config.collectionMaxCount;
     final maxLength = config.collectionMaxStringLength;
 
-    assert(maxCount == null || maxCount >= 0);
-    assert(maxLength == null || maxLength > 0);
-    assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
-    assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
+    _validateIterableToStringArguments(
+      maxCount: maxCount,
+      maxLength: maxLength,
+      start: start,
+      end: end,
+    );
 
     final depthTheme = theme.depthTheme(depth);
     final showCount =
@@ -1491,6 +1496,9 @@ abstract mixin class Loggable {
   /// сокращении сохраняются только первые элементы, после которых добавляется
   /// многоточие. Если длина и последний элемент доступны эффективно,
   /// используйте [efficientLengthIterableToString].
+  ///
+  /// Бросает [ArgumentError], если лимит количества отрицательный, лимит
+  /// длины не положительный или разделители содержат управляющие коды.
   @visibleForTesting
   static String iterableToString(
     Iterable<Object?> iterable, {
@@ -1503,10 +1511,12 @@ abstract mixin class Loggable {
     final maxCount = config.collectionMaxCount;
     final maxLength = config.collectionMaxStringLength;
 
-    assert(maxCount == null || maxCount >= 0);
-    assert(maxLength == null || maxLength > 0);
-    assert(!start.ansiHasEscapeCodes && !start.ansiHasControlCodes);
-    assert(!end.ansiHasEscapeCodes && !end.ansiHasControlCodes);
+    _validateIterableToStringArguments(
+      maxCount: maxCount,
+      maxLength: maxLength,
+      start: start,
+      end: end,
+    );
 
     final depthTheme = theme.depthTheme(depth);
 
@@ -2174,4 +2184,51 @@ final class LoggableMultiView implements LoggableView {
         )
         .join(depthTheme.punctuation(separator));
   }
+}
+
+void _validateIterableToStringArguments({
+  required int? maxCount,
+  required int? maxLength,
+  required String start,
+  required String end,
+}) {
+  if (maxCount != null && maxCount < 0) {
+    throw ArgumentError.value(
+      maxCount,
+      'config.collectionMaxCount',
+      'Must not be negative',
+    );
+  }
+  if (maxLength != null && maxLength <= 0) {
+    throw ArgumentError.value(
+      maxLength,
+      'config.collectionMaxStringLength',
+      'Must be positive',
+    );
+  }
+  if (_hasControlCode(start)) {
+    throw ArgumentError.value(
+      start,
+      'start',
+      'Must not contain ANSI escape or control codes',
+    );
+  }
+  if (_hasControlCode(end)) {
+    throw ArgumentError.value(
+      end,
+      'end',
+      'Must not contain ANSI escape or control codes',
+    );
+  }
+}
+
+bool _hasControlCode(String value) {
+  for (var i = 0; i < value.length; i++) {
+    final codeUnit = value.codeUnitAt(i);
+    if (codeUnit <= 0x1F || codeUnit >= 0x7F && codeUnit <= 0x9F) {
+      return true;
+    }
+  }
+
+  return false;
 }

@@ -14,6 +14,8 @@ part 'log_storage_events.dart';
 /// evicted, a following [LogStorageRemove] (add first, then remove —
 /// a mirroring subscriber transiently holds `maxCount + 1` entries).
 /// After [dispose] the storage ignores [publish] and [clear].
+///
+/// Construction throws [ArgumentError] when [maxCount] is not positive.
 abstract interface class LogStorage implements CustomLogPublisher<Log> {
   factory LogStorage({
     required int maxCount,
@@ -71,8 +73,7 @@ final class _LogStorageImpl implements LogStorage {
   _LogStorageImpl({
     required this.maxCount,
     this.minLevel = LogLevels.all,
-  })  : assert(maxCount > 0, 'maxCount must be positive'),
-        _logs = List<Log?>.filled(maxCount, null),
+  })  : _logs = _createLogBuffer(maxCount),
         _currentIndex = 0,
         _count = 0;
 
@@ -198,6 +199,14 @@ final class _LogStorageImpl implements LogStorage {
       _onChangedController.add(LogStorageRemove._(oldLog));
     }
   }
+}
+
+List<Log?> _createLogBuffer(int maxCount) {
+  if (maxCount <= 0) {
+    throw ArgumentError.value(maxCount, 'maxCount', 'Must be positive');
+  }
+
+  return List<Log?>.filled(maxCount, null);
 }
 
 final class _ReversedLogStorageImpl implements LogStorage {

@@ -20,6 +20,49 @@ FileSystemEntityType _entityTypeNoFollow(String path) =>
 bool _isRegularFilePath(String path) =>
     _entityTypeNoFollow(path) == FileSystemEntityType.file;
 
+int? _validateMaxQueueSize(int? maxQueueSize) {
+  if (maxQueueSize != null && maxQueueSize <= 0) {
+    throw ArgumentError.value(
+      maxQueueSize,
+      'maxQueueSize',
+      'Must be null or positive',
+    );
+  }
+
+  return maxQueueSize;
+}
+
+int _validateStorageSizes({
+  required int maxChunkSize,
+  required int maxSessionSize,
+  required int? maxTotalSize,
+}) {
+  if (maxChunkSize <= 0) {
+    throw ArgumentError.value(
+      maxChunkSize,
+      'maxChunkSize',
+      'Must be positive',
+    );
+  }
+  if (maxSessionSize < 2 * maxChunkSize) {
+    throw ArgumentError.value(
+      maxSessionSize,
+      'maxSessionSize',
+      'Must fit at least two chunks '
+          '(maxSessionSize >= 2 * maxChunkSize)',
+    );
+  }
+  if (maxTotalSize != null && maxTotalSize < maxSessionSize) {
+    throw ArgumentError.value(
+      maxTotalSize,
+      'maxTotalSize',
+      'Must be greater than or equal to maxSessionSize',
+    );
+  }
+
+  return maxSessionSize;
+}
+
 typedef _EncodedLog = ({Log log, String line});
 typedef _WriteFailure = ({
   Object error,
@@ -49,6 +92,9 @@ typedef _WriteFailure = ({
 /// deleted, so it and the current session can also exceed [maxSessionSize].
 /// Consequently, [maxTotalSize] cannot guarantee a hard runtime ceiling.
 /// Bound input sizes before publishing if the application requires one.
+/// Construction throws [ArgumentError] unless [maxChunkSize] is positive,
+/// [maxSessionSize] fits at least two chunks, and a non-null [maxTotalSize]
+/// is at least [maxSessionSize]. [maxQueueSize] must be null or positive.
 ///
 /// Logs are written in batches in the background; a successfully completed
 /// `await flush()` guarantees everything published so far is on disk. After
@@ -139,7 +185,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     this.meta,
     this.minLevel = LogLevels.all,
     this.maxTotalSize,
-    this.maxSessionSize = 10 * 1024 * 1024,
+    int maxSessionSize = 10 * 1024 * 1024,
     this.maxChunkSize = 1024 * 1024,
     this.maxAge = const Duration(days: 7),
     FileLogDataFormat dataFormat = FileLogDataFormat.text,
@@ -149,15 +195,10 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     void Function(Object error, StackTrace stackTrace)? onError,
     void Function(List<Log> logs)? onDropped,
     int? maxQueueSize = 100000,
-  })  : assert(maxChunkSize > 0, 'maxChunkSize must be positive'),
-        assert(
-          maxSessionSize >= 2 * maxChunkSize,
-          'maxSessionSize must fit at least two chunks '
-          '(maxSessionSize >= 2 * maxChunkSize)',
-        ),
-        assert(
-          maxTotalSize == null || maxTotalSize >= maxSessionSize,
-          'maxTotalSize must be >= maxSessionSize',
+  })  : maxSessionSize = _validateStorageSizes(
+          maxChunkSize: maxChunkSize,
+          maxSessionSize: maxSessionSize,
+          maxTotalSize: maxTotalSize,
         ),
         _codec = FileLogCodec(
           dataFormat: dataFormat,
@@ -170,7 +211,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
           onError: onError,
           onDropped: onDropped,
           maxRetries: 0,
-          maxQueueSize: maxQueueSize,
+          maxQueueSize: _validateMaxQueueSize(maxQueueSize),
         ) {
     _sessionId = sanitizeSessionId(sessionId ?? defaultSessionId(_started));
     // Инициализация стартует в фоне, future сохраняется в [ready].

@@ -20,7 +20,8 @@ import 'log_row.dart';
 /// ([activeLevels]/`activeMinLevel`, [activeNamespaces] — prefix matching
 /// by [pathSeparator], [activeTraceGroups], [activeTags] or [isLogActive],
 /// combined with OR) to dim background logs while emphasizing matching
-/// ones. [output] defaults to `print` and is injectable.
+/// ones. Supplying any active filter without [inactiveTheme] throws
+/// [ArgumentError]. [output] defaults to `print` and is injectable.
 ///
 /// Note: a `\n` inside a message is escaped by the theme's value
 /// formatter; multi-line output comes from data, wrapping and stack
@@ -55,21 +56,25 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     this.pathSeparator = '/',
     required this.rows,
     this.output = print,
-  })  : assert(
-          inactiveTheme != null ||
-              activeMinLevel == null &&
-                  activeLevels == null &&
-                  activeNamespaces == null &&
-                  activeTraceGroups == null &&
-                  activeTags == null &&
-                  isLogActive == null,
-          'inactiveTheme must be set first',
-        ),
-        theme = theme ?? LogMainTheme.defaultActiveTheme,
+  })  : theme = theme ?? LogMainTheme.defaultActiveTheme,
         activeLevels = _buildLevels(activeLevels, activeMinLevel),
         activeNamespaces = activeNamespaces ?? {},
         activeTraceGroups = activeTraceGroups ?? {},
-        activeTags = activeTags ?? {};
+        activeTags = activeTags ?? {} {
+    if (inactiveTheme == null &&
+        (activeMinLevel != null ||
+            activeLevels != null ||
+            activeNamespaces != null ||
+            activeTraceGroups != null ||
+            activeTags != null ||
+            isLogActive != null)) {
+      throw ArgumentError.value(
+        inactiveTheme,
+        'inactiveTheme',
+        'Must be set when active filters are configured',
+      );
+    }
+  }
 
   bool _isLogActive(Log log) =>
       inactiveTheme == null ||
