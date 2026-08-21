@@ -106,6 +106,9 @@ trace-идентификаторами, ошибкой и стеком — и п
   (структурный вывод). Поведением управляют `LoggableConfig` и
   `LoggableJsonConfig` (`collectionMaxCount`, `collectionMaxStringLength`,
   `units`, `doubleFormat`, `stringInQuotes`, …).
+- JSON-ключи `Map` строятся из строкового ключа либо `key.toString()` и после
+  escaping обязаны быть уникальны. Коллизия реально выводимых записей даёт
+  `ArgumentError`; запись, удалённая sanitizer'ом, в проверке не участвует.
 
 **Политика конфигов:** config описывает *способ печати* и наследуется
 контейнером вниз; `units` описывают *саму величину*, поэтому замена от

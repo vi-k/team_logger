@@ -1,5 +1,10 @@
 ## 0.7.0
 
+- [breaking changes] `Loggable.objectToJson()` now throws `ArgumentError` when
+  distinct emitted map keys have the same JSON representation, such as `1`
+  and `'1'`, instead of silently keeping the later value. Affected
+  `FileLogStorage` JSON records use the existing `encodeError` fallback and
+  report the original error through `onError` without losing batch neighbors.
 - [breaking changes] Replace `FileLogSessions.archiveTo()` with streaming
   `gzipTo()`. It writes the selected sessions, in order and with each session's
   metadata line, into one GZIP-compressed JSON Lines file instead of a ZIP

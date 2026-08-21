@@ -1498,6 +1498,12 @@ FileLogStorage(
 );
 ```
 
+JSON object keys must remain unique after conversion to strings. For example,
+`Loggable.objectToJson({1: 'number', '1': 'string'})` throws `ArgumentError`
+instead of silently dropping the first value. In `FileLogStorage` JSON mode,
+the error reaches `onError`, that record becomes an `encodeError` fallback,
+and neighboring records are still written.
+
 To send logs for diagnostics, stream the stored sessions into a single
 GZIP-compressed JSON Lines file, or export them as separate plain files. The
 compressed stream keeps the selected session order and each session's meta

@@ -1,8 +1,8 @@
 # Executive summary
 
 > Состояние на 2026-08-21: ревью завершено на срезе `a175dd7`. Находки №1,
-> №2, №3, №5 и №12 исправлены; №4 принят как исходный контракт и
-> документирован. Остаются 10 исходных находок (5 Medium, 5 Low).
+> №2, №3, №5, №6 и №12 исправлены; №4 принят как исходный контракт и
+> документирован. Остаются 9 исходных находок (4 Medium, 5 Low).
 
 Проект в целом аккуратно устроен и необычно хорошо покрыт тестами для
 библиотеки такого размера: платформенно-независимое ядро отделено от
@@ -334,6 +334,15 @@ stress-прогон на позднем meta-подобном чанке 128 М�
 ключом. Тихое last-write-wins здесь небезопасно.
 
 **Уверенность:** high.
+
+**Вердикт (2026-08-21): исправлено fail-fast проверкой.** После преобразования
+ключа через `toString()` и escaping `_mapToJson` проверяет уже реально
+выводимый JSON-ключ через `containsKey`; коллизия даёт `ArgumentError` вместо
+last-write-wins. Запись, удалённая sanitizer'ом, до проверки не доходит.
+Прямые тесты закрепляют `1`/`'1'`, `null`/`'null'`, первое значение `null` и
+sanitizer drop. В JSON-режиме `FileLogStorage` существующий encode fallback
+пишет `encodeError: ArgumentError`, сообщает исходную ошибку в `onError` и
+сохраняет соседние логи.
 
 ### 7. [Medium / P2] `Log` назван immutable, но его коллекции изменяемы
 
@@ -765,7 +774,7 @@ identity-cache создают неявные контракты, которые 
 | Accepted | Одна запись превышает size targets | Атомарная запись может дать неограниченный пик | Контракт документирован; для hard cap вызывающий код ограничивает input | — |
 | Fixed | ZIP держал весь набор в RAM | OOM при сборе диагностики | `archiveTo()` заменён потоковым `gzipTo()` | — |
 | Next | Public validation только в `assert` | Production crash и тихая неверная конфигурация | Runtime `ArgumentError` во всех public constructors | S–M |
-| Next | JSON key collisions | Тихая потеря structured data | Detect/reject collision или lossless pair representation | M |
+| Fixed | JSON key collisions | Тихая потеря structured data | Коллизия после нормализации даёт `ArgumentError` | — |
 | Next | Mutable `Log` | Publisher'ы видят разные версии записи | Defensive copy и unmodifiable collections | S |
 | Next | Невалидные session filenames | Невидимая session или disabled storage | Reject empty id, `int.tryParse`, corrupted-file policy | S |
 | Next | Raw ANSI из untrusted input | Подмена terminal output | Сквозной safe mode и явный opt-in для raw ANSI | M |

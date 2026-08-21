@@ -847,6 +847,12 @@ abstract mixin class Loggable {
     return parts.join(depthTheme.punctuation(', '));
   }
 
+  /// Converts [obj] to a JSON-compatible value.
+  ///
+  /// Map keys are strings as required by JSON. Non-string keys use
+  /// `toString()`. If distinct emitted entries produce the same JSON key, an
+  /// [ArgumentError] is thrown instead of silently keeping the later value.
+  /// Entries removed by [Sanitize.drop] do not participate in this check.
   static Object? objectToJson(
     Object? obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
@@ -1856,7 +1862,12 @@ abstract mixin class Loggable {
       final value = _sanitizeChild(segment, name, entry.value);
       if (_isDropped(value)) continue;
 
-      result[_escapeServiceKey(segment)] = _withSegment(
+      final jsonKey = _escapeServiceKey(segment);
+      if (result.containsKey(jsonKey)) {
+        throw ArgumentError('Map keys must have unique JSON representations');
+      }
+
+      result[jsonKey] = _withSegment(
         segment,
         () => objectToJson(value, config: itemConfig),
       );

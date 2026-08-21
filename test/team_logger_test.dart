@@ -1071,6 +1071,58 @@ void main() {
           );
         });
 
+        test('rejects distinct keys with the same JSON representation', () {
+          // Mutation: assigning without a collision check silently keeps only
+          // the value of the later key.
+          expect(
+            () => Loggable.objectToJson(<Object?, Object?>{
+              1: 'int',
+              '1': 'string',
+            }),
+            throwsArgumentError,
+          );
+        });
+
+        test('rejects null and string null keys together', () {
+          // Mutation: treating null as the string "null" without a collision
+          // check silently keeps only the value of the later key.
+          expect(
+            () => Loggable.objectToJson(<Object?, Object?>{
+              null: 'null value',
+              'null': 'string value',
+            }),
+            throwsArgumentError,
+          );
+        });
+
+        test('rejects a collision when the first value is null', () {
+          // Mutation: checking result[jsonKey] instead of containsKey misses
+          // an existing key whose converted value is null.
+          expect(
+            () => Loggable.objectToJson(<Object?, Object?>{
+              1: null,
+              '1': 'string',
+            }),
+            throwsArgumentError,
+          );
+        });
+
+        test('allows a colliding key when sanitizer drops its entry', () {
+          // Mutation: checking collisions before Sanitize.drop would reject a
+          // map whose emitted JSON representation is unambiguous.
+          addTearDown(() => Loggable.sanitizer = null);
+          Loggable.sanitizer =
+              (ctx) => ctx.value == 'discard' ? Sanitize.drop : ctx.value;
+
+          expect(
+            Loggable.objectToJson(<Object?, Object?>{
+              1: 'discard',
+              '1': 'kept',
+            }),
+            {'1': 'kept'},
+          );
+        });
+
         test('does not pass units to values', () {
           const config = LoggableJsonConfig(units: 'm');
           expect(Loggable.objectToJson({'a': 1}, config: config), {

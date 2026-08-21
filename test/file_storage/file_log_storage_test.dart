@@ -621,6 +621,36 @@ void main() {
       await storage.close();
     });
 
+    test('a JSON key collision uses fallback and keeps batch neighbors',
+        () async {
+      // Mutation: last-write-wins in objectToJson writes a normal log line,
+      // silently losing one of the colliding values.
+      final reports = <Object>[];
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 's1',
+        dataFormat: FileLogDataFormat.json,
+        onError: (error, stackTrace) => reports.add(error),
+      );
+      _logger(storage)
+        ..i('one')
+        ..i(
+          'ambiguous',
+          data: <Object?, Object?>{1: 'int', '1': 'string'},
+        )
+        ..i('three');
+      await storage.flush().timeout(_timeout);
+
+      final lines = _lines(File('${tmp.path}/s1.1.jsonl'));
+      expect(lines, hasLength(4));
+      expect(_json(lines[1])['message'], 'one');
+      expect(_json(lines[2])['encodeError'], 'ArgumentError');
+      expect(_json(lines[3])['message'], 'three');
+      expect(reports.single, isA<ArgumentError>());
+
+      await storage.close();
+    });
+
     test('an encode error carrying a secret is not written to the file',
         () async {
       // ArgumentError.value(ctx.value) — совершенно естественная форма
