@@ -366,11 +366,12 @@ immutability и явно описать ownership, но это заметно с
 
 **Уверенность:** high.
 
-**Вердикт (2026-08-21): исправлено immutable snapshots без поэлементного
-копирования в горячем пути.** Публичный `Log` и новые коллекции в `copyWith`
-делают defensive copy; обычный `Logger` передаёт свежие list/set во владение
-приватного `_owned`, который выдаёт unmodifiable views. Пустые коллекции в
-`Log` канонические, а `copyWith` без replacement сохраняет identity snapshots.
+**Вердикт (2026-08-21): исправлено в `b20f797` immutable snapshots без
+поэлементного копирования в горячем пути.** Публичный `Log` и новые коллекции
+в `copyWith` делают defensive copy; обычный `Logger` передаёт свежие list/set
+во владение приватного `_owned`, который выдаёт unmodifiable views. Пустые
+коллекции в `Log` канонические, а `copyWith` без replacement сохраняет identity
+snapshots.
 Три исходных regression-теста и review-тест порядка lazy message/tags прошли
 RED–GREEN. Сфокусированный probe не показал значимой регрессии, независимое
 ревью не нашло Critical/Important.
