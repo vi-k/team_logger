@@ -144,6 +144,9 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   /// same id already exists on disk (see [ready]).
   String get sessionId => _sessionId;
 
+  @override
+  bool get isClosed => _closed;
+
   /// Reader for the sessions stored in [directory], including the current
   /// one.
   FileLogSessions get sessions => FileLogSessions(directory);
@@ -158,7 +161,14 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   }
 
   @override
-  Future<void> flush() async {
+  Future<void> flush() {
+    final closeFuture = _closeFuture;
+    if (closeFuture != null) return closeFuture;
+
+    return _flush();
+  }
+
+  Future<void> _flush() async {
     // flush гарантирует не только запись опубликованного (drain-семантика
     // базового flush), но и завершение инициализации: первый чанк с
     // meta-строкой уже на диске.

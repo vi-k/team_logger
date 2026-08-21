@@ -326,6 +326,35 @@ void main() {
       expect(logs.existsSync(), isFalse);
     });
 
+    test('flush after close returns the full close future', () async {
+      // Mutation: bypassing `_closeFuture` returns before the active handle
+      // close that follows the base publisher drain.
+      final logs = Directory('${tmp.path}/logs');
+      final storage = FileLogStorage(directory: logs.path, sessionId: 's1');
+      addTearDown(storage.close);
+      _logger(storage).i('pending');
+
+      final closeFuture = storage.close();
+      final flushFuture = storage.flush();
+
+      expect(identical(flushFuture, closeFuture), isTrue);
+      await flushFuture.timeout(_timeout);
+      await logs.delete(recursive: true);
+      expect(logs.existsSync(), isFalse);
+    });
+
+    test('isClosed flips synchronously when close starts', () async {
+      // Mutation: relying on the inherited getter keeps this false until
+      // `_close()` reaches `super.close()` after awaiting initialization.
+      final storage = FileLogStorage(directory: tmp.path, sessionId: 's1');
+      expect(storage.isClosed, isFalse);
+
+      final closeFuture = storage.close();
+
+      expect(storage.isClosed, isTrue);
+      await closeFuture.timeout(_timeout);
+    });
+
     test('rotates chunks and deletes the oldest, keeping the tail', () async {
       final storage = FileLogStorage(
         directory: tmp.path,
@@ -427,6 +456,37 @@ void main() {
       await storage.close();
     });
 
+    test('skips an ordinary file occupying the next chunk path', () async {
+      // Mutation: reopening or overwriting an occupied path changes its
+      // contents instead of preserving the batch for the next free index.
+      final reports = <Object>[];
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 's1',
+        maxSessionSize: 1200,
+        maxChunkSize: 600,
+        onError: (error, stackTrace) => reports.add(error),
+      );
+      final log = _logger(storage);
+      await storage.ready;
+
+      log.i('x' * 700);
+      await storage.flush().timeout(_timeout);
+      final occupied = File('${tmp.path}/s1.2.jsonl')
+        ..writeAsStringSync('occupied');
+
+      log.i('safe');
+      await storage.flush().timeout(_timeout);
+
+      expect(occupied.readAsStringSync(), 'occupied');
+      expect(
+        File('${tmp.path}/s1.3.jsonl').readAsStringSync(),
+        contains('safe'),
+      );
+      expect(reports, hasLength(1));
+      await storage.close();
+    });
+
     test(
       'keeps writing to the opened chunk after its path is replaced',
       () async {
@@ -464,6 +524,20 @@ void main() {
       expect(sessions.map((s) => s.id), ['s1']);
 
       await storage.close();
+    });
+
+    test('deletes the current session after storage is closed', () async {
+      final storage = FileLogStorage(directory: tmp.path, sessionId: 's1');
+      _logger(storage).i('safe');
+      await storage.flush().timeout(_timeout);
+      final session = (await storage.sessions.list()).single;
+      final chunks = [...session.files];
+
+      await storage.close();
+      await session.delete();
+
+      expect(chunks.every((file) => !file.existsSync()), isTrue);
+      expect(await storage.sessions.list(), isEmpty);
     });
   });
 
