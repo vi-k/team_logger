@@ -1415,9 +1415,9 @@ same directory.
 final storage = FileLogStorage(
   directory: '/path/to/logs',            // e.g. from path_provider
   meta: {'appVersion': '1.2.3'},         // written into the meta line
-  maxSessionSize: 10 * 1024 * 1024,      // per-session limit (chunk rotation)
-  maxChunkSize: 1024 * 1024,             // per-chunk limit
-  maxTotalSize: 100 * 1024 * 1024,       // limit for all sessions together
+  maxSessionSize: 10 * 1024 * 1024,      // per-session retention target
+  maxChunkSize: 1024 * 1024,             // chunk rotation target
+  maxTotalSize: 100 * 1024 * 1024,       // startup retention budget
   maxAge: const Duration(days: 7),       // sessions older than this are deleted
 );
 
@@ -1427,8 +1427,8 @@ log.publisher = MultiPublisher([
 ]);
 ```
 
-Three size limits, from the outside in (the number of sessions and chunks
-is never limited — only sizes are):
+Three size controls, from the outside in (the number of sessions and chunks
+is never limited):
 
 - **All sessions** (`maxTotalSize`, `maxAge`): on startup, sessions older
   than `maxAge` are deleted, then the oldest sessions are removed until the
@@ -1438,6 +1438,15 @@ is never limited — only sizes are):
   limit, the oldest chunk is deleted — the most recent logs are always kept.
 - **Per chunk** (`maxChunkSize`): when a chunk file reaches the limit, the
   next chunk is started. Must fit into `maxSessionSize` at least twice.
+
+These values are rotation and retention targets, not hard byte ceilings.
+Each JSON Lines record is atomic: it is never split, truncated or dropped
+solely because of its size. A single record larger than `maxChunkSize` is
+written whole, and the newest chunk is never deleted, so that chunk and the
+current session can also exceed `maxSessionSize`. Consequently,
+`maxTotalSize` cannot guarantee a hard runtime ceiling either. If exhausting
+disk space is a concern, bound the size of session metadata, messages, errors,
+stack traces and rendered data before publishing them.
 
 Writing happens in the background, in batches, and the queue in front of it
 is bounded by `maxQueueSize` — 100 000 logs accepted and not yet written by

@@ -1,7 +1,8 @@
 # Executive summary
 
 > Состояние на 2026-08-21: ревью завершено на срезе `a175dd7`. Находки №1,
-> №2, №3 и №12 исправлены; остаются 12 исходных находок (7 Medium, 5 Low).
+> №2, №3 и №12 исправлены; №4 принят как исходный контракт и документирован.
+> Остаются 11 исходных находок (6 Medium, 5 Low).
 
 Проект в целом аккуратно устроен и необычно хорошо покрыт тестами для
 библиотеки такого размера: платформенно-независимое ядро отделено от
@@ -13,9 +14,10 @@ Sanitizer, циклы, layout и асинхронное хранилище им�
 явного принятия рисков ниже. Найдено **16 проблем: 1 High, 9 Medium и 6 Low**.
 Главный блокер — сверхлинейный BBCode-парсер в стандартной теме: незакрытые
 теги длиной всего 2,4 КБ синхронно занимают isolate примерно на 4,16 секунды.
-Второй кластер — файловое хранилище: запись и чтение следуют по symlink,
-`flush()` успешно подтверждает уже потерянные логи, одна запись обходит обе
-квоты, а ZIP-экспорт держит весь исходный и сжатый архив в памяти.
+Второй кластер — файловое хранилище: запись и чтение следовали по symlink,
+`flush()` подтверждал уже потерянные логи, а ZIP-экспорт держит весь исходный
+и сжатый архив в памяти. Превышение size targets одной атомарной записью после
+сверки признано исходным контрактом, а не отдельным дефектом реализации.
 
 Ниже отделены подтверждённые дефекты от архитектурных ограничений и
 предположений. Старый черновик не принимался за источник истины: дерево,
@@ -248,6 +250,17 @@ list → `await storage.close()` → `session.delete()` без runtime registry.
 Проверять размер до append.
 
 **Уверенность:** high.
+
+**Вердикт (2026-08-21): принят исходный контракт, публичная документация
+уточнена.** Утверждённая до реализации спецификация
+`2026-07-27[2]-file-log-storage-design.md` прямо требует не разрезать строку и
+разрешает ей разово превысить `maxChunkSize`; реализация этого контракта вошла
+в `12edda6`, а существующий тест намеренно его закрепляет. Владелец подтвердил
+прежнее решение. `maxChunkSize` и `maxSessionSize` теперь публично описаны как
+пороги ротации/retention, `maxTotalSize` — как startup retention budget; ни
+один из них не обещает жёсткий потолок при oversized record. Для жёсткой
+границы вызывающий код должен ограничить размер session metadata, сообщений,
+ошибок, стеков и рендеримых данных.
 
 ### 5. [Medium / P2] `archiveTo()` масштабирует память по всему набору логов
 
@@ -645,9 +658,10 @@ format-check, web compile, screenshot-check и publish dry-run.
 
 В steady state console layout и обычный `Loggable` traversal ограничиваются
 размером фактически выводимых данных; cycle protection и collection limits
-реализованы. Однако эти пределы не закрывают oversized JSONL record, а
-`maxTotalSize: null` делает число и общий размер архивируемых sessions
-неограниченными.
+реализованы. Атомарная oversized JSONL record по принятому контракту может
+превысить rotation/retention targets; жёсткую дисковую границу обязан задать
+вызывающий код. `maxTotalSize: null` делает число и общий размер архивируемых
+sessions неограниченными.
 
 Асинхронный publisher имеет bounded queue и не блокирует call site диском —
 это хороший базовый выбор. Его reliability contract слабее документации:
@@ -723,7 +737,7 @@ identity-cache создают неявные контракты, которые 
 | Now | Кубическое время BBCode | Isolate блокируется коротким input | Линейный parser, adversarial benchmark и regression tests | M |
 | Now | Symlink boundary у chunks | Запись/утечка файлов вне log directory | No-follow listing/open, exclusive reservation каждого chunk, private directory policy | M–L |
 | Now | Ложная гарантия `flush()` | Незаметная потеря принятой диагностики | Вернуть failure/loss result или ошибку, связать потери с `onDropped` | M |
-| Now | Одна запись обходит квоты | Неограниченный пиковый расход диска | Hard per-record policy до append | S–M |
+| Accepted | Одна запись превышает size targets | Атомарная запись может дать неограниченный пик | Контракт документирован; для hard cap вызывающий код ограничивает input | — |
 | Next | ZIP держит весь набор в RAM | OOM при сборе диагностики | Streaming encoder/output либо документированный hard cap | M |
 | Next | Public validation только в `assert` | Production crash и тихая неверная конфигурация | Runtime `ArgumentError` во всех public constructors | S–M |
 | Next | JSON key collisions | Тихая потеря structured data | Detect/reject collision или lossless pair representation | M |
@@ -734,5 +748,6 @@ identity-cache создают неявные контракты, которые 
 | Later | Unicode width | Съезжают columns и `maxLength` | Единая grapheme/wcwidth abstraction | M–L |
 | Later | Docs drift и нет CI | Ошибки использования и непроверенный SDK floor | Исправить ссылки/термины; CI для Dart 3.6 и stable | S–M |
 
-После исправления пунктов 1–10 нужен повторный security/reliability review с
-adversarial тестами, а не только повтор текущего happy-path набора.
+После исправления или явного принятия пунктов 1–10 нужен повторный
+security/reliability review с adversarial тестами, а не только повтор текущего
+happy-path набора.

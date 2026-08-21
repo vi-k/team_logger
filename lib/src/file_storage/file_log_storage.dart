@@ -35,13 +35,20 @@ typedef _WriteFailure = ({
 /// pre-existing links, not a sandbox against another process that can race
 /// filesystem operations in the same directory.
 ///
-/// A session is a chain of chunk files `<sessionId>.<index>.jsonl`, each
-/// limited by [maxChunkSize]. The session is limited by [maxSessionSize]:
-/// when the limit is exceeded, the oldest chunk is deleted, so the most
-/// recent logs are always kept. On startup, sessions older than [maxAge]
-/// are deleted, and, if [maxTotalSize] is set, the oldest sessions are
-/// deleted until the rest fit into the limit. The number of chunks and
-/// sessions is not limited — only sizes are.
+/// A session is a chain of chunk files `<sessionId>.<index>.jsonl`.
+/// [maxChunkSize] is its chunk-rotation target, and [maxSessionSize] is its
+/// retention target: when the latter is exceeded, the oldest chunk is
+/// deleted, so the most recent logs are always kept. On startup, sessions
+/// older than [maxAge] are deleted, and, if [maxTotalSize] is set, the oldest
+/// sessions are deleted until the rest fit into its retention budget. The
+/// number of chunks and sessions is not limited.
+///
+/// These size settings are not hard byte ceilings. A JSON Lines record is
+/// never split, truncated or dropped solely because of its size. A record
+/// larger than [maxChunkSize] is written whole, and the newest chunk is never
+/// deleted, so it and the current session can also exceed [maxSessionSize].
+/// Consequently, [maxTotalSize] cannot guarantee a hard runtime ceiling.
+/// Bound input sizes before publishing if the application requires one.
 ///
 /// Logs are written in batches in the background; a successfully completed
 /// `await flush()` guarantees everything published so far is on disk. After
@@ -79,14 +86,23 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
 
   final int minLevel;
 
-  /// Total size limit of one session, in bytes.
+  /// Retained-size target for one session, in bytes.
+  ///
+  /// The newest chunk is always kept, so an oversized record can make the
+  /// session exceed this target. See the class documentation.
   final int maxSessionSize;
 
-  /// Size limit of one chunk file, in bytes. When a chunk reaches it, the
-  /// next chunk is started. Must fit into [maxSessionSize] at least twice.
+  /// Rotation-size target for one chunk file, in bytes.
+  ///
+  /// When a chunk reaches it, the next chunk is started. One JSON Lines record
+  /// is never split, so it can make a chunk exceed this target. Must fit into
+  /// [maxSessionSize] at least twice.
   final int maxChunkSize;
 
-  /// Total size limit of all sessions together, in bytes. `null` — no limit.
+  /// Startup retention budget for all sessions together, in bytes.
+  ///
+  /// This is not a hard runtime ceiling because the current session can exceed
+  /// [maxSessionSize]. `null` disables this cleanup.
   final int? maxTotalSize;
 
   /// Sessions older than this are deleted on startup. `null` — keep forever.

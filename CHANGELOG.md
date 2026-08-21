@@ -19,6 +19,11 @@
 - Documented and tested the supported current-session deletion sequence:
   deleting it while its `FileLogStorage` is active is unsupported; await
   `close()` first.
+- Clarified the existing file-retention contract: `maxChunkSize` and
+  `maxSessionSize` are rotation and retention targets, while `maxTotalSize`
+  is a startup retention budget. JSON Lines records stay whole and the newest
+  chunk is always retained, so one oversized record can exceed all three
+  settings; callers that need a hard disk ceiling must bound their inputs.
 - `BbCodeFormatter` no longer uses a backtracking regular expression: a
   single left-to-right scan now keeps malformed input from blocking the
   isolate. Properly nested tags, including identical tags, are supported;
