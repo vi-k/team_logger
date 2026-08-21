@@ -335,10 +335,10 @@ stress-прогон на позднем meta-подобном чанке 128 М�
 
 **Уверенность:** high.
 
-**Вердикт (2026-08-21): исправлено fail-fast проверкой.** После преобразования
-ключа через `toString()` и escaping `_mapToJson` проверяет уже реально
-выводимый JSON-ключ через `containsKey`; коллизия даёт `ArgumentError` вместо
-last-write-wins. Запись, удалённая sanitizer'ом, до проверки не доходит.
+**Вердикт (2026-08-21): исправлено в `fd3045f` fail-fast проверкой.** После
+преобразования ключа через `toString()` и escaping `_mapToJson` проверяет уже
+реально выводимый JSON-ключ через `containsKey`; коллизия даёт `ArgumentError`
+вместо last-write-wins. Запись, удалённая sanitizer'ом, до проверки не доходит.
 Прямые тесты закрепляют `1`/`'1'`, `null`/`'null'`, первое значение `null` и
 sanitizer drop. В JSON-режиме `FileLogStorage` существующий encode fallback
 пишет `encodeError: ArgumentError`, сообщает исходную ошибку в `onError` и
