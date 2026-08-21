@@ -5,8 +5,11 @@
 > superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-> **Состояние на 2026-08-21:** реализовано и проверено в `ac40ae9` и
-> `08aa5c0`; итоговый отчёт — `2026-08-21[4]-file-storage-symlink-boundary-report.md`.
+> **Состояние на 2026-08-21:** реализовано и проверено в `ac40ae9`,
+> `08aa5c0`, `4005f65` и `28b6ad9`; broad-review final fix-wave закрыла
+> `flush()`/`isClosed`, ordinary collision coverage и контракт удаления
+> текущей сессии. Итоговый отчёт —
+> `2026-08-21[4]-file-storage-symlink-boundary-report.md`.
 > **Что это:** TDD-план исправления находок ревью №2 и №12.
 > **Связанные записи:** `2026-08-21[2]-file-storage-symlink-boundary-design.md`,
 > `2026-08-21[1]-project-review.md`.

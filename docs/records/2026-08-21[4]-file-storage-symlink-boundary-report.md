@@ -1,5 +1,6 @@
 > **Состояние на 2026-08-21:** реализовано, проверено и задокументировано;
-> кодовые изменения — `ac40ae9` и `08aa5c0`.
+> кодовые изменения — `ac40ae9`, `08aa5c0` и `4005f65`, финальное уточнение
+> публичного контракта — `28b6ad9`.
 > **Что это:** итог работ по находкам project review №2 (symlink boundary)
 > и №12 (полный lifecycle `close()`).
 > **Связанные записи:** `2026-08-21[1]-project-review.md`,
@@ -47,6 +48,10 @@ chunk.
   пропускает индекс и сохраняет тот же батч в первом свободном chunk.
 - `close()` возвращает cached Future, ждёт инициализацию и drain, затем
   закрывает активный handle даже при ошибке базового lifecycle.
+- `flush()` после начала закрытия возвращает тот же cached close Future, а
+  `isClosed` переключается синхронно.
+- Удаление текущей сессии при активном writer объявлено неподдерживаемым;
+  real-filesystem тест закрепляет последовательность close → delete.
 - README, CHANGELOG и dartdoc объявляют private-directory best-effort
   contract и полный lifecycle `close()`; architecture, design, plan и
   project review синхронизированы с ним.
@@ -111,7 +116,7 @@ cd example && rtk dart run bin/file_storage_example.dart  exit 0
 Проверки `rtk git diff --check`, `rtk git status --short` и полного diff от
 `HEAD~2` уже выполнены; до commit замечания self-review отсутствовали.
 
-## Ограничения и открытый concern
+## Ограничения и concern на первом закрытии
 
 Полной защиты от hostile TOCTOU и hardlink нет, и публичная документация её
 не обещает. Отдельно остаётся deferred Minor: унаследованный `isClosed`
@@ -119,9 +124,47 @@ cd example && rtk dart run bin/file_storage_example.dart  exit 0
 работа его не меняла; широкое итоговое ревью должно независимо решить,
 существенно ли это для публичного lifecycle-контракта.
 
+Broad review подтвердил concern и закрыл его в `4005f65`: `isClosed` теперь
+меняется синхронно. Тем же TDD-циклом `flush()` после начала закрытия
+присоединён к полному close Future. Новая явно документированная граница:
+удаление текущей сессии поддерживается только после `await storage.close()`;
+runtime enforcement не заявляется.
+
 ## Созданные коммиты
 
 - `ac40ae9 fix: ignore symlink log chunks`
 - `08aa5c0 fix: keep log chunk handles open`
-- `docs: record symlink-safe file storage` — этот итоговый документальный
-  commit.
+- `8899b94 docs: record symlink-safe file storage`
+- `fe9567f docs: qualify symlink boundary guarantee`
+- `4005f65 fix: complete file storage close state`
+- `28b6ad9 docs: clarify file session lifecycle`
+
+## Дополнение: final fix-wave после broad review
+
+Целевой RED:
+
+```text
+rtk dart test test/file_storage/file_log_storage_test.dart \
+  -n 'flush after close|isClosed flips|ordinary file occupying|current session after storage'
+```
+
+Результат до production-правки: exit 1, `+2 -2`. `flush()` вернул отличный
+от close Future (`Actual: false` для identity), а `isClosed` остался `false`
+сразу после `close()`. Ordinary-file collision и close→delete прошли сразу
+как characterization/coverage.
+
+После `4005f65` тот же набор прошёл `+4`. Финальная проверка после публичного
+документального коммита:
+
+```text
+rtk dart test test/file_storage/file_log_storage_test.dart  36 passed
+rtk dart test test/file_storage/file_log_sessions_test.dart 22 passed
+rtk dart test                                             454 passed
+rtk dart analyze                                          No issues found
+rtk dart format --output=none --set-exit-if-changed .      94 files, 0 changed
+rtk dart pub publish --dry-run                             0 warnings, 156 KB
+rtk scripts/screenshots.sh --check                         exit 0, 41 frames
+```
+
+Broad review также обнаружил устаревшие live counts. После закрытия находок
+№1, №2 и №12 остаются 13 исходных находок: 8 Medium и 5 Low.
