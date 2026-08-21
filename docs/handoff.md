@@ -8,9 +8,9 @@
 ## Где мы
 
 Ветка `main`, версия в `pubspec.yaml` — **0.7.0, ещё не выпущена**.
-`main` опережает `origin/main` на четыре локальных коммита: исправление
-`431b277`, отчёт ревью `267ab0f`, дизайн `7968d6a` и implementation plan
-symlink boundary в `HEAD`; push не делался. Рабочее дерево чистое.
+`main` опережает `origin/main` на пять локальных коммитов: исправление
+`431b277`, отчёт ревью `267ab0f`, дизайн `7968d6a`, implementation plan и
+первый кодовый этап symlink boundary; push не делался. Рабочее дерево чистое.
 
 Повторное полное техническое ревью по `$project-review` завершено. Итоговый
 отчёт — `docs/records/2026-08-21[1]-project-review.md`: 16 подтверждённых
@@ -31,9 +31,17 @@ append во внешний файл, а reader/export/ZIP могут прочи�
 принимать только regular files перед path-based операциями. Письменная
 спецификация — `docs/records/2026-08-21[2]-file-storage-symlink-boundary-design.md`;
 владелец её одобрил. TDD implementation plan —
-`docs/records/2026-08-21[3]-file-storage-symlink-boundary-plan.md`; код ещё не
-начат. В тот же цикл включена находка №12: `close()` обязан дождаться
-`ready`, drain и закрытия handle.
+`docs/records/2026-08-21[3]-file-storage-symlink-boundary-plan.md`.
+
+Первый этап плана завершён: reader и startup/rotation cleanup перечисляют
+только regular files через no-follow type; snapshot-session повторно
+проверяет чанк перед чтением, экспортом, ZIP и удалением. Реальные
+symlink-тесты сначала были RED: старый код включал ссылку в `list()`, читал
+её target в `read`/export/ZIP и удалял ссылку при startup cleanup. GREEN:
+`dart test test/file_storage/file_log_sessions_test.dart` (22),
+`dart test test/file_storage/file_log_storage_test.dart` (29), `dart analyze`
+и проверка formatter — код 0. В тот же цикл включена находка №12: `close()`
+обязан дождаться `ready`, drain и закрытия handle.
 
 Правило общения от владельца: прежде чем задавать вопрос о любой следующей
 находке или обсуждать её решение, сначала простыми словами описать саму
@@ -184,11 +192,11 @@ dev-зависимостей, потребителей это не касает�
 
 ## Следующий шаг
 
-Находка №1 исправлена и независимо перепроверена. По находке №2 дизайн
-одобрен, implementation plan составлен. Следующий шаг — выбрать режим
-исполнения плана и провести TDD-цикл по no-follow reader, exclusive/open-
-handle writer и полному `close()` lifecycle. После №2/№12 идут семантика
-`flush()` и жёсткий предел одной записи.
+Находка №1 исправлена и независимо перепроверена. По находке №2 первый
+no-follow reader/cleanup этап завершён. Следующий шаг — Task 2: TDD-цикл
+writer handle с exclusive creation, закрытие handle и полный `close()`
+lifecycle. После №2/№12 идут семантика `flush()` и жёсткий предел одной
+записи.
 
 До ревью подготовка 0.7.0 (пункты 1–6 чеклиста «Релиз» в
 `docs/conventions.md`) была завершена и подтверждена dry-run'ом. Теперь

@@ -23,6 +23,16 @@ File _chunk(
   return file;
 }
 
+Future<bool> _createLinkOrSkip(Link link, String target) async {
+  try {
+    await link.create(target);
+    return true;
+  } on FileSystemException catch (error) {
+    markTestSkipped('Symlink creation is unavailable: $error');
+    return false;
+  }
+}
+
 void main() {
   group('chunk names', () {
     test('chunkName/parseChunkName roundtrip', () {
@@ -118,6 +128,23 @@ void main() {
       expect(sessions.map((s) => s.id), ['s1']);
     });
 
+    test('list ignores symlinks with chunk names', () async {
+      // Mutation: removing the no-follow check includes leak in a session.
+      _chunk(tmp, 'safe', 1, [_metaLine('safe'), '{"num":1}']);
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside-secret');
+      if (!await _createLinkOrSkip(
+        Link('${tmp.path}/leak.1.jsonl'),
+        victim.path,
+      )) {
+        return;
+      }
+
+      final sessions = await FileLogSessions(tmp.path).list();
+
+      expect(sessions.map((session) => session.id), ['safe']);
+    });
+
     test('list returns empty list for missing directory', () async {
       final sessions =
           await FileLogSessions('${tmp.path}/does_not_exist').list();
@@ -134,6 +161,25 @@ void main() {
         'sessionId': 's1',
         'started': '2026-01-01T00:00:00.000Z',
       });
+    });
+
+    test('read and readMeta skip a chunk replaced by a symlink', () async {
+      // Mutation: removing the late no-follow check opens the link target.
+      final chunk = _chunk(
+        tmp,
+        's1',
+        1,
+        [_metaLine('s1'), '{"message":"safe"}'],
+      );
+      final session = (await FileLogSessions(tmp.path).list()).single;
+      final original = await chunk.rename('${tmp.path}/original.jsonl');
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside-secret');
+      if (!await _createLinkOrSkip(Link(chunk.path), victim.path)) return;
+
+      expect(await session.readMeta(), isEmpty);
+      expect(await session.readAsString(), isNot(contains('outside-secret')));
+      expect(original.readAsStringSync(), contains('safe'));
     });
 
     test('read concatenates chunks, skipping duplicate meta lines', () async {
@@ -219,6 +265,32 @@ void main() {
       expect(File('${target.path}/s1.jsonl').existsSync(), isFalse);
     });
 
+    test('exportTo skips a chunk replaced by a symlink', () async {
+      // Mutation: removing the late no-follow check exports the link target.
+      final chunk = _chunk(
+        tmp,
+        's1',
+        1,
+        [_metaLine('s1'), '{"message":"safe"}'],
+      );
+      final session = (await FileLogSessions(tmp.path).list()).single;
+      await chunk.rename('${tmp.path}/original.jsonl');
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside-secret');
+      if (!await _createLinkOrSkip(Link(chunk.path), victim.path)) return;
+
+      final target = Directory('${tmp.path}/out');
+      final files = await FileLogSessions(tmp.path).exportTo(
+        target,
+        sessions: [session],
+      );
+
+      expect(
+        files.single.readAsStringSync(),
+        isNot(contains('outside-secret')),
+      );
+    });
+
     test('exportTo overwrites existing target files', () async {
       _chunk(tmp, 's1', 1, [_metaLine('s1'), '{"num":1}']);
       final target = Directory('${tmp.path}/out')..createSync();
@@ -302,6 +374,30 @@ void main() {
       expect(archive.files.map((f) => f.name), ['s2.jsonl']);
     });
 
+    test('archiveTo skips a chunk replaced by a symlink', () async {
+      // Mutation: removing the late no-follow check archives the link target.
+      final chunk = _chunk(
+        tmp,
+        's1',
+        1,
+        [_metaLine('s1'), '{"message":"safe"}'],
+      );
+      final session = (await FileLogSessions(tmp.path).list()).single;
+      await chunk.rename('${tmp.path}/original.jsonl');
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside-secret');
+      if (!await _createLinkOrSkip(Link(chunk.path), victim.path)) return;
+
+      final target = File('${tmp.path}/logs.zip');
+      await FileLogSessions(tmp.path).archiveTo(target, sessions: [session]);
+
+      final archive = ZipDecoder().decodeBytes(target.readAsBytesSync());
+      expect(
+        utf8.decode(archive.find('s1.jsonl')!.content),
+        isNot(contains('outside-secret')),
+      );
+    });
+
     test('delete removes all session files and nothing else', () async {
       _chunk(tmp, 's1', 1, [_metaLine('s1')]);
       _chunk(tmp, 's1', 2, [_metaLine('s1')]);
@@ -313,6 +409,24 @@ void main() {
       expect(File('${tmp.path}/s1.1.jsonl').existsSync(), isFalse);
       expect(File('${tmp.path}/s1.2.jsonl').existsSync(), isFalse);
       expect(other.existsSync(), isTrue);
+    });
+
+    test('delete skips a chunk replaced by a symlink', () async {
+      // Mutation: removing the late no-follow check deletes the symlink.
+      final chunk = _chunk(tmp, 's1', 1, [_metaLine('s1')]);
+      final session = (await FileLogSessions(tmp.path).list()).single;
+      await chunk.rename('${tmp.path}/original.jsonl');
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside-secret');
+      if (!await _createLinkOrSkip(Link(chunk.path), victim.path)) return;
+
+      await session.delete();
+
+      expect(victim.readAsStringSync(), 'outside-secret');
+      expect(
+        FileSystemEntity.typeSync(chunk.path, followLinks: false),
+        FileSystemEntityType.link,
+      );
     });
   });
 }

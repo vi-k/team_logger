@@ -47,6 +47,10 @@ bool _startsWith(List<int> bytes, List<int> prefix) {
   return true;
 }
 
+bool _isRegularFile(File file) =>
+    FileSystemEntity.typeSync(file.path, followLinks: false) ==
+    FileSystemEntityType.file;
+
 /// Reader for log sessions stored in a directory by `FileLogStorage`.
 final class FileLogSessions {
   final String directory;
@@ -61,17 +65,19 @@ final class FileLogSessions {
 
     final chunksById =
         <String, List<({int index, File file, FileStat stat})>>{};
-    await for (final entity in dir.list()) {
-      if (entity is! File) continue;
-      final parsed = parseChunkName(entity.uri.pathSegments.last);
+    await for (final entity in dir.list(followLinks: false)) {
+      final file = File(entity.path);
+      final parsed = parseChunkName(file.uri.pathSegments.last);
       if (parsed == null) continue;
-      final stat = entity.statSync();
+      if (!_isRegularFile(file)) continue;
+      final stat = file.statSync();
       // Файл могли удалить между list() и statSync (ротация/очистка другого
       // процесса) — иначе сессия получит size -1 и lastModified около эпохи.
       if (stat.type == FileSystemEntityType.notFound) continue;
+      if (!_isRegularFile(file)) continue;
       chunksById
           .putIfAbsent(parsed.sessionId, () => [])
-          .add((index: parsed.index, file: entity, stat: stat));
+          .add((index: parsed.index, file: file, stat: stat));
     }
 
     final sessions = <FileLogSession>[];
@@ -178,22 +184,26 @@ final class FileLogSession {
 
   /// The content of the session meta line, or an empty map if absent.
   Future<Map<String, Object?>> readMeta() async {
-    if (files.isEmpty) return const {};
+    for (final file in files) {
+      if (!_isRegularFile(file)) continue;
 
-    final firstLine = await files.first
-        .openRead()
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .firstWhere((_) => true, orElse: () => '');
+      final firstLine = await file
+          .openRead()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .firstWhere((_) => true, orElse: () => '');
 
-    try {
-      final decoded = jsonDecode(firstLine);
-      if (decoded is Map<String, Object?>) {
-        final meta = decoded[FileLogCodec.metaKey];
-        if (meta is Map<String, Object?>) return meta;
+      try {
+        final decoded = jsonDecode(firstLine);
+        if (decoded is Map<String, Object?>) {
+          final meta = decoded[FileLogCodec.metaKey];
+          if (meta is Map<String, Object?>) return meta;
+        }
+      } on FormatException {
+        // Не meta-строка — считаем, что метаданных нет.
       }
-    } on FormatException {
-      // Не meta-строка — считаем, что метаданных нет.
+
+      return const {};
     }
 
     return const {};
@@ -204,6 +214,7 @@ final class FileLogSession {
   Stream<List<int>> read() async* {
     var first = true;
     for (final file in files) {
+      if (!_isRegularFile(file)) continue;
       if (first) {
         first = false;
         yield* file.openRead();
@@ -219,7 +230,7 @@ final class FileLogSession {
   /// Deletes all chunk files of this session.
   Future<void> delete() async {
     for (final file in files) {
-      if (file.existsSync()) {
+      if (_isRegularFile(file)) {
         await file.delete();
       }
     }

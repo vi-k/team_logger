@@ -25,6 +25,16 @@ List<String> _lines(File file) =>
 Map<String, Object?> _json(String line) =>
     jsonDecode(line) as Map<String, Object?>;
 
+Future<bool> _createLinkOrSkip(Link link, String target) async {
+  try {
+    await link.create(target);
+    return true;
+  } on FileSystemException catch (error) {
+    markTestSkipped('Symlink creation is unavailable: $error');
+    return false;
+  }
+}
+
 void main() {
   late Directory tmp;
 
@@ -131,6 +141,31 @@ void main() {
 
       expect(foreign.existsSync(), isTrue);
 
+      await storage.close();
+    });
+
+    test('startup cleanup ignores symlinks with chunk names', () async {
+      // Mutation: removing the no-follow check lets cleanup remove the link.
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside-secret')
+        ..setLastModifiedSync(
+          DateTime.now().subtract(const Duration(days: 30)),
+        );
+      final link = Link('${tmp.path}/old.1.jsonl');
+      if (!await _createLinkOrSkip(link, victim.path)) return;
+
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 'current',
+        maxAge: const Duration(days: 7),
+      );
+      await storage.ready;
+
+      expect(
+        FileSystemEntity.typeSync(link.path, followLinks: false),
+        FileSystemEntityType.link,
+      );
+      expect(victim.readAsStringSync(), 'outside-secret');
       await storage.close();
     });
   });

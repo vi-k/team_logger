@@ -14,6 +14,12 @@ import '../theme/log_main_theme.dart';
 import 'file_log_codec.dart';
 import 'file_log_sessions.dart';
 
+FileSystemEntityType _entityTypeNoFollow(String path) =>
+    FileSystemEntity.typeSync(path, followLinks: false);
+
+bool _isRegularFilePath(String path) =>
+    _entityTypeNoFollow(path) == FileSystemEntityType.file;
+
 /// A publisher that stores logs on disk, one session per application run.
 ///
 /// A session is a chain of chunk files `<sessionId>.<index>.jsonl`, each
@@ -277,8 +283,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   }
 
   Set<String> _existingSessionIds() => {
-        for (final entity in Directory(directory).listSync())
-          if (entity is File)
+        for (final entity in Directory(directory).listSync(followLinks: false))
+          if (_isRegularFilePath(entity.path))
             if (parseChunkName(entity.uri.pathSegments.last) case final parsed?)
               parsed.sessionId,
       };
@@ -347,7 +353,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     while (total > maxSessionSize && _chunkSizes.length > 1) {
       final oldest = _chunkSizes.keys.reduce((a, b) => a < b ? a : b);
       final file = File('$directory/${chunkName(_sessionId, oldest)}');
-      if (file.existsSync()) {
+      if (_isRegularFilePath(file.path)) {
         await file.delete();
       }
       total -= _chunkSizes.remove(oldest)!;
