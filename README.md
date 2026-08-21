@@ -1442,17 +1442,25 @@ is never limited — only sizes are):
 Writing happens in the background, in batches, and the queue in front of it
 is bounded by `maxQueueSize` — 100 000 logs accepted and not yet written by
 default. At the limit it is the *incoming* log that is refused, so a disk
-that cannot keep up costs the newest logs rather than the process:
-everything already accepted is still written and `flush()`/`close()` keep
-their meaning. A refused log is handed to `onDropped`, and with no
-`onDropped` set the loss is announced on stdout rather than hidden — pass
-`onDropped: (_) {}` for a storage that must stay quiet, or
-`maxQueueSize: null` to give the bound up entirely.
+that cannot keep up costs the newest logs rather than the process. A refused
+log is handed to `onDropped`, and with no `onDropped` set the loss is
+announced on stdout rather than hidden — pass `onDropped: (_) {}` for a
+storage that must stay quiet, or `maxQueueSize: null` to give the bound up
+entirely.
 
-`close()` waits for initialization, drains accepted logs, and closes the active
-chunk handle. `isClosed` becomes true as soon as closing starts, and a
-`flush()` called after that returns the same full-lifecycle future as
-`close()`. Calls to `publish()` after it are ignored.
+A successfully completed `flush()` guarantees that everything published so
+far is on disk. If initialization or a write fails after a log was accepted,
+the error is reported to `onError`, the affected logs are handed to
+`onDropped`, and every subsequent `flush()` completes with the first such
+error after draining new logs. The storage may recover and persist later
+logs, but that cannot undo the earlier loss; create a new `FileLogStorage`
+for a clean durability state.
+
+`close()` waits for initialization, drains accepted logs, and closes the
+active chunk handle. If durability failed, it closes the resources first and
+then completes with the same stored error. `isClosed` becomes true as soon as
+closing starts, and a `flush()` called after that returns the same
+full-lifecycle future as `close()`. Calls to `publish()` after it are ignored.
 
 ```dart
 FileLogStorage(

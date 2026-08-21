@@ -20,6 +20,13 @@ FileSystemEntityType _entityTypeNoFollow(String path) =>
 bool _isRegularFilePath(String path) =>
     _entityTypeNoFollow(path) == FileSystemEntityType.file;
 
+typedef _EncodedLog = ({Log log, String line});
+typedef _WriteFailure = ({
+  Object error,
+  StackTrace stackTrace,
+  List<Log> uncommittedLogs,
+});
+
 /// A publisher that stores logs on disk, one session per application run.
 ///
 /// Use an application-private directory. Symlinks and other non-regular
@@ -36,18 +43,20 @@ bool _isRegularFilePath(String path) =>
 /// deleted until the rest fit into the limit. The number of chunks and
 /// sessions is not limited — only sizes are.
 ///
-/// Logs are written in batches in the background; `await flush()` guarantees
-/// everything published so far is on disk. After [close] publications are
-/// silently ignored. [close] waits for initialization, drains accepted logs,
-/// and closes the active chunk handle. Once closing starts, [isClosed] is
-/// immediately true and [flush] returns the same full-lifecycle Future as
-/// [close].
+/// Logs are written in batches in the background; a successfully completed
+/// `await flush()` guarantees everything published so far is on disk. After
+/// [close] publications are silently ignored. [close] waits for
+/// initialization, drains accepted logs, and closes the active chunk handle.
+/// Once closing starts, [isClosed] is immediately true and [flush] returns
+/// the same full-lifecycle Future as [close].
 ///
 /// Deleting the current session through [FileLogSession.delete] while this
 /// storage is active is unsupported. Await [close] before deleting it.
 ///
-/// [onError] is called on initialization, encoding and write errors. Errors
-/// are never thrown; exceptions thrown by the callback itself are ignored.
+/// [onError] is called on initialization, encoding and write errors.
+/// Initialization and write errors that make accepted logs unavailable also
+/// make every subsequent [flush] and [close] complete with the first such
+/// error. Exceptions thrown by [onError] itself are ignored.
 ///
 /// The queue between `publish` and the disk is bounded by [maxQueueSize] —
 /// 100 000 logs accepted and not yet written, the batch in flight included.
@@ -56,10 +65,10 @@ bool _isRegularFilePath(String path) =>
 /// already accepted is still written, and [flush] and [close] keep their
 /// meaning. A refused log goes to [onDropped], and with no [onDropped] set
 /// the loss is announced on stdout rather than hidden — pass
-/// `onDropped: (_) {}` for silence. This is the only way a log is lost
-/// after being accepted: a failed write is reported to [onError] and never
-/// retried, so the retry budget of the base class does not come into play
-/// here.
+/// `onDropped: (_) {}` for silence. A log that cannot be persisted after it
+/// was accepted is also handed to [onDropped]. Failed writes are never
+/// retried: the storage can recover for later logs, but the durability error
+/// remains observable for the lifetime of this instance.
 final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   /// The directory the session files are stored in (created recursively).
   final String directory;
@@ -100,10 +109,14 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   var _chunkSize = 0;
   RandomAccessFile? _currentChunk;
   Future<void>? _closeFuture;
+  (Object, StackTrace)? _durabilityFailure;
 
   /// Размеры чанков текущей сессии на диске (индекс -> байты).
   final Map<int, int> _chunkSizes = {};
 
+  // Explicit callback and queue parameters let the super invocation keep
+  // write retries fixed at zero without adding maxRetries to this API.
+  // ignore: use_super_parameters
   FileLogStorage({
     required this.directory,
     String? sessionId,
@@ -117,9 +130,9 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     LogMainTheme? theme,
     LoggableConfig config = const LoggableConfig(),
     LoggableJsonConfig jsonConfig = const LoggableJsonConfig(),
-    super.onError,
-    super.onDropped,
-    super.maxQueueSize,
+    void Function(Object error, StackTrace stackTrace)? onError,
+    void Function(List<Log> logs)? onDropped,
+    int? maxQueueSize = 100000,
   })  : assert(maxChunkSize > 0, 'maxChunkSize must be positive'),
         assert(
           maxSessionSize >= 2 * maxChunkSize,
@@ -136,7 +149,13 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
           config: config,
           jsonConfig: jsonConfig,
         ),
-        _started = clock.now() {
+        _started = clock.now(),
+        super(
+          onError: onError,
+          onDropped: onDropped,
+          maxRetries: 0,
+          maxQueueSize: maxQueueSize,
+        ) {
     _sessionId = sanitizeSessionId(sessionId ?? defaultSessionId(_started));
     // Инициализация стартует в фоне, future сохраняется в [ready].
     // ignore: discarded_futures
@@ -160,7 +179,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   void publish(Log log) {
     // После close публикация — no-op: базовый publish бросил бы StateError
     // в точку логирования, а буфер никогда не был бы обработан.
-    if (_closed) return;
+    if (_closed || log.level < minLevel) return;
 
     super.publish(log);
   }
@@ -179,6 +198,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     // meta-строкой уже на диске.
     await ready;
     await super.flush();
+    _throwIfDurabilityFailed();
   }
 
   @override
@@ -195,38 +215,49 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     } finally {
       await _closeCurrentChunk(reportErrors: true);
     }
+    _throwIfDurabilityFailed();
   }
 
   @override
   Future<void> handle(List<Log> logs, List<Log> retryBuffer) async {
-    // Батч не возвращается в retryBuffer: при недоступном диске это дало бы
-    // бесконечные повторы и рост памяти.
+    List<Log>? persistedLogs;
     try {
       await ready;
-      if (_disabled) return;
+      persistedLogs = [
+        for (final log in logs)
+          if (log.level >= minLevel) log,
+      ];
+      if (_disabled) {
+        retryBuffer.addAll(persistedLogs);
+        return;
+      }
 
-      final lines = <String>[];
-      for (final log in logs) {
-        if (log.level < minLevel) continue;
+      final encodedLogs = <_EncodedLog>[];
+      for (final log in persistedLogs) {
         try {
-          lines.add(_codec.encode(log));
+          encodedLogs.add((log: log, line: _codec.encode(log)));
         } on Object catch (error, stackTrace) {
           // Ошибка кодирования одного лога (бросающий toString и т.п.)
           // не должна терять соседние логи батча.
           _report(error, stackTrace);
-          lines.add(_encodeFallback(log, error));
+          encodedLogs.add((log: log, line: _encodeFallback(log, error)));
         }
       }
 
-      if (lines.isNotEmpty) {
-        try {
-          await _write(lines);
-        } on Object catch (error, stackTrace) {
-          _report(error, stackTrace);
+      if (encodedLogs.isNotEmpty) {
+        final failure = await _write(encodedLogs);
+        if (failure != null) {
+          _rememberDurabilityFailure(failure.error, failure.stackTrace);
+          retryBuffer.addAll(failure.uncommittedLogs);
+          _report(failure.error, failure.stackTrace);
           await _recoverAfterWriteError();
         }
       }
     } on Object catch (error, stackTrace) {
+      _rememberDurabilityFailure(error, stackTrace);
+      if (retryBuffer.isEmpty && persistedLogs != null) {
+        retryBuffer.addAll(persistedLogs);
+      }
       _report(error, stackTrace);
     }
   }
@@ -277,6 +308,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
       await _appendToCurrent(_metaLineBytes);
     } on Object catch (error, stackTrace) {
       _disabled = true;
+      _rememberDurabilityFailure(error, stackTrace);
       _report(error, stackTrace);
       await _closeCurrentChunk(reportErrors: true);
     }
@@ -324,37 +356,61 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   /// Дописывает строки батча в чанки, режа батч по [maxChunkSize],
   /// чтобы один большой батч не раздувал чанк и не выбрасывался ротацией
   /// целиком. Только append: файлы никогда не усекаются.
-  Future<void> _write(List<String> lines) async {
+  Future<_WriteFailure?> _write(List<_EncodedLog> logs) async {
     final target = maxChunkSize;
     final pending = BytesBuilder(copy: false);
+    final pendingLogs = <Log>[];
 
-    Future<void> commit() async {
-      if (pending.isEmpty) return;
-      await _appendToCurrent(pending.takeBytes());
+    Future<_WriteFailure?> commit(int nextLogIndex) async {
+      if (pending.isEmpty) return null;
+
+      final bytes = pending.takeBytes();
+      final committingLogs = List<Log>.of(pendingLogs);
+      pendingLogs.clear();
+      try {
+        await _appendToCurrent(bytes);
+      } on Object catch (error, stackTrace) {
+        return (
+          error: error,
+          stackTrace: stackTrace,
+          uncommittedLogs: [
+            ...committingLogs,
+            for (var i = nextLogIndex; i < logs.length; i++) logs[i].log,
+          ],
+        );
+      }
+
+      return null;
     }
 
-    for (final line in lines) {
+    for (var i = 0; i < logs.length; i++) {
+      final (:log, :line) = logs[i];
       if (_chunkSize == 0 && pending.isEmpty) {
         pending.add(_metaLineBytes);
       }
       pending.add(utf8.encode('$line\n'));
+      pendingLogs.add(log);
 
       if (_chunkSize + pending.length >= target) {
-        await commit();
-        await _closeCurrentChunk(reportErrors: false);
+        final failure = await commit(i + 1);
+        if (failure != null) return failure;
+        await _closeCurrentChunk(reportErrors: true);
         _chunkIndex++;
         _chunkSize = 0;
-        await _deleteOldestChunks();
+        await _deleteOldestChunksReported();
       }
     }
 
-    await commit();
+    final failure = await commit(logs.length);
+    if (failure != null) return failure;
     if (_chunkSize >= target) {
-      await _closeCurrentChunk(reportErrors: false);
+      await _closeCurrentChunk(reportErrors: true);
       _chunkIndex++;
       _chunkSize = 0;
     }
-    await _deleteOldestChunks();
+    await _deleteOldestChunksReported();
+
+    return null;
   }
 
   Future<void> _reserveCurrentChunk() async {
@@ -430,6 +486,14 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     }
   }
 
+  Future<void> _deleteOldestChunksReported() async {
+    try {
+      await _deleteOldestChunks();
+    } on Object catch (error, stackTrace) {
+      _report(error, stackTrace);
+    }
+  }
+
   /// A placeholder line for a log that failed to encode.
   ///
   /// Only the error TYPE reaches the file. The error text may carry the
@@ -445,6 +509,16 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
         'time': log.time.toUtc().toIso8601String(),
         'encodeError': error.runtimeType.toString(),
       });
+
+  void _rememberDurabilityFailure(Object error, StackTrace stackTrace) {
+    _durabilityFailure ??= (error, stackTrace);
+  }
+
+  void _throwIfDurabilityFailed() {
+    if (_durabilityFailure case (final error, final stackTrace)) {
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
 
   void _report(Object error, StackTrace stackTrace) {
     try {

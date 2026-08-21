@@ -1,5 +1,14 @@
 ## 0.7.0
 
+- [breaking changes] `FileLogStorage.flush()` and `close()` no longer report
+  success after an initialization or write failure made an accepted log
+  unavailable. The affected logs go to `onDropped`; both lifecycle methods
+  drain or close resources and then complete with the first durability error,
+  which remains sticky for that storage instance. `onError` still receives
+  the original failure when it happens.
+- `FileLogStorage.minLevel` is now applied before the bounded queue, so logs
+  excluded from file output neither consume queue capacity nor displace an
+  eligible log into `onDropped`.
 - Fixed best-effort handling of accidental or pre-existing chunk symlinks in
   an application-private, trusted log directory: they are ignored rather than
   making reading or appending leave it. This is not a sandbox against a

@@ -235,6 +235,28 @@ void main() {
       await storage.close();
     });
 
+    test('minLevel filters logs before they consume queue capacity', () async {
+      final dropped = <Log>[];
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 's1',
+        minLevel: LogLevels.warning,
+        maxQueueSize: 1,
+        onDropped: dropped.addAll,
+      );
+      _logger(storage)
+        ..i('filtered')
+        ..e('kept');
+      await storage.flush().timeout(_timeout);
+
+      expect(dropped, isEmpty);
+      final lines = _lines(File('${tmp.path}/s1.1.jsonl'));
+      expect(lines, hasLength(2));
+      expect(_json(lines.last)['message'], 'kept');
+
+      await storage.close();
+    });
+
     test('default sessionId is derived from the start time', () async {
       final time = DateTime(2026, 7, 27, 14, 30, 59, 482, 913);
       late FileLogStorage storage;
@@ -274,26 +296,38 @@ void main() {
       await storage.close();
     });
 
-    test('reports the error once and disables itself on unusable directory',
+    test('flush stays failed after initialization loses accepted logs',
         () async {
       File('${tmp.path}/blocked').writeAsStringSync('');
 
       final reports = <Object>[];
+      final dropped = <Log>[];
       final storage = FileLogStorage(
         directory: '${tmp.path}/blocked/dir',
         onError: (error, stackTrace) => reports.add(error),
+        onDropped: dropped.addAll,
       );
       final log = _logger(storage);
       log.i('x');
-      await storage.flush().timeout(_timeout);
+      await expectLater(
+        storage.flush().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
       log.i('y');
-      await storage.flush().timeout(_timeout);
+      await expectLater(
+        storage.flush().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
 
-      // Одна ошибка инициализации; последующие публикации молча
-      // отбрасываются без новых ошибок.
+      // Initialization itself is reported once. Every accepted log is also
+      // reported as dropped, without retrying a permanently disabled store.
       expect(reports, hasLength(1));
+      expect(dropped.map((log) => log.message), ['x', 'y']);
 
-      await storage.close();
+      await expectLater(
+        storage.close().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
     });
 
     test('close writes pending logs', () async {
@@ -708,8 +742,9 @@ void main() {
       await storage.close();
     });
 
-    test('recovers into a new chunk after chunk creation failure', () async {
+    test('write failure stays sticky after later logs recover', () async {
       final reports = <Object>[];
+      final dropped = <Log>[];
       final logs = Directory('${tmp.path}/logs');
       final storage = FileLogStorage(
         directory: logs.path,
@@ -717,6 +752,7 @@ void main() {
         maxSessionSize: 1200,
         maxChunkSize: 600,
         onError: (error, stackTrace) => reports.add(error),
+        onDropped: dropped.addAll,
       );
       final log = _logger(storage);
       log.i('x' * 700);
@@ -724,21 +760,81 @@ void main() {
 
       final unavailable = await logs.rename('${tmp.path}/unavailable');
       log.i('lost');
-      await storage.flush().timeout(_timeout);
+      await expectLater(
+        storage.flush().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
       expect(reports, isNotEmpty);
+      expect(dropped.map((log) => log.message), ['lost']);
       await unavailable.rename(logs.path);
 
       log.i('recovered');
-      await storage.flush().timeout(_timeout);
+      await expectLater(
+        storage.flush().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
 
-      // Сбойный батч потерян по прежнему контракту; следующий пишет в
-      // более поздний индекс и не склеивается с частичным JSONL.
+      // The next batch still reaches disk. Its successful write cannot make
+      // the earlier loss disappear from the instance's durability result.
       final recovered = File('${logs.path}/s1.3.jsonl');
       expect(recovered.existsSync(), isTrue);
       expect(_json(_lines(recovered).last)['message'], 'recovered');
       expect(recovered.readAsStringSync(), isNot(contains('lost')));
+      expect(dropped.map((log) => log.message), ['lost']);
 
-      await storage.close();
+      await expectLater(
+        storage.close().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
+    });
+
+    test('partial batch failure drops only the uncommitted suffix', () async {
+      final logs = Directory('${tmp.path}/logs');
+      final unavailable = Directory('${tmp.path}/unavailable');
+      final dropped = <Log>[];
+      var movedDirectory = false;
+      final storage = FileLogStorage(
+        directory: logs.path,
+        sessionId: 's1',
+        maxSessionSize: 1200,
+        maxChunkSize: 600,
+        onError: (error, stackTrace) {
+          if (!movedDirectory) {
+            movedDirectory = true;
+            logs.renameSync(unavailable.path);
+          }
+        },
+        onDropped: dropped.addAll,
+      );
+      await storage.ready;
+      File('${logs.path}/s1.2.jsonl').writeAsStringSync('occupied');
+
+      final storedMessage = 'stored ${'a' * 700}';
+      final lostMessage = 'lost ${'b' * 700}';
+      _logger(storage)
+        ..i(storedMessage)
+        ..i(lostMessage)
+        ..i('also lost');
+      await expectLater(
+        storage.flush().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
+      unavailable.renameSync(logs.path);
+
+      expect(
+        dropped.map((log) => log.message),
+        [lostMessage, 'also lost'],
+      );
+      expect(
+        File('${logs.path}/s1.1.jsonl').readAsStringSync(),
+        contains(storedMessage),
+      );
+      expect(File('${logs.path}/s1.2.jsonl').readAsStringSync(), 'occupied');
+
+      await expectLater(
+        storage.close().timeout(_timeout),
+        throwsA(isA<FileSystemException>()),
+      );
     });
 
     test('maxQueueSize refuses the newest logs and reports them', () async {
