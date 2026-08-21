@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -305,6 +306,26 @@ void main() {
       expect(_json(lines[1])['message'], 'pending');
     });
 
+    test('close waits for initialization before it completes', () async {
+      // Mutation: removing `await ready` from close lets it return while
+      // initialization can still recreate the directory and first chunk.
+      final logs = Directory('${tmp.path}/logs');
+      final storage = FileLogStorage(directory: logs.path, sessionId: 's1');
+      var readyCompleted = false;
+      unawaited(storage.ready.whenComplete(() => readyCompleted = true));
+
+      final firstClose = storage.close();
+      final secondClose = storage.close();
+      expect(identical(firstClose, secondClose), isTrue);
+      await firstClose.timeout(_timeout);
+
+      expect(readyCompleted, isTrue);
+      expect(File('${logs.path}/s1.1.jsonl').existsSync(), isTrue);
+      await logs.delete(recursive: true);
+      await storage.ready;
+      expect(logs.existsSync(), isFalse);
+    });
+
     test('rotates chunks and deletes the oldest, keeping the tail', () async {
       final storage = FileLogStorage(
         directory: tmp.path,
@@ -368,6 +389,71 @@ void main() {
 
       await storage.close();
     });
+
+    test('skips a symlink occupying the next chunk path', () async {
+      // Mutation: path-based append follows the link and changes victim.
+      final reports = <Object>[];
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 's1',
+        maxSessionSize: 1200,
+        maxChunkSize: 600,
+        onError: (error, stackTrace) => reports.add(error),
+      );
+      final log = _logger(storage);
+      await storage.ready;
+
+      log.i('x' * 700);
+      await storage.flush().timeout(_timeout);
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside');
+      if (!await _createLinkOrSkip(
+        Link('${tmp.path}/s1.2.jsonl'),
+        victim.path,
+      )) {
+        await storage.close();
+        return;
+      }
+
+      log.i('safe');
+      await storage.flush().timeout(_timeout);
+
+      expect(victim.readAsStringSync(), 'outside');
+      expect(
+        File('${tmp.path}/s1.3.jsonl').readAsStringSync(),
+        contains('safe'),
+      );
+      expect(reports, hasLength(1));
+      await storage.close();
+    });
+
+    test(
+      'keeps writing to the opened chunk after its path is replaced',
+      () async {
+        // Mutation: reopening by path follows the replacement symlink.
+        final logs = Directory('${tmp.path}/logs');
+        final storage = FileLogStorage(directory: logs.path, sessionId: 's1');
+        final log = _logger(storage);
+        await storage.ready;
+
+        final chunk = File('${logs.path}/s1.1.jsonl');
+        final detached = await chunk.rename('${tmp.path}/detached.jsonl');
+        final victim = File('${tmp.path}/victim.txt')
+          ..writeAsStringSync('outside');
+        if (!await _createLinkOrSkip(Link(chunk.path), victim.path)) {
+          await storage.close();
+          return;
+        }
+
+        log.i('safe');
+        await storage.flush().timeout(_timeout);
+
+        expect(victim.readAsStringSync(), 'outside');
+        expect(detached.readAsStringSync(), contains('safe'));
+        await storage.close();
+      },
+      skip: Platform.isWindows ? 'Windows may not rename an opened file' : null,
+    );
 
     test('exposes sessions reader for its directory', () async {
       final storage = FileLogStorage(directory: tmp.path, sessionId: 's1');
@@ -548,32 +634,35 @@ void main() {
       await storage.close();
     });
 
-    test('recovers into a new chunk after a write failure', () async {
+    test('recovers into a new chunk after chunk creation failure', () async {
       final reports = <Object>[];
+      final logs = Directory('${tmp.path}/logs');
       final storage = FileLogStorage(
-        directory: tmp.path,
+        directory: logs.path,
         sessionId: 's1',
+        maxSessionSize: 1200,
+        maxChunkSize: 600,
         onError: (error, stackTrace) => reports.add(error),
       );
       final log = _logger(storage);
-      log.i('first');
+      log.i('x' * 700);
       await storage.flush().timeout(_timeout);
 
-      final chunk1 = File('${tmp.path}/s1.1.jsonl');
-      Process.runSync('chmod', ['400', chunk1.path]);
+      final unavailable = await logs.rename('${tmp.path}/unavailable');
       log.i('lost');
       await storage.flush().timeout(_timeout);
       expect(reports, isNotEmpty);
-      Process.runSync('chmod', ['644', chunk1.path]);
+      await unavailable.rename(logs.path);
 
       log.i('recovered');
       await storage.flush().timeout(_timeout);
 
-      // После сбоя запись ушла в новый чанк, старый не тронут.
-      final chunk2 = File('${tmp.path}/s1.2.jsonl');
-      expect(chunk2.existsSync(), isTrue);
-      expect(_json(_lines(chunk2).last)['message'], 'recovered');
-      expect(_json(_lines(chunk1).last)['message'], 'first');
+      // Сбойный батч потерян по прежнему контракту; следующий пишет в
+      // более поздний индекс и не склеивается с частичным JSONL.
+      final recovered = File('${logs.path}/s1.3.jsonl');
+      expect(recovered.existsSync(), isTrue);
+      expect(_json(_lines(recovered).last)['message'], 'recovered');
+      expect(recovered.readAsStringSync(), isNot(contains('lost')));
 
       await storage.close();
     });

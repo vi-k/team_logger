@@ -86,6 +86,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   var _closed = false;
   var _chunkIndex = 1;
   var _chunkSize = 0;
+  RandomAccessFile? _currentChunk;
+  Future<void>? _closeFuture;
 
   /// Размеры чанков текущей сессии на диске (индекс -> байты).
   final Map<int, int> _chunkSizes = {};
@@ -161,7 +163,16 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   Future<void> close() {
     _closed = true;
 
-    return super.close();
+    return _closeFuture ??= _close();
+  }
+
+  Future<void> _close() async {
+    await ready;
+    try {
+      await super.close();
+    } finally {
+      await _closeCurrentChunk(reportErrors: true);
+    }
   }
 
   @override
@@ -190,7 +201,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
           await _write(lines);
         } on Object catch (error, stackTrace) {
           _report(error, stackTrace);
-          _recoverAfterWriteError();
+          await _recoverAfterWriteError();
         }
       }
     } on Object catch (error, stackTrace) {
@@ -217,13 +228,16 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
       // ...затем резервируем сессию, эксклюзивно создавая первый чанк, —
       // защита от гонки двух инстансов с одинаковым id, ещё не успевших
       // ничего записать.
+      late File file;
       while (true) {
-        final file = File('$directory/${chunkName(candidate, 1)}');
+        file = File('$directory/${chunkName(candidate, 1)}');
         try {
           await file.create(exclusive: true);
           break;
         } on FileSystemException {
-          if (!file.existsSync()) rethrow;
+          if (_entityTypeNoFollow(file.path) == FileSystemEntityType.notFound) {
+            rethrow;
+          }
           n++;
           candidate = '$base-$n';
         }
@@ -237,16 +251,12 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
           meta: meta,
         )}\n',
       );
-      await File('$directory/${chunkName(candidate, 1)}').writeAsBytes(
-        _metaLineBytes,
-        mode: FileMode.writeOnlyAppend,
-        flush: true,
-      );
-      _chunkSize = _metaLineBytes.length;
-      _chunkSizes[1] = _chunkSize;
+      _currentChunk = await file.open(mode: FileMode.writeOnlyAppend);
+      await _appendToCurrent(_metaLineBytes);
     } on Object catch (error, stackTrace) {
       _disabled = true;
       _report(error, stackTrace);
+      await _closeCurrentChunk(reportErrors: true);
     }
   }
 
@@ -298,15 +308,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
 
     Future<void> commit() async {
       if (pending.isEmpty) return;
-      final bytes = pending.takeBytes();
-      final file = File('$directory/${chunkName(_sessionId, _chunkIndex)}');
-      await file.writeAsBytes(
-        bytes,
-        mode: FileMode.writeOnlyAppend,
-        flush: true,
-      );
-      _chunkSize += bytes.length;
-      _chunkSizes[_chunkIndex] = _chunkSize;
+      await _appendToCurrent(pending.takeBytes());
     }
 
     for (final line in lines) {
@@ -317,6 +319,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
 
       if (_chunkSize + pending.length >= target) {
         await commit();
+        await _closeCurrentChunk(reportErrors: false);
         _chunkIndex++;
         _chunkSize = 0;
         await _deleteOldestChunks();
@@ -325,23 +328,68 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
 
     await commit();
     if (_chunkSize >= target) {
+      await _closeCurrentChunk(reportErrors: false);
       _chunkIndex++;
       _chunkSize = 0;
     }
     await _deleteOldestChunks();
   }
 
+  Future<void> _reserveCurrentChunk() async {
+    while (true) {
+      final file = File(
+        '$directory/${chunkName(_sessionId, _chunkIndex)}',
+      );
+      try {
+        await file.create(exclusive: true);
+      } on FileSystemException catch (error, stackTrace) {
+        if (_entityTypeNoFollow(file.path) == FileSystemEntityType.notFound) {
+          rethrow;
+        }
+        _report(error, stackTrace);
+        _chunkIndex++;
+        continue;
+      }
+      _currentChunk = await file.open(mode: FileMode.writeOnlyAppend);
+      return;
+    }
+  }
+
+  Future<void> _appendToCurrent(List<int> bytes) async {
+    if (_currentChunk == null) {
+      await _reserveCurrentChunk();
+    }
+    await _currentChunk!.writeFrom(bytes);
+    await _currentChunk!.flush();
+    _chunkSize += bytes.length;
+    _chunkSizes[_chunkIndex] = _chunkSize;
+  }
+
+  Future<void> _closeCurrentChunk({required bool reportErrors}) async {
+    final chunk = _currentChunk;
+    if (chunk == null) return;
+    _currentChunk = null;
+    try {
+      await chunk.close();
+    } on Object catch (error, stackTrace) {
+      if (!reportErrors) rethrow;
+      _report(error, stackTrace);
+    }
+  }
+
   /// После ошибки записи текущий чанк может содержать частично записанную
   /// строку — переходим на новый чанк, чтобы следующая запись не склеилась
   /// с обрывком в невалидный JSONL, и сверяем учтённый размер с фактическим.
-  void _recoverAfterWriteError() {
-    final file = File('$directory/${chunkName(_sessionId, _chunkIndex)}');
-    final stat = file.statSync();
-    if (stat.type != FileSystemEntityType.notFound) {
-      _chunkSizes[_chunkIndex] = stat.size;
-    } else {
-      _chunkSizes.remove(_chunkIndex);
+  Future<void> _recoverAfterWriteError() async {
+    final chunk = _currentChunk;
+    if (chunk != null) {
+      try {
+        _chunkSizes[_chunkIndex] = await chunk.length();
+      } on Object catch (error, stackTrace) {
+        _report(error, stackTrace);
+      }
     }
+    await _closeCurrentChunk(reportErrors: true);
     _chunkIndex++;
     _chunkSize = 0;
   }
