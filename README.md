@@ -1509,12 +1509,14 @@ for (final session in sessions) {
 
 Deleting the current session while its `FileLogStorage` is active is
 unsupported: POSIX may keep writing to an unlinked file, while Windows may
-reject the deletion. Close the storage first; the supported sequence for a
-session returned by the earlier snapshot is:
+reject the deletion. Remember the current id, close the storage, and then
+select that exact session:
 
 ```dart
-final current = sessions.last;
+final currentId = storage.sessionId;
 await storage.close();
+final current = (await storage.sessions.list())
+    .singleWhere((session) => session.id == currentId);
 await current.delete();
 ```
 
