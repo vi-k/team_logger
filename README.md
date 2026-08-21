@@ -1405,6 +1405,11 @@ files `<sessionId>.<index>.jsonl` written as JSON Lines, one JSON object per
 log. The first line of every chunk is a metadata line (`":meta"` key) with
 the session id, start time and any fields you pass in `meta`.
 
+Custom session ids are sanitized to letters, digits, `-` and `_`; an empty id
+is rejected with `ArgumentError`. Files with an unrelated name or a numeric
+index outside the Dart `int` range are ignored by session listing and startup
+cleanup.
+
 Use an application-private directory. Symlinks and other non-regular entries
 are ignored, and each chunk is created exclusively and kept open while active.
 This is best-effort protection against accidental or pre-existing links, not a

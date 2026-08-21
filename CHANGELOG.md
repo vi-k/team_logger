@@ -1,5 +1,9 @@
 ## 0.7.0
 
+- [breaking changes] Empty custom file-session ids are now rejected with
+  `ArgumentError` instead of creating chunk files that session listing cannot
+  discover. Chunk names whose numeric index does not fit in a Dart `int` are
+  treated as foreign files instead of disabling listing or storage startup.
 - [breaking changes] `Log.tags` and `Log.traceIds` are now unmodifiable
   snapshots. Mutating collections passed to the public constructor or as
   `copyWith()` replacements no longer changes an existing log, and attempts

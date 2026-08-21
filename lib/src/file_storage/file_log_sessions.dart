@@ -22,17 +22,30 @@ String defaultSessionId(DateTime now) {
 
 /// Replaces characters that are not allowed in a session id (anything but
 /// latin letters, digits, `-` and `_`) with `_`.
-String sanitizeSessionId(String raw) => raw.replaceAll(_invalidIdCharsRe, '_');
+///
+/// Throws [ArgumentError] if the resulting id is empty.
+String sanitizeSessionId(String raw) {
+  final sanitized = raw.replaceAll(_invalidIdCharsRe, '_');
+  if (sanitized.isEmpty) {
+    throw ArgumentError.value(raw, 'raw', 'Session id must not be empty');
+  }
+  return sanitized;
+}
 
 /// `<sessionId>.<index>.jsonl`
 String chunkName(String sessionId, int index) => '$sessionId.$index.jsonl';
 
-/// Parses a chunk file name. Returns `null` for files that are not chunks.
+/// Parses a chunk file name.
+///
+/// Returns `null` for files that are not chunks, including numeric indexes
+/// outside the range of a Dart [int].
 ({String sessionId, int index})? parseChunkName(String fileName) {
   final m = _chunkNameRe.firstMatch(fileName);
   if (m == null) return null;
+  final index = int.tryParse(m[2]!);
+  if (index == null) return null;
 
-  return (sessionId: m[1]!, index: int.parse(m[2]!));
+  return (sessionId: m[1]!, index: index);
 }
 
 bool _isRegularFile(File file) =>

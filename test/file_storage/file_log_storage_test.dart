@@ -145,6 +145,26 @@ void main() {
       await storage.close();
     });
 
+    test('startup ignores a chunk index larger than int', () async {
+      // Mutation: parsing the numeric regex group with int.parse disables the
+      // storage before it can reserve the current session.
+      final malformed = oldChunk(
+        'foreign.${'9' * 100}.jsonl',
+        10,
+        age: const Duration(days: 30),
+      );
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 'current',
+      );
+
+      await storage.ready;
+      await expectLater(storage.close().timeout(_timeout), completes);
+
+      expect(malformed.existsSync(), isTrue);
+      expect(File('${tmp.path}/current.1.jsonl').existsSync(), isTrue);
+    });
+
     test('startup cleanup ignores symlinks with chunk names', () async {
       // Mutation: removing the no-follow check lets cleanup remove the link.
       final victim = File('${tmp.path}/victim.txt')

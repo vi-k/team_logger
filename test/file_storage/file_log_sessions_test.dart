@@ -48,6 +48,16 @@ void main() {
       expect(parseChunkName('x.1x.jsonl'), isNull);
     });
 
+    test('parseChunkName rejects an index larger than int', () {
+      // Mutation: int.parse accepts the regex match, then throws instead of
+      // treating an unrepresentable chunk index as a foreign file name.
+      final fileName = 's1.${'9' * 100}.jsonl';
+      ({String sessionId, int index})? parsed;
+
+      expect(() => parsed = parseChunkName(fileName), returnsNormally);
+      expect(parsed, isNull);
+    });
+
     test('defaultSessionId format and lexicographic ordering', () {
       final id =
           defaultSessionId(DateTime.utc(2026, 7, 27, 9, 30, 59, 482, 913));
@@ -61,6 +71,19 @@ void main() {
     test('sanitizeSessionId replaces invalid characters', () {
       expect(sanitizeSessionId('a.b/c:d e'), 'a_b_c_d_e');
       expect(sanitizeSessionId('AB-9_x'), 'AB-9_x');
+    });
+
+    test('sanitizeSessionId rejects an empty id', () {
+      // Mutation: returning the empty string lets FileLogStorage create
+      // `.1.jsonl`, which its own session parser cannot discover.
+      expect(
+        () => sanitizeSessionId(''),
+        throwsA(
+          isA<ArgumentError>()
+              .having((error) => error.name, 'name', 'raw')
+              .having((error) => error.invalidValue, 'invalidValue', ''),
+        ),
+      );
     });
   });
 
