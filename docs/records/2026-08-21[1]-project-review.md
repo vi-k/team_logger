@@ -1,8 +1,8 @@
 # Executive summary
 
 > Состояние на 2026-08-21: ревью завершено на срезе `a175dd7`. Находки №1,
-> №2, №3, №5, №6 и №12 исправлены; №4 принят как исходный контракт и
-> документирован. Остаются 9 исходных находок (4 Medium, 5 Low).
+> №2, №3, №5, №6, №7 и №12 исправлены; №4 принят как исходный контракт и
+> документирован. Остаются 8 исходных находок (3 Medium, 5 Low).
 
 Проект в целом аккуратно устроен и необычно хорошо покрыт тестами для
 библиотеки такого размера: платформенно-независимое ядро отделено от
@@ -365,6 +365,15 @@ unmodifiable значения. Если изменяемость намерен�
 immutability и явно описать ownership, но это заметно слабее текущего дизайна.
 
 **Уверенность:** high.
+
+**Вердикт (2026-08-21): исправлено immutable snapshots без поэлементного
+копирования в горячем пути.** Публичный `Log` и новые коллекции в `copyWith`
+делают defensive copy; обычный `Logger` передаёт свежие list/set во владение
+приватного `_owned`, который выдаёт unmodifiable views. Пустые коллекции в
+`Log` канонические, а `copyWith` без replacement сохраняет identity snapshots.
+Три исходных regression-теста и review-тест порядка lazy message/tags прошли
+RED–GREEN. Сфокусированный probe не показал значимой регрессии, независимое
+ревью не нашло Critical/Important.
 
 ### 8. [Medium / P2] API имён сессий не замкнут на собственном формате
 
@@ -775,7 +784,7 @@ identity-cache создают неявные контракты, которые 
 | Fixed | ZIP держал весь набор в RAM | OOM при сборе диагностики | `archiveTo()` заменён потоковым `gzipTo()` | — |
 | Next | Public validation только в `assert` | Production crash и тихая неверная конфигурация | Runtime `ArgumentError` во всех public constructors | S–M |
 | Fixed | JSON key collisions | Тихая потеря structured data | Коллизия после нормализации даёт `ArgumentError` | — |
-| Next | Mutable `Log` | Publisher'ы видят разные версии записи | Defensive copy и unmodifiable collections | S |
+| Fixed | Mutable `Log` | Publisher'ы видят разные версии записи | Unmodifiable snapshots с owned hot path | — |
 | Next | Невалидные session filenames | Невидимая session или disabled storage | Reject empty id, `int.tryParse`, corrupted-file policy | S |
 | Next | Raw ANSI из untrusted input | Подмена terminal output | Сквозной safe mode и явный opt-in для raw ANSI | M |
 | Later | Config/cache/lifecycle/zone defects | Непоследовательное runtime-поведение | Закрыть находки 11–14 отдельными regression tests | M |

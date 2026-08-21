@@ -34,8 +34,10 @@ void main() {
       expect(copy.path, original.path);
       expect(copy.message, original.message);
       expect(copy.data, same(original.data));
-      expect(copy.tags, original.tags);
-      expect(copy.traceIds, original.traceIds);
+      // Performance characterization: an unchanged immutable snapshot is
+      // reused instead of copied by every transformer.
+      expect(copy.tags, same(original.tags));
+      expect(copy.traceIds, same(original.traceIds));
       expect(copy.error, same(original.error));
       expect(copy.stackTrace, same(original.stackTrace));
     });
@@ -116,6 +118,21 @@ void main() {
       expect(clearedTraces.traceIds, isEmpty);
     });
 
+    test('snapshots replacement collections', () {
+      // Mutation: assigning replacements directly lets their caller change
+      // an already transformed log after copyWith returns.
+      final original = capture((log) => log.i('m'));
+      final tags = <String>{'original'};
+      final traceIds = <TraceId>[const TraceId.manual('req', 1)];
+
+      final copy = original.copyWith(tags: tags, traceIds: traceIds);
+      tags.add('mutated');
+      traceIds.add(const TraceId.manual('req', 2));
+
+      expect(copy.tags, {'original'});
+      expect(copy.traceIds.map((id) => id.toString()), ['req-1']);
+    });
+
     test(
       'stackTrace rejects a value that is neither a StackTrace nor null',
       () {
@@ -127,5 +144,50 @@ void main() {
         );
       },
     );
+  });
+
+  group('Log collection snapshots', () {
+    test('the public constructor snapshots mutable inputs', () {
+      // Mutation: assigning constructor inputs directly lets their caller
+      // change an already constructed log.
+      final tags = <String>{'original'};
+      final traceIds = <TraceId>[const TraceId.manual('req', 1)];
+      final log = Log(
+        LevelLogger(level: LogLevels.info, name: 'info'),
+        path: 'test',
+        traceIds: traceIds,
+        message: 'm',
+        data: Log.noData,
+        tags: tags,
+      );
+
+      tags.add('mutated');
+      traceIds.add(const TraceId.manual('req', 2));
+
+      expect(log.tags, {'original'});
+      expect(log.traceIds.map((id) => id.toString()), ['req-1']);
+    });
+
+    test('published collections cannot be mutated', () {
+      // Mutation: exposing the owned List and Set directly lets one consumer
+      // change what later publishers and storages observe.
+      final logs = <Log>[];
+      final logger = Logger('test')
+        ..level = LogLevels.all
+        ..publisher = CustomLogPublisher(logs.add);
+
+      logger.i(
+        'm',
+        traceId: const TraceId.manual('req', 1),
+        tags: {'original'},
+      );
+      final log = logs.single;
+
+      expect(() => log.tags.add('mutated'), throwsUnsupportedError);
+      expect(
+        () => log.traceIds.add(const TraceId.manual('req', 2)),
+        throwsUnsupportedError,
+      );
+    });
   });
 }

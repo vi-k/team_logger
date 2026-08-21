@@ -15,6 +15,9 @@ final class _Unset {
 /// namespace path, message, resolved data, tags, trace ids, error and
 /// stack trace.
 ///
+/// [tags] and [traceIds] are unmodifiable snapshots. Mutating collections
+/// passed to the constructor or [copyWith] cannot change an existing log.
+///
 /// [num] grows monotonically per isolate; logs filtered out by publishers
 /// still consume numbers, so gaps are normal.
 final class Log extends CustomLog with Loggable {
@@ -33,14 +36,39 @@ final class Log extends CustomLog with Loggable {
   Log(
     super.levelLogger, {
     required this.path,
-    required this.traceIds,
+    required List<TraceId> traceIds,
     required this.message,
     required this.data,
-    required this.tags,
+    required Set<String> tags,
     super.error,
     super.stackTrace,
     super.zone,
-  })  : num = ++lastNum,
+  })  : traceIds = List<TraceId>.unmodifiable(traceIds),
+        tags = Set<String>.unmodifiable(tags),
+        num = ++lastNum,
+        time = clock.now();
+
+  /// Takes exclusive ownership of collections built for one log event.
+  ///
+  /// The normal logger path creates fresh collections and retains no mutable
+  /// aliases, so unmodifiable views avoid an additional element-by-element
+  /// copy. Empty collections reuse canonical constants.
+  Log._owned(
+    super.levelLogger, {
+    required this.path,
+    required List<TraceId> traceIds,
+    required this.message,
+    required this.data,
+    required Set<String> tags,
+    super.error,
+    super.stackTrace,
+    super.zone,
+  })  : traceIds = traceIds.isEmpty
+            ? const <TraceId>[]
+            : UnmodifiableListView<TraceId>(traceIds),
+        tags =
+            tags.isEmpty ? const <String>{} : UnmodifiableSetView<String>(tags),
+        num = ++lastNum,
         time = clock.now();
 
   static const _unset = _Unset._();
@@ -75,6 +103,8 @@ final class Log extends CustomLog with Loggable {
   /// `stackTrace: null` — the stack trace, which is NOT re-derived from
   /// [error]); `data: Log.noData` clears the data. Collections are
   /// cleared with empty values (`tags: {}`, `traceIds: []`).
+  /// Replaced collections are snapshotted once; omitted collections reuse
+  /// the existing immutable snapshots without copying.
   /// [stackTrace], when passed, must be a [StackTrace] or `null`.
   Log copyWith({
     String? message,
@@ -88,10 +118,14 @@ final class Log extends CustomLog with Loggable {
       Log._copy(
         this,
         path: path ?? this.path,
-        traceIds: traceIds ?? this.traceIds,
+        traceIds: traceIds == null || identical(traceIds, this.traceIds)
+            ? this.traceIds
+            : List<TraceId>.unmodifiable(traceIds),
         message: message ?? this.message,
         data: identical(data, _unset) ? this.data : data,
-        tags: tags ?? this.tags,
+        tags: tags == null || identical(tags, this.tags)
+            ? this.tags
+            : Set<String>.unmodifiable(tags),
         error: identical(error, _unset) ? this.error : error,
         stackTrace: identical(stackTrace, _unset)
             ? this.stackTrace

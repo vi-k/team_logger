@@ -59,7 +59,12 @@ final class LevelLogger
         zone,
       }) {
         final zonedTraceIds = Logger.zonedTraceIds(zone);
-        final logTraceIds = [...zonedTraceIds, if (traceId != null) traceId];
+        final logTraceIds = zonedTraceIds.isEmpty && traceId == null
+            ? const <TraceId>[]
+            : <TraceId>[
+                ...zonedTraceIds,
+                if (traceId != null) traceId,
+              ];
         for (final traceId in logTraceIds) {
           traceId.resolve();
         }
@@ -69,23 +74,28 @@ final class LevelLogger
           resolvedData = Loggable.from(resolvedData, config: config);
         }
 
+        final logPath = overridePath ?? logger._lazyPath.value;
+        // The message is outside the sanitizer's documented scope,
+        // so the library's own `toString()` on it is suppressed (see
+        // [_GuardedLazyString]). Interpolation the CALLER did —
+        // `log.i('$obj')` — happened before this point and stays
+        // affected: it is not our `toString()` call.
+        final logMessage = _GuardedLazyString(message, '').value;
+
+        final logTags = <String>{
+          ...Logger.zonedTags(zone),
+          ...logger.tags,
+          ...LazyTags(tags).value,
+        };
+
         publishLog(
-          Log(
+          Log._owned(
             this,
-            path: overridePath ?? logger._lazyPath.value,
+            path: logPath,
             traceIds: logTraceIds,
-            // The message is outside the sanitizer's documented scope,
-            // so the library's own `toString()` on it is suppressed (see
-            // [_GuardedLazyString]). Interpolation the CALLER did —
-            // `log.i('$obj')` — happened before this point and stays
-            // affected: it is not our `toString()` call.
-            message: _GuardedLazyString(message, '').value,
+            message: logMessage,
             data: resolvedData,
-            tags: {
-              ...Logger.zonedTags(zone),
-              ...logger.tags,
-              ...LazyTags(tags).value,
-            },
+            tags: logTags,
             error: error,
             stackTrace: stackTrace,
             zone: zone,

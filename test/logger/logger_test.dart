@@ -175,5 +175,33 @@ void main() {
 
       expect(resolved, isFalse);
     });
+
+    test('resolves message and snapshots logger tags before lazy call tags',
+        () {
+      // Mutation: resolving call tags before path/message and before copying
+      // logger tags changes side-effect order and the current log's snapshot.
+      final order = <String>[];
+      final loggerTags = <String>{};
+      final out = _Capture();
+      final log = Logger('app', tags: loggerTags)
+        ..level = LogLevels.all
+        ..publisher = out;
+
+      log.i(
+        () {
+          order.add('message');
+          return 'm';
+        },
+        tags: () {
+          order.add('tags');
+          loggerTags.add('late');
+          return {'call'};
+        },
+      );
+
+      expect(order, ['message', 'tags']);
+      expect(out.logs.single.tags, {'call'});
+      expect(loggerTags, {'late'});
+    });
   });
 }

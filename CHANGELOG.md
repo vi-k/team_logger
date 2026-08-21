@@ -1,5 +1,11 @@
 ## 0.7.0
 
+- [breaking changes] `Log.tags` and `Log.traceIds` are now unmodifiable
+  snapshots. Mutating collections passed to the public constructor or as
+  `copyWith()` replacements no longer changes an existing log, and attempts
+  to mutate the exposed collections throw `UnsupportedError`. The normal
+  `Logger` path transfers fresh collections without copying their elements;
+  `copyWith()` reuses snapshots when those fields are omitted.
 - [breaking changes] `Loggable.objectToJson()` now throws `ArgumentError` when
   distinct emitted map keys have the same JSON representation, such as `1`
   and `'1'`, instead of silently keeping the later value. Affected

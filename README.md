@@ -1575,6 +1575,12 @@ like `level`/`publisher`, and returning `null` drops the log. Build it with
 time); a throwing transformer is fail-closed — the log is dropped and the
 unmasked version is never published.
 
+`Log.tags` and `Log.traceIds` are unmodifiable snapshots. Changing a source
+collection after constructing or copying a log cannot change that log, and
+mutating the exposed collections throws `UnsupportedError`. A `copyWith()`
+call that does not replace them reuses the existing snapshots without another
+copy.
+
 ```dart
 log.transformer = (entry) => entry.copyWith(
   message: entry.message.replaceAll(RegExp(r'\d{16}'), '**** **** **** ****'),
