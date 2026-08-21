@@ -1450,7 +1450,9 @@ their meaning. A refused log is handed to `onDropped`, and with no
 `maxQueueSize: null` to give the bound up entirely.
 
 `close()` waits for initialization, drains accepted logs, and closes the active
-chunk handle. Calls to `publish()` after it are ignored.
+chunk handle. `isClosed` becomes true as soon as closing starts, and a
+`flush()` called after that returns the same full-lifecycle future as
+`close()`. Calls to `publish()` after it are ignored.
 
 ```dart
 FileLogStorage(
@@ -1495,6 +1497,17 @@ for (final session in sessions) {
   print('${session.id}: ${session.size} bytes, ${session.lastModified}');
   print(await session.readMeta());       // {'sessionId': ..., 'appVersion': ...}
 }
+```
+
+Deleting the current session while its `FileLogStorage` is active is
+unsupported: POSIX may keep writing to an unlinked file, while Windows may
+reject the deletion. Close the storage first; the supported sequence for a
+session returned by the earlier snapshot is:
+
+```dart
+final current = sessions.last;
+await storage.close();
+await current.delete();
 ```
 
 ---

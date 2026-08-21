@@ -39,7 +39,12 @@ bool _isRegularFilePath(String path) =>
 /// Logs are written in batches in the background; `await flush()` guarantees
 /// everything published so far is on disk. After [close] publications are
 /// silently ignored. [close] waits for initialization, drains accepted logs,
-/// and closes the active chunk handle.
+/// and closes the active chunk handle. Once closing starts, [isClosed] is
+/// immediately true and [flush] returns the same full-lifecycle Future as
+/// [close].
+///
+/// Deleting the current session through [FileLogSession.delete] while this
+/// storage is active is unsupported. Await [close] before deleting it.
 ///
 /// [onError] is called on initialization, encoding and write errors. Errors
 /// are never thrown; exceptions thrown by the callback itself are ignored.

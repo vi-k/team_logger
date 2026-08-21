@@ -5,7 +5,11 @@
   making reading or appending leave it. This is not a sandbox against a
   concurrent hostile actor that can race filesystem operations.
 - Fixed immediate `close()` so it waits for initialization and the active
-  chunk handle to close.
+  chunk handle to close. `isClosed` now flips synchronously, and `flush()`
+  called after closing starts returns the exact same full-lifecycle Future.
+- Documented and tested the supported current-session deletion sequence:
+  deleting it while its `FileLogStorage` is active is unsupported; await
+  `close()` first.
 - `BbCodeFormatter` no longer uses a backtracking regular expression: a
   single left-to-right scan now keeps malformed input from blocking the
   isolate. Properly nested tags, including identical tags, are supported;

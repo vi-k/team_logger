@@ -212,7 +212,11 @@ no-follow проверке. Это best-effort граница против сл�
 созданных symlink и подмены пути уже открытого writer, но не sandbox: чистый
 `dart:io` не закрывает hostile TOCTOU-гонку другого процесса и не отличает
 hardlink от обычного файла. `close()` ждёт `ready`, drain принятых логов и
-закрытие активного handle.
+закрытие активного handle; начавшийся `close()` синхронно переключает
+`isClosed`, а последующий `flush()` возвращает тот же lifecycle Future.
+Удалять текущую сессию разрешено только после `await storage.close()`:
+runtime registry намеренно нет, потому что standalone `FileLogSessions` и
+другие процессы всё равно не позволили бы гарантировать координацию.
 
 `FileLogCodec` кодирует лог в строку JSONL (текстовый или JSON-формат
 данных), `FileLogSessions` — листинг сессий, экспорт и ZIP-архивация

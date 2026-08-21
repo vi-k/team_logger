@@ -54,7 +54,12 @@ bool _isRegularFile(File file) =>
 /// Reader for log sessions stored in a directory by `FileLogStorage`.
 ///
 /// Listing, reading, and deletion ignore non-regular entries, including
-/// symlinks.
+/// symlinks. Use an application-private directory. This is best-effort
+/// protection against accidental or pre-existing links, not a sandbox against
+/// another process that can race filesystem operations in the same directory.
+///
+/// Deleting the current session of an active `FileLogStorage` is unsupported.
+/// Await that storage's `close()` before deleting the session.
 final class FileLogSessions {
   final String directory;
 
@@ -235,6 +240,9 @@ final class FileLogSession {
 
   /// Deletes all regular chunk files of this session. Non-regular entries
   /// that replace a chunk after listing are ignored.
+  ///
+  /// Deleting the current session of an active `FileLogStorage` is
+  /// unsupported. Await that storage's `close()` first.
   Future<void> delete() async {
     for (final file in files) {
       if (_isRegularFile(file)) {
