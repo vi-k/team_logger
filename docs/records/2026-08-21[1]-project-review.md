@@ -1,8 +1,8 @@
 # Executive summary
 
 > Состояние на 2026-08-21: ревью завершено на срезе `a175dd7`. Находки №1,
-> №2, №3, №5, №6, №7 и №12 исправлены; №4 принят как исходный контракт и
-> документирован. Остаются 8 исходных находок (3 Medium, 5 Low).
+> №2, №3, №5, №6, №7, №8 и №12 исправлены; №4 принят как исходный контракт
+> и документирован. Остаются 7 исходных находок (2 Medium, 5 Low).
 
 Проект в целом аккуратно устроен и необычно хорошо покрыт тестами для
 библиотеки такого размера: платформенно-независимое ядро отделено от
@@ -399,6 +399,13 @@ startup cleanup отключает весь `FileLogStorage` через общи
 
 **Уверенность:** high.
 
+**Вердикт (2026-08-21): исправлено в `4b8c9b4`.** Пустой результат
+`sanitizeSessionId` теперь синхронно даёт `ArgumentError`, а
+`parseChunkName` возвращает `null` для индекса вне диапазона Dart `int`.
+Повреждённое имя не удаляется и больше не отключает listing/startup.
+Три regression-теста прошли два RED–GREEN цикла; независимое ревью не нашло
+Critical/Important.
+
 ### 9. [Medium / P2] Public API валидирует опасные параметры только через `assert`
 
 **Где:** `lib/src/storage/log_storage.dart:71-77`,
@@ -786,7 +793,7 @@ identity-cache создают неявные контракты, которые 
 | Next | Public validation только в `assert` | Production crash и тихая неверная конфигурация | Runtime `ArgumentError` во всех public constructors | S–M |
 | Fixed | JSON key collisions | Тихая потеря structured data | Коллизия после нормализации даёт `ArgumentError` | — |
 | Fixed | Mutable `Log` | Publisher'ы видят разные версии записи | Unmodifiable snapshots с owned hot path | — |
-| Next | Невалидные session filenames | Невидимая session или disabled storage | Reject empty id, `int.tryParse`, corrupted-file policy | S |
+| Fixed | Невалидные session filenames | Невидимая session или disabled storage | Empty id rejected, unrepresentable index ignored | — |
 | Next | Raw ANSI из untrusted input | Подмена terminal output | Сквозной safe mode и явный opt-in для raw ANSI | M |
 | Later | Config/cache/lifecycle/zone defects | Непоследовательное runtime-поведение | Закрыть находки 11–14 отдельными regression tests | M |
 | Later | Unicode width | Съезжают columns и `maxLength` | Единая grapheme/wcwidth abstraction | M–L |
