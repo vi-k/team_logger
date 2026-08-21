@@ -1,8 +1,8 @@
 # Executive summary
 
 > Состояние на 2026-08-21: ревью завершено на срезе `a175dd7`. Находки №1,
-> №2, №3 и №12 исправлены; №4 принят как исходный контракт и документирован.
-> Остаются 11 исходных находок (6 Medium, 5 Low).
+> №2, №3, №5 и №12 исправлены; №4 принят как исходный контракт и
+> документирован. Остаются 10 исходных находок (5 Medium, 5 Low).
 
 Проект в целом аккуратно устроен и необычно хорошо покрыт тестами для
 библиотеки такого размера: платформенно-независимое ядро отделено от
@@ -14,10 +14,11 @@ Sanitizer, циклы, layout и асинхронное хранилище им�
 явного принятия рисков ниже. Найдено **16 проблем: 1 High, 9 Medium и 6 Low**.
 Главный блокер — сверхлинейный BBCode-парсер в стандартной теме: незакрытые
 теги длиной всего 2,4 КБ синхронно занимают isolate примерно на 4,16 секунды.
-Второй кластер — файловое хранилище: запись и чтение следовали по symlink,
-`flush()` подтверждал уже потерянные логи, а ZIP-экспорт держит весь исходный
+Второй кластер был в файловом хранилище: запись и чтение следовали по symlink,
+`flush()` подтверждал уже потерянные логи, а ZIP-экспорт держал весь исходный
 и сжатый архив в памяти. Превышение size targets одной атомарной записью после
-сверки признано исходным контрактом, а не отдельным дефектом реализации.
+сверки признано исходным контрактом, а не отдельным дефектом реализации; три
+остальные проблемы этого кластера исправлены.
 
 Ниже отделены подтверждённые дефекты от архитектурных ограничений и
 предположений. Старый черновик не принимался за источник истины: дерево,
@@ -289,6 +290,28 @@ sessions по stream, не удерживая предыдущие sessions. Е�
 
 **Уверенность:** high по текущей реализации, medium по фактическому порогу
 OOM — он зависит от среды и сжимаемости.
+
+**Вердикт (2026-08-21): исправлено breaking-заменой на потоковый GZIP.**
+Владелец согласовал удалить `archiveTo()` и добавить `gzipTo()`: выбранные
+сессии последовательно пишутся в один GZIP-сжатый JSONL, каждая сохраняет свою
+meta-строку, поэтому границы остаются видны после распаковки. В памяти больше
+нет `BytesBuilder`, `ArchiveFile.bytes` и полного output archive; остаются
+только I/O- и compression-буферы. Четыре контрактных теста прошли RED–GREEN,
+включая порядок/meta, subset+overwrite, symlink и разделитель после файла без
+финального `\n`. Отдельный stress-прогон экспортировал 128 МБ под heap 32 МБ:
+пиковый прирост RSS — около 5,4 МБ. Неиспользуемая зависимость `archive`
+удалена. Независимое ревью нашло ещё три edge case: первая строка позднего
+чанка могла целиком накопиться до `LF`, target-алиас выбранного чанка обнулял
+источник, а ошибка `close()` маскировала первичную ошибку чтения. Все три
+исправлены отдельными RED–GREEN циклами: meta распознаётся с ограниченным
+prefix-state, path/symlink/hardlink алиасы отвергаются до `openWrite`, а
+первичная ошибка сохраняется вместе с исходным stack trace. Повторный
+stress-прогон на позднем meta-подобном чанке 128 МБ без `LF` под heap 32 МБ
+завершился с пиковым приростом RSS около 8,3 МБ. Повторное ревью обнаружило
+вариант, где snapshot chunk path уже заменён symlink'ом и одновременно передан
+как target: прежняя type-based проверка пропускала его и меняла symlink victim.
+Нормализованный snapshot path теперь отвергается независимо от текущего типа;
+отдельный RED–GREEN тест проверяет сохранность victim.
 
 ### 6. [Medium / P2] Нормализация ключей `Map` молча теряет JSON-данные
 
@@ -640,7 +663,7 @@ Exclusive create защищает только первый chunk, а дальн
 - семантику ошибки `flush()` после init/write failure;
 - collision нормализованных JSON keys;
 - немедленный `close()` до `ready`;
-- memory bound ZIP-экспорта;
+- автоматизированный RSS/heap ceiling потокового GZIP-экспорта;
 - wide/combining/ZWJ Unicode;
 - mutation уже опубликованного `Log`, zone tags и cached configuration.
 
@@ -651,17 +674,19 @@ format-check, web compile, screenshot-check и publish dry-run.
 
 # Performance and reliability
 
-Главный performance-риск измерен напрямую: BBCode на adversarial input
-масштабируется примерно как O(n³) и блокирует isolate. Следующий по значимости
-путь — `archiveTo()`: memory peak растёт со всем объёмом retained sessions, а
-не с одной session или chunk.
+Исходный главный performance-риск был измерен напрямую: BBCode на adversarial
+input масштабировался примерно как O(n³) и блокировал isolate. Оба измеренных
+риска закрыты: BBCode теперь сканируется за линейное время, а `gzipTo()`
+передаёт session streams в один compressor/file sink без накопления набора.
+Stress-прогон 128 МБ дал около 5,4 МБ пикового прироста RSS.
 
 В steady state console layout и обычный `Loggable` traversal ограничиваются
 размером фактически выводимых данных; cycle protection и collection limits
 реализованы. Атомарная oversized JSONL record по принятому контракту может
 превысить rotation/retention targets; жёсткую дисковую границу обязан задать
-вызывающий код. `maxTotalSize: null` делает число и общий размер архивируемых
-sessions неограниченными.
+вызывающий код. `maxTotalSize: null` оставляет число и общий размер
+экспортируемых sessions неограниченными, но потоковый GZIP больше не связывает
+этот объём с потреблением RAM.
 
 Асинхронный publisher имеет bounded queue и не блокирует call site диском —
 это хороший базовый выбор. Его reliability contract слабее документации:
@@ -683,7 +708,7 @@ identity-cache создают неявные контракты, которые 
 
 - `dart pub outdated` не нашёл доступных обновлений при текущих constraints;
 - core dependency graph мал и оправдан: ANSI/style, builder, clock, meta,
-  stack trace; `archive` изолирован в IO entrypoint;
+  stack trace; после потоковой GZIP-замены `archive` удалён совсем;
 - `format` корректно остался dev dependency для теста документированного
   formatter recipe;
 - package archive не содержит `docs/`, scripts, screenshots и внутренний
@@ -738,7 +763,7 @@ identity-cache создают неявные контракты, которые 
 | Now | Symlink boundary у chunks | Запись/утечка файлов вне log directory | No-follow listing/open, exclusive reservation каждого chunk, private directory policy | M–L |
 | Now | Ложная гарантия `flush()` | Незаметная потеря принятой диагностики | Вернуть failure/loss result или ошибку, связать потери с `onDropped` | M |
 | Accepted | Одна запись превышает size targets | Атомарная запись может дать неограниченный пик | Контракт документирован; для hard cap вызывающий код ограничивает input | — |
-| Next | ZIP держит весь набор в RAM | OOM при сборе диагностики | Streaming encoder/output либо документированный hard cap | M |
+| Fixed | ZIP держал весь набор в RAM | OOM при сборе диагностики | `archiveTo()` заменён потоковым `gzipTo()` | — |
 | Next | Public validation только в `assert` | Production crash и тихая неверная конфигурация | Runtime `ArgumentError` во всех public constructors | S–M |
 | Next | JSON key collisions | Тихая потеря structured data | Detect/reject collision или lossless pair representation | M |
 | Next | Mutable `Log` | Publisher'ы видят разные версии записи | Defensive copy и unmodifiable collections | S |

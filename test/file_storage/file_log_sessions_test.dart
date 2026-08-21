@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
 import 'package:team_logger/src/file_storage/file_log_sessions.dart';
 import 'package:test/test.dart';
 
@@ -208,6 +207,27 @@ void main() {
       );
     });
 
+    test('read does not buffer a long first line of a later chunk', () async {
+      // Mutation: accumulating bytes until LF emits this whole file at once.
+      _chunk(tmp, 's1', 1, [_metaLine('s1'), '{"num":1}']);
+      const longLineLength = 2 * 1024 * 1024;
+      File('${tmp.path}/s1.2.jsonl').writeAsBytesSync(
+        List<int>.filled(longLineLength, 0x61),
+      );
+
+      final session = (await FileLogSessions(tmp.path).list()).single;
+      final blocks = await session.read().toList();
+
+      expect(
+        blocks.expand((block) => block).length,
+        greaterThan(longLineLength),
+      );
+      expect(
+        blocks.map((block) => block.length),
+        everyElement(lessThan(1024 * 1024)),
+      );
+    });
+
     test('exportTo writes each session as a separate plain file', () async {
       _chunk(
         tmp,
@@ -315,7 +335,7 @@ void main() {
       expect(sessions.map((s) => s.id), ['s1']);
     });
 
-    test('archiveTo packs sessions into a single zip file', () async {
+    test('gzipTo combines sessions in order with every meta line', () async {
       _chunk(
         tmp,
         's1',
@@ -338,44 +358,46 @@ void main() {
         modified: DateTime(2026, 1, 2),
       );
 
-      final target = File('${tmp.path}/out/logs.zip');
-      await FileLogSessions(tmp.path).archiveTo(target);
+      final target = File('${tmp.path}/out/logs.jsonl.gz');
+      await FileLogSessions(tmp.path).gzipTo(target);
 
-      final archive = ZipDecoder().decodeBytes(target.readAsBytesSync());
       expect(
-        archive.files.map((f) => f.name),
-        unorderedEquals(['s1.jsonl', 's2.jsonl']),
-      );
-      expect(
-        const LineSplitter()
-            .convert(utf8.decode(archive.find('s1.jsonl')!.content)),
-        [_metaLine('s1'), '{"num":1}', '{"num":2}'],
-      );
-      expect(
-        const LineSplitter()
-            .convert(utf8.decode(archive.find('s2.jsonl')!.content)),
-        [_metaLine('s2'), '{"num":3}'],
+        const LineSplitter().convert(
+          utf8.decode(gzip.decode(target.readAsBytesSync())),
+        ),
+        [
+          _metaLine('s1'),
+          '{"num":1}',
+          '{"num":2}',
+          _metaLine('s2'),
+          '{"num":3}',
+        ],
       );
     });
 
-    test('archiveTo archives only the given sessions and overwrites target',
+    test('gzipTo includes only the given sessions and overwrites target',
         () async {
       _chunk(tmp, 's1', 1, [_metaLine('s1'), '{"num":1}']);
       _chunk(tmp, 's2', 1, [_metaLine('s2'), '{"num":2}']);
 
-      final target = File('${tmp.path}/logs.zip')..writeAsStringSync('garbage');
+      final target = File('${tmp.path}/logs.jsonl.gz')
+        ..writeAsStringSync('garbage');
       final all = await FileLogSessions(tmp.path).list();
-      await FileLogSessions(tmp.path).archiveTo(
+      await FileLogSessions(tmp.path).gzipTo(
         target,
         sessions: all.where((s) => s.id == 's2'),
       );
 
-      final archive = ZipDecoder().decodeBytes(target.readAsBytesSync());
-      expect(archive.files.map((f) => f.name), ['s2.jsonl']);
+      expect(
+        const LineSplitter().convert(
+          utf8.decode(gzip.decode(target.readAsBytesSync())),
+        ),
+        [_metaLine('s2'), '{"num":2}'],
+      );
     });
 
-    test('archiveTo skips a chunk replaced by a symlink', () async {
-      // Mutation: removing the late no-follow check archives the link target.
+    test('gzipTo skips a chunk replaced by a symlink', () async {
+      // Mutation: removing the late no-follow check compresses the link target.
       final chunk = _chunk(
         tmp,
         's1',
@@ -388,14 +410,156 @@ void main() {
         ..writeAsStringSync('outside-secret');
       if (!await _createLinkOrSkip(Link(chunk.path), victim.path)) return;
 
-      final target = File('${tmp.path}/logs.zip');
-      await FileLogSessions(tmp.path).archiveTo(target, sessions: [session]);
+      final target = File('${tmp.path}/logs.jsonl.gz');
+      await FileLogSessions(tmp.path).gzipTo(target, sessions: [session]);
 
-      final archive = ZipDecoder().decodeBytes(target.readAsBytesSync());
       expect(
-        utf8.decode(archive.find('s1.jsonl')!.content),
+        utf8.decode(gzip.decode(target.readAsBytesSync())),
         isNot(contains('outside-secret')),
       );
+    });
+
+    test('gzipTo separates sessions when the previous one has no newline',
+        () async {
+      File('${tmp.path}/s1.1.jsonl').writeAsStringSync('{"num":1}');
+      _chunk(tmp, 's2', 1, [_metaLine('s2'), '{"num":2}']);
+
+      final target = File('${tmp.path}/logs.jsonl.gz');
+      await FileLogSessions(tmp.path).gzipTo(target);
+
+      expect(
+        const LineSplitter().convert(
+          utf8.decode(gzip.decode(target.readAsBytesSync())),
+        ),
+        ['{"num":1}', _metaLine('s2'), '{"num":2}'],
+      );
+    });
+
+    test('gzipTo rejects a target that is a selected chunk', () async {
+      final chunk = _chunk(
+        tmp,
+        's1',
+        1,
+        [_metaLine('s1'), '{"message":"keep me"}'],
+      );
+      final original = chunk.readAsBytesSync();
+      final session = (await FileLogSessions(tmp.path).list()).single;
+
+      await expectLater(
+        FileLogSessions(tmp.path).gzipTo(chunk, sessions: [session]),
+        throwsArgumentError,
+      );
+      expect(chunk.readAsBytesSync(), original);
+    });
+
+    test('gzipTo rejects a symlink target to a selected chunk', () async {
+      final chunk = _chunk(
+        tmp,
+        's1',
+        1,
+        [_metaLine('s1'), '{"message":"keep me"}'],
+      );
+      final original = chunk.readAsBytesSync();
+      final target = Link('${tmp.path}/logs.jsonl.gz');
+      if (!await _createLinkOrSkip(target, chunk.path)) return;
+      final session = (await FileLogSessions(tmp.path).list()).single;
+
+      await expectLater(
+        FileLogSessions(tmp.path).gzipTo(
+          File(target.path),
+          sessions: [session],
+        ),
+        throwsArgumentError,
+      );
+      expect(chunk.readAsBytesSync(), original);
+    });
+
+    test('gzipTo rejects a selected chunk path replaced by a symlink',
+        () async {
+      final chunk = _chunk(
+        tmp,
+        's1',
+        1,
+        [_metaLine('s1'), '{"message":"keep me"}'],
+      );
+      final session = (await FileLogSessions(tmp.path).list()).single;
+      await chunk.rename('${tmp.path}/original.jsonl');
+      final victim = File('${tmp.path}/victim.txt')
+        ..writeAsStringSync('outside-secret');
+      if (!await _createLinkOrSkip(Link(chunk.path), victim.path)) return;
+
+      await expectLater(
+        FileLogSessions(tmp.path).gzipTo(chunk, sessions: [session]),
+        throwsArgumentError,
+      );
+      expect(victim.readAsStringSync(), 'outside-secret');
+    });
+
+    test('gzipTo rejects a hardlink target to a selected chunk', () async {
+      if (Platform.isWindows) {
+        markTestSkipped('POSIX hardlink creation is required');
+        return;
+      }
+
+      final chunk = _chunk(
+        tmp,
+        's1',
+        1,
+        [_metaLine('s1'), '{"message":"keep me"}'],
+      );
+      final original = chunk.readAsBytesSync();
+      final target = File('${tmp.path}/logs.jsonl.gz');
+      expect(
+        (await Process.run('ln', [chunk.path, target.path])).exitCode,
+        0,
+      );
+      final session = (await FileLogSessions(tmp.path).list()).single;
+
+      await expectLater(
+        FileLogSessions(tmp.path).gzipTo(target, sessions: [session]),
+        throwsArgumentError,
+      );
+      expect(chunk.readAsBytesSync(), original);
+    });
+
+    test('gzipTo preserves a source read error when closing the target',
+        () async {
+      if (Platform.isWindows) {
+        markTestSkipped('POSIX file permissions are required');
+        return;
+      }
+
+      final chunk = _chunk(tmp, 's1', 1, [_metaLine('s1'), '{"num":1}']);
+      final session = (await FileLogSessions(tmp.path).list()).single;
+      final target = File('${tmp.path}/logs.jsonl.gz');
+      expect((await Process.run('chmod', ['000', chunk.path])).exitCode, 0);
+
+      try {
+        var sourceIsReadable = false;
+        try {
+          await chunk.openRead().drain<void>();
+          sourceIsReadable = true;
+        } on FileSystemException {
+          // Expected on a POSIX filesystem that enforces the mode bits.
+        }
+        if (sourceIsReadable) {
+          markTestSkipped('The filesystem does not enforce mode bits');
+          return;
+        }
+
+        await expectLater(
+          FileLogSessions(tmp.path).gzipTo(target, sessions: [session]),
+          throwsA(
+            isA<FileSystemException>().having(
+              (error) => error.path,
+              'path',
+              chunk.path,
+            ),
+          ),
+        );
+      } finally {
+        expect((await Process.run('chmod', ['600', chunk.path])).exitCode, 0);
+      }
     });
 
     test('delete removes all session files and nothing else', () async {

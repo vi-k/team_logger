@@ -1,8 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:archive/archive.dart';
 
 import 'file_log_codec.dart';
 
@@ -38,18 +35,14 @@ String chunkName(String sessionId, int index) => '$sessionId.$index.jsonl';
   return (sessionId: m[1]!, index: int.parse(m[2]!));
 }
 
-bool _startsWith(List<int> bytes, List<int> prefix) {
-  if (bytes.length < prefix.length) return false;
-  for (var i = 0; i < prefix.length; i++) {
-    if (bytes[i] != prefix[i]) return false;
-  }
-
-  return true;
-}
-
 bool _isRegularFile(File file) =>
     FileSystemEntity.typeSync(file.path, followLinks: false) ==
     FileSystemEntityType.file;
+
+String _normalizedAbsolutePath(String path) {
+  final normalized = File(path).absolute.uri.normalizePath().toFilePath();
+  return Platform.isWindows ? normalized.toLowerCase() : normalized;
+}
 
 /// Reader for log sessions stored in a directory by `FileLogStorage`.
 ///
@@ -149,26 +142,98 @@ final class FileLogSessions {
     return created;
   }
 
-  /// Packs the given [sessions] (all by default) into a single ZIP archive
-  /// [target]. Inside the archive every session is a separate file
-  /// `<sessionId>.jsonl` with the same content [exportTo] would produce.
-  /// An existing [target] is overwritten.
-  Future<void> archiveTo(
+  /// Compresses the given [sessions] (all by default) into one GZIP-compressed
+  /// JSON Lines file [target].
+  ///
+  /// Sessions are concatenated in their given order. Each keeps its own meta
+  /// line, so session boundaries remain identifiable after decompression. The
+  /// input and output are streamed with bounded memory. An existing [target]
+  /// is overwritten. The target must not be one of the selected session chunks
+  /// or an alias to one; an [ArgumentError] is thrown before writing if it is.
+  Future<void> gzipTo(
     File target, {
     Iterable<FileLogSession>? sessions,
   }) async {
     final selected = sessions?.toList() ?? await list();
 
-    final archive = Archive();
+    final normalizedTargetPath = _normalizedAbsolutePath(target.path);
     for (final session in selected) {
-      final builder = BytesBuilder(copy: false);
-      await session.read().forEach(builder.add);
-      archive
-          .add(ArchiveFile.bytes('${session.id}.jsonl', builder.takeBytes()));
+      for (final chunk in session.files) {
+        if (normalizedTargetPath == _normalizedAbsolutePath(chunk.path)) {
+          throw ArgumentError.value(
+            target.path,
+            'target',
+            'Must not alias a selected session chunk',
+          );
+        }
+      }
+    }
+
+    final targetType = FileSystemEntity.typeSync(
+      target.path,
+      followLinks: false,
+    );
+    if (targetType != FileSystemEntityType.notFound) {
+      final identityPath = targetType == FileSystemEntityType.link
+          ? await Link(target.path).resolveSymbolicLinks()
+          : target.path;
+      for (final session in selected) {
+        for (final chunk in session.files) {
+          if (!_isRegularFile(chunk)) continue;
+          if (await FileSystemEntity.identical(identityPath, chunk.path)) {
+            throw ArgumentError.value(
+              target.path,
+              'target',
+              'Must not alias a selected session chunk',
+            );
+          }
+        }
+      }
     }
 
     await target.parent.create(recursive: true);
-    await target.writeAsBytes(ZipEncoder().encode(archive), flush: true);
+    final sink = target.openWrite();
+    Object? primaryError;
+    StackTrace? primaryStackTrace;
+    try {
+      await sink.addStream(_combinedSessions(selected).transform(gzip.encoder));
+    } on Object catch (error, stackTrace) {
+      primaryError = error;
+      primaryStackTrace = stackTrace;
+    }
+
+    try {
+      await sink.close();
+    } on Object catch (error, stackTrace) {
+      if (primaryError == null) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+    }
+
+    if (primaryError != null) {
+      Error.throwWithStackTrace(primaryError, primaryStackTrace!);
+    }
+  }
+
+  Stream<List<int>> _combinedSessions(
+    Iterable<FileLogSession> sessions,
+  ) async* {
+    var hasOutput = false;
+    var endsWithNewline = true;
+
+    for (final session in sessions) {
+      var sessionStarted = false;
+      await for (final block in session.read()) {
+        if (block.isEmpty) continue;
+        if (!sessionStarted) {
+          if (hasOutput && !endsWithNewline) yield const [0x0A];
+          sessionStarted = true;
+        }
+        yield block;
+        hasOutput = true;
+        endsWithNewline = block.last == 0x0A;
+      }
+    }
   }
 }
 
@@ -252,34 +317,44 @@ final class FileLogSession {
   }
 
   Stream<List<int>> _skipMetaLine(File file) async* {
-    var buffer = <int>[];
-    var newlineSeen = false;
+    final candidate = <int>[];
+    var skipUntilNewline = false;
+    var passThrough = false;
 
     await for (final block in file.openRead()) {
-      if (newlineSeen) {
+      if (passThrough) {
         yield block;
         continue;
       }
 
-      buffer.addAll(block);
-      final nl = buffer.indexOf(0x0A);
-      if (nl == -1) continue;
+      var offset = 0;
+      if (!skipUntilNewline) {
+        while (offset < block.length && candidate.length < _metaPrefix.length) {
+          final byte = block[offset++];
+          candidate.add(byte);
+          if (byte != _metaPrefix[candidate.length - 1]) {
+            passThrough = true;
+            yield candidate;
+            if (offset < block.length) yield block.sublist(offset);
+            break;
+          }
+        }
 
-      newlineSeen = true;
-      if (!_startsWith(buffer, _metaPrefix)) {
-        yield buffer.sublist(0, nl + 1);
+        if (passThrough) continue;
+        if (candidate.length < _metaPrefix.length) continue;
+        skipUntilNewline = true;
       }
-      if (nl + 1 < buffer.length) {
-        yield buffer.sublist(nl + 1);
-      }
-      buffer = const [];
+
+      final newline = block.indexOf(0x0A, offset);
+      if (newline == -1) continue;
+
+      passThrough = true;
+      if (newline + 1 < block.length) yield block.sublist(newline + 1);
     }
 
-    // Файл из единственной строки без завершающего \n.
-    if (!newlineSeen &&
-        buffer.isNotEmpty &&
-        !_startsWith(buffer, _metaPrefix)) {
-      yield buffer;
+    // Файл короче meta-префикса и без завершающего \n.
+    if (!passThrough && !skipUntilNewline && candidate.isNotEmpty) {
+      yield candidate;
     }
   }
 }

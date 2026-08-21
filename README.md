@@ -1498,15 +1498,17 @@ FileLogStorage(
 );
 ```
 
-To send logs for diagnostics, list the stored sessions and pack them into
-a single ZIP archive (each session stays a separate file inside), or export
-them as plain files:
+To send logs for diagnostics, stream the stored sessions into a single
+GZIP-compressed JSON Lines file, or export them as separate plain files. The
+compressed stream keeps the selected session order and each session's meta
+line, so the boundaries remain identifiable after decompression without
+buffering the whole diagnostic bundle in memory:
 
 ```dart
 await storage.flush();                   // make sure everything is on disk
 
 final sessions = await storage.sessions.list();
-await storage.sessions.archiveTo(File('/tmp/logs.zip'));          // one zip
+await storage.sessions.gzipTo(File('/tmp/logs.jsonl.gz'));        // one gzip
 await storage.sessions.exportTo(Directory('/tmp/logs'));          // plain files
 
 // Inspect or clean up:
@@ -1515,6 +1517,10 @@ for (final session in sessions) {
   print(await session.readMeta());       // {'sessionId': ..., 'appVersion': ...}
 }
 ```
+
+The GZIP target must be a separate file, not a selected session chunk or a
+symlink/hardlink to one. `gzipTo()` rejects such aliases before opening the
+target, so exporting cannot truncate its own source.
 
 Deleting the current session while its `FileLogStorage` is active is
 unsupported: POSIX may keep writing to an unlinked file, while Windows may

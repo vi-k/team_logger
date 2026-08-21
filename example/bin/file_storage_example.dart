@@ -59,10 +59,14 @@ Future<void> main() async {
     );
   }
 
-  // Один ZIP-архив на все сессии: внутри каждая сессия — отдельный файл.
-  final zip = File('${storage.directory}/../team_logger_example_logs.zip');
-  await storage.sessions.archiveTo(zip);
-  log.i('Logs archived', data: {'path': zip.path, 'size': zip.lengthSync()});
+  // Один потоковый GZIP на все сессии; границы отмечены их meta-строками.
+  final gzipFile =
+      File('${storage.directory}/../team_logger_example_logs.jsonl.gz');
+  await storage.sessions.gzipTo(gzipFile);
+  log.i(
+    'Logs compressed',
+    data: {'path': gzipFile.path, 'size': gzipFile.lengthSync()},
+  );
 
   await storage.close();
 }

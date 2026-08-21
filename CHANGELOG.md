@@ -1,5 +1,13 @@
 ## 0.7.0
 
+- [breaking changes] Replace `FileLogSessions.archiveTo()` with streaming
+  `gzipTo()`. It writes the selected sessions, in order and with each session's
+  metadata line, into one GZIP-compressed JSON Lines file instead of a ZIP
+  containing one file per session. Memory use is now bounded by I/O and
+  compression buffers rather than the complete source set plus the output
+  archive. Targets that alias selected chunks are rejected before writing,
+  and source read failures are not masked by output cleanup. The `archive`
+  package is no longer a dependency.
 - [breaking changes] `FileLogStorage.flush()` and `close()` no longer report
   success after an initialization or write failure made an accepted log
   unavailable. The affected logs go to `onDropped`; both lifecycle methods
