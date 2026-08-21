@@ -1,8 +1,8 @@
 # Executive summary
 
 > Состояние на 2026-08-21: ревью завершено на срезе `a175dd7`. Находки №1,
-> №2, №3, №5, №6, №7, №8 и №12 исправлены; №4 принят как исходный контракт
-> и документирован. Остаются 7 исходных находок (2 Medium, 5 Low).
+> №2, №3, №5, №6, №7, №8, №9 и №12 исправлены; №4 принят как исходный
+> контракт и документирован. Остаются 6 исходных находок (1 Medium, 5 Low).
 
 Проект в целом аккуратно устроен и необычно хорошо покрыт тестами для
 библиотеки такого размера: платформенно-независимое ядро отделено от
@@ -434,6 +434,15 @@ file-size invariants. Тесты с включёнными assertions этого
 
 **Уверенность:** high.
 
+**Вердикт (2026-08-21): исправлено в `1b9f1f0`.** Все перечисленные
+публичные границы, а также обнаруженный в том же конструкторе
+`FileLogStorage.maxQueueSize`, теперь синхронно дают `ArgumentError.value` в
+production без assertions. Subprocess-тест запускает настоящий `dart` с
+assertions disabled; прямые тесты проверяют имя, значение, отрицательные
+границы и прежний порядок ошибок. Независимое ревью после исправления порядка
+не оставило замечаний. AOT-probe оценил добавленную renderer-валидацию сверху
+в 0,13% типичного рендера; publish/write path не изменён.
+
 ### 10. [Medium / P2] Стандартный terminal output допускает ANSI-инъекцию
 
 **Где:** `lib/src/preformatters/control_code_formatter.dart:7-15`, `:24-40`,
@@ -790,7 +799,7 @@ identity-cache создают неявные контракты, которые 
 | Now | Ложная гарантия `flush()` | Незаметная потеря принятой диагностики | Вернуть failure/loss result или ошибку, связать потери с `onDropped` | M |
 | Accepted | Одна запись превышает size targets | Атомарная запись может дать неограниченный пик | Контракт документирован; для hard cap вызывающий код ограничивает input | — |
 | Fixed | ZIP держал весь набор в RAM | OOM при сборе диагностики | `archiveTo()` заменён потоковым `gzipTo()` | — |
-| Next | Public validation только в `assert` | Production crash и тихая неверная конфигурация | Runtime `ArgumentError` во всех public constructors | S–M |
+| Fixed | Public validation только в `assert` | Production crash и тихая неверная конфигурация | Runtime `ArgumentError` на согласованных public boundaries | — |
 | Fixed | JSON key collisions | Тихая потеря structured data | Коллизия после нормализации даёт `ArgumentError` | — |
 | Fixed | Mutable `Log` | Publisher'ы видят разные версии записи | Unmodifiable snapshots с owned hot path | — |
 | Fixed | Невалидные session filenames | Невидимая session или disabled storage | Empty id rejected, unrepresentable index ignored | — |
