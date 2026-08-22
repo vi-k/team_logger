@@ -1,5 +1,23 @@
 ## 0.7.0
 
+- [breaking changes] Formatting settings resolve through a chain of layers:
+  the package default, `Loggable.defaultConfig`, the call site and the
+  containers on the way to the value, and `Loggable.forceConfig` on top. The
+  new statics give an application one place to state a preference and one
+  place to state a rule — `forceConfig` cannot be lifted by a call site or by
+  a container config merged in halfway down the data, which is what makes it
+  a policy rather than a suggestion. Both are per-isolate, like
+  `Loggable.sanitizer`, and both apply to `objectToString()` and
+  `objectToJson()`, not only to the console printer.
+- [breaking changes] `LogMainTheme` no longer carries `enumDotShorthand`,
+  `collectionShowCount`, `collectionShowIndexes` and `stringInQuotes`. They
+  were the theme's only say in *what* is printed rather than how it looks,
+  and resolving them meant `config.x ?? theme.x` in five separate places.
+  They live in the chain now: move a theme that set them to
+  `Loggable.defaultConfig` instead. Defaults are unchanged — all four are
+  still `true`, and output with empty layers is identical to the byte.
+  `LoggableConfig.toEffectiveConfig()` lost its theme argument with them.
+
 - [breaking changes] Console layout measures terminal columns instead of
   UTF-16 code units. `LogRow.maxLength`, wrapping, truncation, padding and
   tail alignment used to count code units, so a row of CJK ran to about twice

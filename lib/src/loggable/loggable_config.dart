@@ -7,7 +7,7 @@ import 'loggable_json_config.dart';
 /// Конфигурация для [objectToString].
 ///
 /// [enumDotShorthand] - сокращенное представление enums в виде `.value`.
-/// Если равно null, значение берётся из [LogMainTheme.enumDotShorthand].
+/// Если равно null, решают слои цепочки (см. ниже); по умолчанию `true`.
 ///
 /// [collectionMaxCount] - максимальное количество элементов в коллекции
 /// (для [List], [Set] и [Iterable]). Если равно null, нет ограничений.
@@ -19,12 +19,11 @@ import 'loggable_json_config.dart';
 /// ограничений.
 ///
 /// [collectionShowCount] - показывать ли длину коллекции в виде `₌₄`
-/// (только для List и Set). Если равно null, значение берётся из
-/// [LogMainTheme.collectionShowCount].
+/// (только для List и Set). Если равно null, решают слои цепочки;
+/// по умолчанию `true`.
 ///
 /// [collectionShowIndexes] - показывать ли индексы элементов в виде `₀:`,
-/// `₁:` и т.д. Если равно null, значение берётся из
-/// [LogMainTheme.collectionShowIndexes].
+/// `₁:` и т.д. Если равно null, решают слои цепочки; по умолчанию `true`.
 ///
 /// [units] - единицы измерения, будут добавлены к представлению объекта
 /// в виде суффикса. Если равно null, единицы не добавляются.
@@ -40,6 +39,21 @@ import 'loggable_json_config.dart';
 /// Обратите внимание! Все параметры действуют рекурсивно не только на сам
 /// объект, но и на все вложенные в него объекты. При этом установленные
 /// параметры сбросить в null уже нельзя.
+///
+/// ## Слои
+///
+/// Незаданное (`null`) поле разрешается цепочкой, от слабого к сильному:
+///
+/// 1. дефолт пакета — то, что печатается, если не сказано ничего;
+/// 2. [Loggable.defaultConfig] — дефолт приложения;
+/// 3. этот конфиг: с места вызова и от контейнеров по пути к значению
+///    (ближний к значению сильнее);
+/// 4. [Loggable.forceConfig] — политика приложения, которую нельзя снять
+///    ни с места вызова, ни вложенным контейнером.
+///
+/// Раньше слои 1 и 2 отсутствовали, а дефолты четырёх булевых настроек
+/// брались из темы. Тема отвечает за то, как вывод выглядит; конфиг — за
+/// то, что в нём печатается.
 ///
 /// ```dart
 /// log.d(
@@ -77,6 +91,82 @@ final class LoggableConfig with Loggable {
     this.stringInQuotes,
   });
 
+  /// Дефолты пакета — нижний пол цепочки, ниже [Loggable.defaultConfig].
+  ///
+  /// Раньше их держала тема (`LogMainTheme.stringInQuotes` и соседние), и
+  /// разрешение «конфиг, иначе тема» было размазано по пяти местам
+  /// рендеринга. Теперь тема отвечает за то, как вывод выглядит, а конфиг —
+  /// за то, что в нём печатается.
+  static const bool defaultEnumDotShorthand = true;
+  static const bool defaultCollectionShowCount = true;
+  static const bool defaultCollectionShowIndexes = true;
+  static const bool defaultStringInQuotes = true;
+
+  /// Значения с наложенной цепочкой `default ← этот конфиг ← force`.
+  ///
+  /// Спрашиваются в точке использования, а не собираются заранее: конфиг
+  /// контейнера подмешивается уже во время обхода, и слой, свёрнутый до
+  /// него, вложенный контейнер перебил бы. Здесь перебить нечего — порядок
+  /// задан прямо в выражении.
+  @internal
+  bool get resolvedEnumDotShorthand =>
+      Loggable.forceConfig.enumDotShorthand ??
+      enumDotShorthand ??
+      Loggable.defaultConfig.enumDotShorthand ??
+      defaultEnumDotShorthand;
+
+  @internal
+  bool get resolvedCollectionShowCount =>
+      Loggable.forceConfig.collectionShowCount ??
+      collectionShowCount ??
+      Loggable.defaultConfig.collectionShowCount ??
+      defaultCollectionShowCount;
+
+  @internal
+  bool get resolvedCollectionShowIndexes =>
+      Loggable.forceConfig.collectionShowIndexes ??
+      collectionShowIndexes ??
+      Loggable.defaultConfig.collectionShowIndexes ??
+      defaultCollectionShowIndexes;
+
+  @internal
+  bool get resolvedStringInQuotes =>
+      Loggable.forceConfig.stringInQuotes ??
+      stringInQuotes ??
+      Loggable.defaultConfig.stringInQuotes ??
+      defaultStringInQuotes;
+
+  @internal
+  int? get resolvedCollectionMaxCount =>
+      Loggable.forceConfig.collectionMaxCount ??
+      collectionMaxCount ??
+      Loggable.defaultConfig.collectionMaxCount;
+
+  @internal
+  int? get resolvedCollectionMaxStringLength =>
+      Loggable.forceConfig.collectionMaxStringLength ??
+      collectionMaxStringLength ??
+      Loggable.defaultConfig.collectionMaxStringLength;
+
+  /// `units` разрешаются цепочкой, но снимаются `withoutUnits()` на пути
+  /// корневой sanitizer-замены — там `units` уже вычеркнуты из самого
+  /// конфига, и force их не возвращает.
+  @internal
+  String? get resolvedUnits =>
+      Loggable.forceConfig.units ?? units ?? Loggable.defaultConfig.units;
+
+  @internal
+  String? get resolvedIntFormat =>
+      Loggable.forceConfig.intFormat ??
+      intFormat ??
+      Loggable.defaultConfig.intFormat;
+
+  @internal
+  String? get resolvedDoubleFormat =>
+      Loggable.forceConfig.doubleFormat ??
+      doubleFormat ??
+      Loggable.defaultConfig.doubleFormat;
+
   LoggableConfig merge(LoggableConfig other) => LoggableConfig(
         enumDotShorthand: enumDotShorthand ?? other.enumDotShorthand,
         collectionMaxCount: collectionMaxCount ?? other.collectionMaxCount,
@@ -108,18 +198,17 @@ final class LoggableConfig with Loggable {
         stringInQuotes: stringInQuotes,
       );
 
-  LoggableEffectiveConfig toEffectiveConfig(LogMainTheme theme) =>
-      LoggableEffectiveConfig(
-        enumDotShorthand: enumDotShorthand ?? theme.enumDotShorthand,
-        collectionMaxCount: collectionMaxCount,
-        collectionMaxStringLength: collectionMaxStringLength,
-        collectionShowCount: collectionShowCount ?? theme.collectionShowCount,
-        collectionShowIndexes:
-            collectionShowIndexes ?? theme.collectionShowIndexes,
-        units: units,
-        doubleFormat: doubleFormat,
-        intFormat: intFormat,
-        stringInQuotes: stringInQuotes ?? theme.stringInQuotes,
+  /// Конфиг со всеми слоями цепочки, разрешёнными до конца.
+  LoggableEffectiveConfig toEffectiveConfig() => LoggableEffectiveConfig(
+        enumDotShorthand: resolvedEnumDotShorthand,
+        collectionMaxCount: resolvedCollectionMaxCount,
+        collectionMaxStringLength: resolvedCollectionMaxStringLength,
+        collectionShowCount: resolvedCollectionShowCount,
+        collectionShowIndexes: resolvedCollectionShowIndexes,
+        units: resolvedUnits,
+        doubleFormat: resolvedDoubleFormat,
+        intFormat: resolvedIntFormat,
+        stringInQuotes: resolvedStringInQuotes,
       );
 
   LoggableJsonConfig mergeWithJsonConfig(LoggableJsonConfig config) =>

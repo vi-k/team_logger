@@ -71,9 +71,6 @@ final class LogMainTheme with Loggable {
   final String lineBreak;
   final String padding;
   final bool errorAlwaysOnNewLine;
-  final bool enumDotShorthand;
-  final bool collectionShowCount;
-  final bool collectionShowIndexes;
 
   /// Pre-formatter applied to every rendered value — keys, strings, numbers,
   /// dates, units — and to the message before [messageFormatter].
@@ -113,7 +110,6 @@ final class LogMainTheme with Loggable {
   final Set<String> tags;
   final String errorTitle;
   final String stackTraceTitle;
-  final bool stringInQuotes;
 
   /// Излучает ли тема ANSI-коды. Для собственных «бесцветных» тем передайте
   /// `false`, чтобы принтер не добавлял служебные escape-коды.
@@ -145,9 +141,6 @@ final class LogMainTheme with Loggable {
     this.lineBreak = defaultLineBreak,
     this.padding = defaultPadding,
     this.errorAlwaysOnNewLine = false,
-    this.enumDotShorthand = true,
-    this.collectionShowCount = true,
-    this.collectionShowIndexes = true,
     this.valueFormatter = const ControlCodeFormatter(),
     this.messageFormatter = const BbCodeFormatter(),
     this.countFormatter = _defaultCountFormatter,
@@ -156,7 +149,6 @@ final class LogMainTheme with Loggable {
     this.tags = const {},
     this.errorTitle = defaultErrorTitle,
     this.stackTraceTitle = defaultStackTraceTitle,
-    this.stringInQuotes = true,
     this.ansiCodesEnabled = true,
     this.cycleFormatter = _defaultCycleFormatter,
     this.cycleStyle = const ansi.NoStyle(),
@@ -209,9 +201,6 @@ final class LogMainTheme with Loggable {
         lineBreak = defaultLineBreak,
         padding = defaultPadding,
         errorAlwaysOnNewLine = false,
-        enumDotShorthand = true,
-        collectionShowCount = true,
-        collectionShowIndexes = true,
         valueFormatter = const ControlCodeFormatter(),
         messageFormatter = const BbCodeFormatter(),
         countFormatter = _defaultCountFormatter,
@@ -219,8 +208,7 @@ final class LogMainTheme with Loggable {
         numberFormatter = _defaultNumberFormatter,
         tags = const {},
         errorTitle = defaultErrorTitle,
-        stackTraceTitle = defaultStackTraceTitle,
-        stringInQuotes = true;
+        stackTraceTitle = defaultStackTraceTitle;
 
   static const LogMainTheme noColors = LogMainTheme._(
     messageStyles: defaultNoColorsMessageStyles,
@@ -392,9 +380,6 @@ final class LogMainTheme with Loggable {
     String? lineBreak,
     String? padding,
     bool? errorAlwaysOnNewLine,
-    bool? enumDotShorthand,
-    bool? collectionShowCount,
-    bool? collectionShowIndexes,
     LogPreFormatter? valueFormatter,
     LogPreFormatter? messageFormatter,
     LogThemeFormatter<int>? countFormatter,
@@ -403,7 +388,6 @@ final class LogMainTheme with Loggable {
     Set<String>? tags,
     String? errorTitle,
     String? stackTraceTitle,
-    bool? stringInQuotes,
     bool? ansiCodesEnabled,
     LogThemeFormatter<int>? cycleFormatter,
     ansi.Style? cycleStyle,
@@ -427,10 +411,6 @@ final class LogMainTheme with Loggable {
         lineBreak: lineBreak ?? this.lineBreak,
         padding: padding ?? this.padding,
         errorAlwaysOnNewLine: errorAlwaysOnNewLine ?? this.errorAlwaysOnNewLine,
-        enumDotShorthand: enumDotShorthand ?? this.enumDotShorthand,
-        collectionShowCount: collectionShowCount ?? this.collectionShowCount,
-        collectionShowIndexes:
-            collectionShowIndexes ?? this.collectionShowIndexes,
         valueFormatter: valueFormatter ?? this.valueFormatter,
         messageFormatter: messageFormatter ?? this.messageFormatter,
         countFormatter: countFormatter ?? this.countFormatter,
@@ -439,7 +419,6 @@ final class LogMainTheme with Loggable {
         tags: tags ?? this.tags,
         errorTitle: errorTitle ?? this.errorTitle,
         stackTraceTitle: stackTraceTitle ?? this.stackTraceTitle,
-        stringInQuotes: stringInQuotes ?? this.stringInQuotes,
         ansiCodesEnabled: ansiCodesEnabled ?? this.ansiCodesEnabled,
         cycleFormatter: cycleFormatter ?? this.cycleFormatter,
         cycleStyle: cycleStyle ?? this.cycleStyle,
@@ -466,9 +445,6 @@ final class LogMainTheme with Loggable {
       ..prop('lineBreak', lineBreak)
       ..prop('padding', padding)
       ..prop('errorAlwaysOnNewLine', errorAlwaysOnNewLine)
-      ..prop('enumDotShorthand', enumDotShorthand)
-      ..prop('collectionShowCount', collectionShowCount)
-      ..prop('collectionShowIndexes', collectionShowIndexes)
       ..prop('valueFormatter', valueFormatter)
       ..prop('messageFormatter', messageFormatter)
       ..prop(
@@ -495,8 +471,7 @@ final class LogMainTheme with Loggable {
       ..prop('numberFormatter', numberFormatter)
       ..prop('tags', tags)
       ..prop('errorTitle', errorTitle)
-      ..prop('stackTraceTitle', stackTraceTitle)
-      ..prop('stringInQuotes', stringInQuotes);
+      ..prop('stackTraceTitle', stackTraceTitle);
   }
 }
 

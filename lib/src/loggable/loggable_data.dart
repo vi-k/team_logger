@@ -337,7 +337,7 @@ final class LoggableData {
       if (_type.showName) Loggable._classKey: className,
       Loggable._propsKey: props,
       if (!_type.showBrackets) Loggable._bracketsKey: false,
-      if (config.units case final units?) Loggable._unitsKey: units,
+      if (config.resolvedUnits case final units?) Loggable._unitsKey: units,
     };
   }
 
@@ -520,7 +520,7 @@ final class Prop<T extends Object?> {
           name,
           () => {
             Loggable._viewKey: view.toString(),
-            if (effectiveConfig.units case final units?)
+            if (effectiveConfig.resolvedUnits case final units?)
               Loggable._unitsKey: units,
           },
         ),
@@ -576,7 +576,8 @@ final class Prop<T extends Object?> {
         ),
       final view => Loggable._withSegment(
           name,
-          () => '$view${Loggable.unitsToString(effectiveConfig.units, theme)}',
+          () =>
+              '$view${Loggable.unitsToString(effectiveConfig.resolvedUnits, theme)}',
         ),
     };
     final styledValue = theme.formatValue(
@@ -701,7 +702,8 @@ final class _LoggableMapBuilder extends LoggableData {
 
     return {
       ...props,
-      if (effectiveConfig.units case final units?) Loggable._unitsKey: units,
+      if (effectiveConfig.resolvedUnits case final units?)
+        Loggable._unitsKey: units,
     };
   }
 

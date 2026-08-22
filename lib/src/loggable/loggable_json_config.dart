@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'loggable.dart';
 
 /// Конфигурация для [objectToJson].
@@ -26,6 +28,21 @@ abstract base class LoggableJsonConfig with Loggable {
     int? collectionMaxCount,
     String? units,
   });
+
+  /// Значения с наложенной цепочкой `default ← этот конфиг ← force`.
+  ///
+  /// Слои общие со строковым выводом: политика у приложения одна, и
+  /// заводить для JSON вторую пару статик значило бы позволить им
+  /// разойтись. Из `LoggableConfig` берутся те поля, которые здесь есть.
+  @internal
+  int? get resolvedCollectionMaxCount =>
+      Loggable.forceConfig.collectionMaxCount ??
+      collectionMaxCount ??
+      Loggable.defaultConfig.collectionMaxCount;
+
+  @internal
+  String? get resolvedUnits =>
+      Loggable.forceConfig.units ?? units ?? Loggable.defaultConfig.units;
 
   @override
   void collectLoggableData(LoggableData data) {

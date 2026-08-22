@@ -144,6 +144,35 @@ abstract mixin class Loggable {
   /// изолирует, но принтер сам по себе пробросит его в точку логирования.
   static LogValueSanitizer? sanitizer;
 
+  /// Дефолт приложения: чем рендерить то, о чём место вызова промолчало.
+  ///
+  /// Самый слабый слой цепочки `defaultConfig ← вызов ← [forceConfig]`.
+  /// Любой конфиг с места вызова и любой конфиг контейнера его перебивают,
+  /// поэтому сюда кладут предпочтения («у нас строки без кавычек»), а не
+  /// политику — для политики есть [forceConfig].
+  ///
+  /// Статика на изолят, как и [sanitizer]: [objectToString] и
+  /// [objectToJson] зовут и без темы, и без логгера, и там дефолт обязан
+  /// действовать тоже. В порождённом изоляте задать заново.
+  static LoggableConfig defaultConfig = const LoggableConfig();
+
+  /// Политика приложения: то, что не снимается с места вызова.
+  ///
+  /// Самый сильный слой цепочки `[defaultConfig] ← вызов ← forceConfig`.
+  /// Перебивает и конфиг вызова, и конфиг контейнера — в том числе тот,
+  /// что подмешивается уже во время обхода, глубоко внутри данных.
+  /// Незаданные (`null`) поля политикой не являются и решаются слоями ниже.
+  ///
+  /// Единицы измерения сюда класть не стоит: `units` описывают конкретную
+  /// величину, а не способ печати, и форсированные припишутся всему подряд.
+  /// Запрета нет — контракт «force перебивает всё» важнее частного
+  /// предохранителя, — но корневая sanitizer-замена единицы снимает и
+  /// вопреки force: замена не является исходной величиной.
+  ///
+  /// Статика на изолят, как и [sanitizer]. В порождённом изоляте задать
+  /// заново.
+  static LoggableConfig forceConfig = const LoggableConfig();
+
   /// Сегменты пути к текущему значению: [String] — имя или ключ,
   /// [int] — индекс. Статический стек, как и [_visiting], чтобы не
   /// менять сигнатуры обходчиков.
@@ -786,7 +815,7 @@ abstract mixin class Loggable {
       return converter.convertToData(obj).toLogString(
             theme: theme,
             depth: depth,
-            config: config.toEffectiveConfig(theme.main),
+            config: config.toEffectiveConfig(),
           );
     }
 
@@ -1077,8 +1106,8 @@ abstract mixin class Loggable {
     String end = ')',
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final maxCount = config.collectionMaxCount;
-    final maxLength = config.collectionMaxStringLength;
+    final maxCount = config.resolvedCollectionMaxCount;
+    final maxLength = config.resolvedCollectionMaxStringLength;
 
     _validateIterableToStringArguments(
       maxCount: maxCount,
@@ -1088,10 +1117,8 @@ abstract mixin class Loggable {
     );
 
     final depthTheme = theme.depthTheme(depth);
-    final showCount =
-        config.collectionShowCount ?? theme.main.collectionShowCount;
-    final showIndexes =
-        config.collectionShowIndexes ?? theme.main.collectionShowIndexes;
+    final showCount = config.resolvedCollectionShowCount;
+    final showIndexes = config.resolvedCollectionShowIndexes;
 
     final buf = StringBuffer(depthTheme.brackets(start));
 
@@ -1463,7 +1490,7 @@ abstract mixin class Loggable {
       );
     }
 
-    var maxCount = config.collectionMaxCount;
+    var maxCount = config.resolvedCollectionMaxCount;
     assert(maxCount == null || maxCount >= 0);
     if (maxCount != null && maxCount < 0) {
       maxCount = 0;
@@ -1472,12 +1499,12 @@ abstract mixin class Loggable {
     if (maxCount == null || iterable.length <= maxCount) {
       final values =
           iterable.indexed.map((item) => obj2json(item.$1, item.$2)).toList();
-      return isList && config.units == null
+      return isList && config.resolvedUnits == null
           ? values
           : {
               _kindKey: type,
               _valueKey: values,
-              if (config.units case final units?) _unitsKey: units,
+              if (config.resolvedUnits case final units?) _unitsKey: units,
             };
     }
 
@@ -1495,7 +1522,7 @@ abstract mixin class Loggable {
             obj2json(iterable.length - 1, iterable.last),
           ],
       },
-      if (config.units case final units?) _unitsKey: units,
+      if (config.resolvedUnits case final units?) _unitsKey: units,
     };
   }
 
@@ -1522,8 +1549,8 @@ abstract mixin class Loggable {
     String end = ')',
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final maxCount = config.collectionMaxCount;
-    final maxLength = config.collectionMaxStringLength;
+    final maxCount = config.resolvedCollectionMaxCount;
+    final maxLength = config.resolvedCollectionMaxStringLength;
 
     _validateIterableToStringArguments(
       maxCount: maxCount,
@@ -1547,8 +1574,7 @@ abstract mixin class Loggable {
       maxCount: maxCount,
       maxLength:
           maxLength == null ? null : math.max(maxLength - reservedLength, 0),
-      showIndexes:
-          config.collectionShowIndexes ?? theme.main.collectionShowIndexes,
+      showIndexes: config.resolvedCollectionShowIndexes,
     );
 
     buf.write(depthTheme.brackets(end));
@@ -1730,7 +1756,7 @@ abstract mixin class Loggable {
       );
     }
 
-    var maxCount = config.collectionMaxCount;
+    var maxCount = config.resolvedCollectionMaxCount;
     assert(maxCount == null || maxCount >= 0);
     if (maxCount != null && maxCount < 0) {
       maxCount = 0;
@@ -1761,7 +1787,7 @@ abstract mixin class Loggable {
       _valueKey:
           values.indexed.map((item) => obj2json(item.$1, item.$2)).toList(),
       if (trimmed ?? false) _trimKey: true,
-      if (config.units case final units?) _unitsKey: units,
+      if (config.resolvedUnits case final units?) _unitsKey: units,
     };
   }
 
@@ -1897,7 +1923,7 @@ abstract mixin class Loggable {
       );
     }
 
-    return switch (config.units) {
+    return switch (config.resolvedUnits) {
       null => result,
       final units => {...result, _unitsKey: units}
     };
@@ -1909,7 +1935,7 @@ abstract mixin class Loggable {
     LoggableConfig config = const LoggableConfig(),
   }) {
     final dotShorthand = '.${theme.formatValue(obj.name)}';
-    return (config.enumDotShorthand ?? theme.main.enumDotShorthand)
+    return config.resolvedEnumDotShorthand
         ? dotShorthand
         : '${obj.runtimeType}${theme.data.emphasis(dotShorthand)}';
   }
@@ -1942,11 +1968,11 @@ abstract mixin class Loggable {
     LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) =>
-      '${switch (config.intFormat) {
+      '${switch (config.resolvedIntFormat) {
         null => obj.toString(),
         final f => theme.formatNumber(obj, f),
       }}'
-      '${unitsToString(config.units, theme)}';
+      '${unitsToString(config.resolvedUnits, theme)}';
 
   static String _doubleToString(
     double obj, {
@@ -1954,11 +1980,11 @@ abstract mixin class Loggable {
     LoggableConfig config = const LoggableConfig(),
   }) {
     if (obj.isFinite) {
-      return '${switch (config.doubleFormat) {
+      return '${switch (config.resolvedDoubleFormat) {
         null => obj.toString(),
         final f => theme.formatNumber(obj, f),
       }}'
-          '${unitsToString(config.units, theme)}';
+          '${unitsToString(config.resolvedUnits, theme)}';
     }
 
     // См. комментарий в [_doubleToJson]: для nan/inf units не показываются.
@@ -1973,7 +1999,7 @@ abstract mixin class Loggable {
     int obj, {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) =>
-      switch (config.units) {
+      switch (config.resolvedUnits) {
         null => obj,
         final units => {
             _valueKey: obj,
@@ -1986,7 +2012,7 @@ abstract mixin class Loggable {
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
     if (obj.isFinite) {
-      if (config.units case final units?) {
+      if (config.resolvedUnits case final units?) {
         return {_valueKey: obj, _unitsKey: units};
       }
 
@@ -2010,7 +2036,7 @@ abstract mixin class Loggable {
     LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final stringInQuotes = config.stringInQuotes ?? theme.main.stringInQuotes;
+    final stringInQuotes = config.resolvedStringInQuotes;
 
     return stringInQuotes
         ? '${theme.styledOpeningQuote}'

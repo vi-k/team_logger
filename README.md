@@ -1057,6 +1057,52 @@ log.d(
 
 ![Formatting settings. Strings](screenshots/data_7.png)
 
+#### Application-wide Defaults and Policy
+
+A `LoggableConfig` at the call site answers for that call. Two more layers
+answer for the application, and an unset (`null`) field is resolved through
+all of them, weakest first:
+
+1. the package default — what is printed when nobody said anything;
+2. `Loggable.defaultConfig` — the application's preference;
+3. the call site, and the configs of the containers on the way to the value
+   (the one closest to the value wins);
+4. `Loggable.forceConfig` — the application's policy.
+
+`Loggable.defaultConfig` saves repeating yourself. Set it once and every log
+that does not say otherwise follows:
+
+```dart
+Loggable.defaultConfig = const LoggableConfig(
+  stringInQuotes: false,
+  collectionShowIndexes: false,
+);
+```
+
+`Loggable.forceConfig` is the one that holds. Nothing below it can lift a
+field it sets — not the call that logs the value, and not a container config
+merged in halfway down the data:
+
+```dart
+Loggable.forceConfig = const LoggableConfig(collectionMaxCount: 10);
+
+// Still ten: the call site does not get to widen the cap.
+log.d('items', data: hugeList,
+    config: const LoggableConfig(collectionMaxCount: 10000));
+```
+
+Use `defaultConfig` for taste and `forceConfig` for rules. A field left
+`null` in either is not a rule and is decided by the layers below it.
+
+Both are per-isolate statics, like `Loggable.sanitizer` — set them again in
+any isolate you spawn. They apply to `Loggable.objectToString()` and
+`Loggable.objectToJson()` as well, which is the point: a policy that only
+held for the console printer would not be a policy.
+
+One field keeps its own rule against the force layer: `units` are still
+dropped from a value the sanitizer replaced, because units assert something
+about the original quantity and a mask is not that quantity.
+
 ---
 
 ### 6. Formatting Complex Objects
