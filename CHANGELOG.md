@@ -189,21 +189,14 @@
   than a newer resolve. `clock`, `meta` and `stack_trace` now sit at the
   3.27 pins (^1.1.1, ^1.15.0, ^1.12.0) instead of the 3.29 ones, and
   nothing here needs anything newer.
-- [breaking changes] Require `format` ^4.1.0, up from ^1.6.0, which is what
-  made the above possible one level down. 1.6.0 wanted `characters` ^1.4.0
-  where Flutter 3.27 pins 1.3.0, and `intl` ^0.20.2 where
-  `flutter_localizations` pins 0.19.0 on both 3.27 and 3.29 — a localized
-  application could not take this package at all on those lines. `format`
-  4.1.0 lowered its own floor to Dart ^3.6.0 and has had no `intl`
-  dependency since 3.0.0, so `intl` leaves the dependency graph of every
-  application that takes this package. One rendering moves with the
-  upgrade: `doubleFormat: 'g'` prints `1234.5678` for 1234.5678 where the
-  1.x branch printed `1234.57`. Everything else — padding, grouping,
-  radices, fixed and exponential forms, rounding — is unchanged, and
-  `test/loggable/number_format_test.dart` now pins all of it; that file
-  covers `intFormat`/`doubleFormat` for the first time.
-- [breaking changes] `format` is no longer a dependency of this package,
-  and number formatting is a theme's job. `intFormat` and `doubleFormat`
+- What blocked the Flutter line one level down was `format` ^1.6.0, the
+  0.6.0 dependency: 1.6.0 wanted `characters` ^1.4.0 where Flutter 3.27 pins
+  1.3.0, and `intl` ^0.20.2 where `flutter_localizations` pins 0.19.0 on both
+  3.27 and 3.29, so a localized application could not take this package at
+  all on those lines. `intl` is gone from the graph of every application that
+  takes this package — and so, as the next entry says, is `format` itself.
+- [breaking changes] `format` is no longer a dependency of this package at
+  all, and number formatting is a theme's job. `intFormat` and `doubleFormat`
   keep their names and their `String?` type, but the package no longer
   reads them: the string goes to [LogMainTheme.numberFormatter] together
   with the value, and what it means is that formatter's business. A theme
@@ -217,6 +210,13 @@
   it leaves the dependency graph of every application that takes this
   package; a formatter over `sprintf` (`'%d'` in the config then), or one
   with nothing to do with `format` at all, is now equally installable.
+  `format` ^4.1.0 stays as a dev dependency, because
+  `test/loggable/number_format_test.dart` builds the recipe above and pins
+  what it renders — `intFormat`/`doubleFormat` are covered for the first
+  time. One rendering there differs from the 0.6.0 line: with `format` 4.x
+  `doubleFormat: '{:g}'` prints `1234.5678` for 1234.5678 where 1.x printed
+  `1234.57`. Padding, grouping, radices, fixed and exponential forms and
+  rounding are unchanged.
 - [breaking changes] A locale-aware `intFormat`/`doubleFormat` no longer
   works by setting `Intl.defaultLocale`, because the specifier is handed
   to `format` and `format` stopped reading an ambient `intl` locale when

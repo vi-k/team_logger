@@ -17,6 +17,22 @@ void main() {
     expect(namedStyle.foreground, isNotNull);
   });
 
+  test('LogBlock is the exported interface README names for row children', () {
+    // README teaches `LogRow(children: [...], tail: [...])` as a list of
+    // LogBlock; the name has to exist and the built-ins have to implement it.
+    const blocks = <LogBlock>[
+      LogNum(),
+      LogLevelName.short(),
+      LogTime.onlyTime(),
+      LogPath(),
+      LogTraceId(),
+      LogMessage(),
+      LogTags(),
+    ];
+
+    expect(blocks, everyElement(isA<LogBlock>()));
+  });
+
   test('team_logger exports the number formatter typedef', () {
     expect(_plainNumber, isA<LogNumberFormatter>());
     expect(_plainNumber(LogTheme.noColors, 42, 'ignored'), '42');

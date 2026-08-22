@@ -166,7 +166,7 @@ SanitizeContext ctx)`, которому по пути к выводу предл
 
 `ConsoleLogPrinter` — основной публишер. Раскладка задаётся данными:
 `rows: [LogRow(children: [...], tail: [...])]`, где каждый элемент —
-`LogElement` (`LogNum`, `LogLevelName`, `LogTime`, `LogPath`, `LogTraceId`,
+`LogBlock` (`LogNum`, `LogLevelName`, `LogTime`, `LogPath`, `LogTraceId`,
 `LogMessage`, `LogTags`, `LogStackTrace`, `LogDivider`, `LogCustomText`, …).
 Поддерживается **активный/неактивный** стиль: `inactiveTheme` плюс фильтры
 (`activeLevels`/`activeMinLevel`, `activeNamespaces`, `activeTraceGroups`,

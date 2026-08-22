@@ -158,9 +158,9 @@ Configuring log output layout is done through the `rows` parameter in the
 - `children`: Elements that make up the main body of the log message.
 - `tail`: Elements that are appended to the main body, typically used for tags.
 
-Both `children` and `tail` accept a list of `LogElement` instances.
-`LogElement` is a class that represents a single log element, such as
-a sequence number, log level name, timestamp, trace ID, path, or message.
+Both `children` and `tail` accept a list of `LogBlock` instances.
+`LogBlock` is the interface of a single log element, such as a sequence
+number, log level name, timestamp, trace ID, path, or message.
 
 ```dart
 import 'package:team_logger/team_logger.dart';
@@ -204,7 +204,7 @@ log.d(
 
 ![Message layout](screenshots/layout_1.png)
 
-The `LogElement` class has several subclasses that can be used to represent
+`LogBlock` has several implementations that can be used to represent
 different log elements:
 - `LogNum()`: Sequence number of the log message.
 - `LogLevelName.full()`: Full name of the log level.
@@ -1786,4 +1786,4 @@ the escaping belongs.
 
 ## License
 
-This library is licensed under the MIT License. See [LICENSE](file:///Users/user/development/my/team_logger/LICENSE) for details.
+This library is licensed under the MIT License. See [LICENSE](https://github.com/vi-k/team_logger/blob/main/LICENSE) for details.
