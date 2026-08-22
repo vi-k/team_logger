@@ -979,6 +979,32 @@ For string rendering, `collectionMaxCount` must be non-negative and
 `collectionMaxStringLength`, when set, must be positive. Invalid limits throw
 `ArgumentError` at the rendering boundary.
 
+Notice the `Iterable` above: it is truncated to `(₀:1.2, ₁:2.3, ₂:3.4, …)`
+rather than to `(₌₅ ₀:1.2, ₁:2.3, …, ₄:5.6)`. A `List` or a `Set` is walked
+freely — its length and its last element are cheap — but a bare `Iterable`
+may be single-pass or expensive to walk twice, so it is read exactly once:
+the leading elements, an ellipsis, and no count.
+
+Where you know better, say so with `iterableEfficientLength`:
+
+```dart
+log.d(
+  'Iterable',
+  data: [1.2, 2.3, 3.4, 4.5, 5.6].where((e) => true),
+  config: const LoggableConfig(
+    collectionMaxCount: 3,
+    iterableEfficientLength: true,
+  ),
+);
+// Iterable: (₌₅ ₀:1.2, ₁:2.3, …, ₄:5.6)
+```
+
+It is an assertion by the caller, like `units` — the package cannot tell an
+efficient-length iterable from a generator, and setting it on one that is
+single-pass will read the length and the last element anyway. The same flag
+exists on `LoggableJsonConfig`, where it turns `":trim": true` into a real
+`":l"` length.
+
 #### Formatting Settings
 
 You can use dot shorthand syntax for enums (default):

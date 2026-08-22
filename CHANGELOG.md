@@ -1,5 +1,14 @@
 ## 0.7.0
 
+- `LoggableConfig.iterableEfficientLength` opts a bare `Iterable` into the
+  rendering a `List` gets: the element count and the last element, rather
+  than the leading elements and an ellipsis. An `Iterable` that is neither a
+  `List` nor a `Set` is still read exactly once by default — it may be
+  single-pass or expensive to walk twice, and the package cannot tell one
+  from a generator — so the richer form is the caller's assertion to make.
+  `LoggableJsonConfig` takes the same flag, where it turns `":trim": true`
+  into a real `":l"` length.
+
 - [breaking changes] Control sequences in logged text are shown instead of
   being sent, and the safe mode is on by default
   (`LoggableConfig.escapeAnsiCodes`). Untrusted text — an HTTP header, an

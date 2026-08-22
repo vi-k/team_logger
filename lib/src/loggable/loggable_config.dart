@@ -25,6 +25,14 @@ import 'loggable_json_config.dart';
 /// [collectionShowIndexes] - показывать ли индексы элементов в виде `₀:`,
 /// `₁:` и т.д. Если равно null, решают слои цепочки; по умолчанию `true`.
 ///
+/// [iterableEfficientLength] - утверждение вызывающего, что у голого
+/// [Iterable] длина и последний элемент дёшевы. Без него коллекция, которая
+/// не [List] и не [Set], обходится ровно один раз: печатаются первые
+/// элементы и многоточие, а длина не читается вовсе — иначе однопроходный
+/// или дорогой итератор пострадал бы. С ним вывод становится таким же
+/// богатым, как у [List]: количество (`₌₅`) и последний элемент. По
+/// умолчанию выключено; на генераторе включать нельзя.
+///
 /// [escapeAnsiCodes] - безопасный вывод: управляющая последовательность в
 /// тексте показывается (`[CSI 2 ED]forged`), а не отправляется в терминал.
 /// Включено по умолчанию. Выключать стоит там, где значение стилизовано
@@ -85,6 +93,7 @@ final class LoggableConfig with Loggable {
   final String? intFormat;
   final bool? stringInQuotes;
   final bool? escapeAnsiCodes;
+  final bool? iterableEfficientLength;
 
   const LoggableConfig({
     this.enumDotShorthand,
@@ -97,6 +106,7 @@ final class LoggableConfig with Loggable {
     this.intFormat,
     this.stringInQuotes,
     this.escapeAnsiCodes,
+    this.iterableEfficientLength,
   });
 
   /// Дефолты пакета — нижний пол цепочки, ниже [Loggable.defaultConfig].
@@ -113,6 +123,10 @@ final class LoggableConfig with Loggable {
   /// Безопасный вывод включён по умолчанию: недоверенный текст попадает в
   /// логи не по злому умыслу, а потому что так устроены логи.
   static const bool defaultEscapeAnsiCodes = true;
+
+  /// Голый [Iterable] по умолчанию обходится один раз: он может быть
+  /// однопроходным или дорогим, и читать его длину пакет не вправе.
+  static const bool defaultIterableEfficientLength = false;
 
   /// Значение [escapeAnsiCodes] там, где локального конфига нет вовсе.
   ///
@@ -157,6 +171,13 @@ final class LoggableConfig with Loggable {
       stringInQuotes ??
       Loggable.defaultConfig.stringInQuotes ??
       defaultStringInQuotes;
+
+  @internal
+  bool get resolvedIterableEfficientLength =>
+      Loggable.forceConfig.iterableEfficientLength ??
+      iterableEfficientLength ??
+      Loggable.defaultConfig.iterableEfficientLength ??
+      defaultIterableEfficientLength;
 
   @internal
   bool get resolvedEscapeAnsiCodes =>
@@ -209,6 +230,8 @@ final class LoggableConfig with Loggable {
         intFormat: intFormat ?? other.intFormat,
         stringInQuotes: stringInQuotes ?? other.stringInQuotes,
         escapeAnsiCodes: escapeAnsiCodes ?? other.escapeAnsiCodes,
+        iterableEfficientLength:
+            iterableEfficientLength ?? other.iterableEfficientLength,
       );
 
   /// Копия конфигурации без [units].
@@ -227,6 +250,7 @@ final class LoggableConfig with Loggable {
         intFormat: intFormat,
         stringInQuotes: stringInQuotes,
         escapeAnsiCodes: escapeAnsiCodes,
+        iterableEfficientLength: iterableEfficientLength,
       );
 
   /// Конфиг со всеми слоями цепочки, разрешёнными до конца.
@@ -241,12 +265,15 @@ final class LoggableConfig with Loggable {
         intFormat: resolvedIntFormat,
         stringInQuotes: resolvedStringInQuotes,
         escapeAnsiCodes: resolvedEscapeAnsiCodes,
+        iterableEfficientLength: resolvedIterableEfficientLength,
       );
 
   LoggableJsonConfig mergeWithJsonConfig(LoggableJsonConfig config) =>
       LoggableJsonConfig(
         collectionMaxCount: collectionMaxCount ?? config.collectionMaxCount,
         units: units ?? config.units,
+        iterableEfficientLength:
+            iterableEfficientLength ?? config.iterableEfficientLength,
       );
 
   @override
@@ -261,7 +288,8 @@ final class LoggableConfig with Loggable {
       ..prop('doubleFormat', doubleFormat)
       ..prop('intFormat', intFormat)
       ..prop('stringInQuotes', stringInQuotes)
-      ..prop('escapeAnsiCodes', escapeAnsiCodes);
+      ..prop('escapeAnsiCodes', escapeAnsiCodes)
+      ..prop('iterableEfficientLength', iterableEfficientLength);
   }
 }
 
@@ -277,6 +305,7 @@ final class LoggableEffectiveConfig extends LoggableConfig with Loggable {
     required super.intFormat,
     required bool super.stringInQuotes,
     required bool super.escapeAnsiCodes,
+    required bool super.iterableEfficientLength,
   });
 
   @override
@@ -293,4 +322,7 @@ final class LoggableEffectiveConfig extends LoggableConfig with Loggable {
 
   @override
   bool get escapeAnsiCodes => super.escapeAnsiCodes!;
+
+  @override
+  bool get iterableEfficientLength => super.iterableEfficientLength!;
 }

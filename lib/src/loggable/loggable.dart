@@ -830,12 +830,22 @@ abstract mixin class Loggable {
         listToString(obj, theme: theme, depth: depth, config: config),
       Set<Object?>() =>
         setToString(obj, theme: theme, depth: depth, config: config),
-      Iterable<Object?>() => iterableToString(
-          obj,
-          theme: theme,
-          depth: depth,
-          config: config,
-        ),
+      // Голый Iterable по умолчанию обходится один раз: длина и последний
+      // элемент у него могут быть дорогими или одноразовыми. Знает об этом
+      // только вызывающий — он и говорит.
+      Iterable<Object?>() => config.resolvedIterableEfficientLength
+          ? efficientLengthIterableToString(
+              obj,
+              theme: theme,
+              depth: depth,
+              config: config,
+            )
+          : iterableToString(
+              obj,
+              theme: theme,
+              depth: depth,
+              config: config,
+            ),
       Map<Object?, Object?>() => _mapToString(
           obj,
           theme: theme,
@@ -974,7 +984,9 @@ abstract mixin class Loggable {
       Duration() => _durationToJson(obj),
       List<Object?>() => listToJson(obj, config: config),
       Set<Object?>() => setToJson(obj, config: config),
-      Iterable<Object?>() => iterableToJson(obj, config: config),
+      Iterable<Object?>() => config.resolvedIterableEfficientLength
+          ? efficientLengthIterableToJson(obj, config: config)
+          : iterableToJson(obj, config: config),
       Map<Object?, Object?>() => _mapToJson(obj, config: config),
       Loggable() => obj.logClassInfo().toJson(config: config),
       LoggableData() => obj.toJson(config: config),

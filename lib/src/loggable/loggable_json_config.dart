@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'loggable.dart';
+import 'loggable_config.dart';
 
 /// Конфигурация для [objectToJson].
 ///
@@ -10,23 +11,30 @@ import 'loggable.dart';
 /// Обратите внимание! Все параметры действуют рекурсивно не только на сам
 /// объект, но и на все вложенные в него объекты. При этом установленные
 /// параметры сбросить в null уже нельзя.
+/// [iterableEfficientLength] - то же утверждение, что и в
+/// `LoggableConfig`: у голого [Iterable] длина и последний элемент дёшевы,
+/// и его можно печатать с `":l"` вместо `":trim"`.
 abstract base class LoggableJsonConfig with Loggable {
   final int? collectionMaxCount;
   final String? units;
+  final bool? iterableEfficientLength;
 
   const factory LoggableJsonConfig({
     int? collectionMaxCount,
     String? units,
+    bool? iterableEfficientLength,
   }) = _LoggableJsonConfig;
 
   const LoggableJsonConfig._({
     this.collectionMaxCount,
     this.units,
+    this.iterableEfficientLength,
   });
 
   LoggableJsonConfig copyWith({
     int? collectionMaxCount,
     String? units,
+    bool? iterableEfficientLength,
   });
 
   /// Значения с наложенной цепочкой `default ← этот конфиг ← force`.
@@ -44,12 +52,20 @@ abstract base class LoggableJsonConfig with Loggable {
   String? get resolvedUnits =>
       Loggable.forceConfig.units ?? units ?? Loggable.defaultConfig.units;
 
+  @internal
+  bool get resolvedIterableEfficientLength =>
+      Loggable.forceConfig.iterableEfficientLength ??
+      iterableEfficientLength ??
+      Loggable.defaultConfig.iterableEfficientLength ??
+      LoggableConfig.defaultIterableEfficientLength;
+
   @override
   void collectLoggableData(LoggableData data) {
     data
       ..name = '$LoggableJsonConfig'
       ..whenNotNull('collectionMaxCount', collectionMaxCount)
-      ..whenNotNull('units', units);
+      ..whenNotNull('units', units)
+      ..whenNotNull('iterableEfficientLength', iterableEfficientLength);
   }
 }
 
@@ -71,17 +87,22 @@ final class _LoggableJsonConfig extends LoggableJsonConfig {
   const _LoggableJsonConfig({
     super.collectionMaxCount,
     super.units,
+    super.iterableEfficientLength,
   }) : super._();
 
   @override
   LoggableJsonConfig copyWith({
     Object? collectionMaxCount = _undefined,
     Object? units = _undefined,
+    Object? iterableEfficientLength = _undefined,
   }) =>
       _LoggableJsonConfig(
         collectionMaxCount: identical(collectionMaxCount, _undefined)
             ? this.collectionMaxCount
             : collectionMaxCount as int?,
         units: identical(units, _undefined) ? this.units : units as String?,
+        iterableEfficientLength: identical(iterableEfficientLength, _undefined)
+            ? this.iterableEfficientLength
+            : iterableEfficientLength as bool?,
       );
 }
