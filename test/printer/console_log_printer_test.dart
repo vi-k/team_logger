@@ -54,6 +54,52 @@ void main() {
       expect(out.join('\n'), isNot(contains('#log')));
     });
 
+    test('a replaced output takes over the levels already printed', () {
+      final first = <String>[];
+      final second = <String>[];
+      final printer = ConsoleLogPrinter(
+        theme: LogMainTheme.noColors,
+        rows: const [
+          LogRow(maxLength: 40, children: [LogMessage()]),
+        ],
+        output: first.add,
+      );
+      final log = Logger('app')
+        ..level = LogLevels.all
+        ..publisher = printer;
+
+      log.i('before');
+      printer.output = second.add;
+      log.i('after');
+
+      // The printer for this level was built on the first log and must not
+      // keep writing into the sink that was replaced.
+      expect(first.single.trim(), 'before');
+      expect(second.single.trim(), 'after');
+    });
+
+    test('a replaced output reaches a level printed for the first time', () {
+      final first = <String>[];
+      final second = <String>[];
+      final printer = ConsoleLogPrinter(
+        theme: LogMainTheme.noColors,
+        rows: const [
+          LogRow(maxLength: 40, children: [LogMessage()]),
+        ],
+        output: first.add,
+      );
+      final log = Logger('app')
+        ..level = LogLevels.all
+        ..publisher = printer;
+
+      log.i('before');
+      printer.output = second.add;
+      log.w('other level');
+
+      expect(first.single.trim(), 'before');
+      expect(second.single.trim(), 'other level');
+    });
+
     test('single-character message is printed', () {
       final (log, out) = _setup(
         rows: const [

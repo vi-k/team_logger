@@ -32,6 +32,21 @@ void main() {
       expect(result, endsWith(' after'));
     });
 
+    test('a tag added to a mutable style map applies on the next render', () {
+      // Review finding #13 claimed a per-theme cache froze the tag set on
+      // first use. The scanner that replaced the backtracking regex keeps no
+      // cache, so the map is read again on every call and a late tag applies
+      // consistently rather than depending on call history.
+      final styles = <String, LogStyle>{};
+      final theme = LogMainTheme(messageStyles: styles).info;
+
+      expect(_formatter(theme, '[custom]x[/custom]'), '[custom]x[/custom]');
+
+      styles['custom'] = const LogNoStyle();
+
+      expect(_formatter(theme, '[custom]x[/custom]'), 'x');
+    });
+
     test('style keys with regex special characters are escaped', () {
       final theme = LogMainTheme(
         messageStyles: const {'a.b': LogStyle(ansi.NoStyle())},

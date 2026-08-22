@@ -40,6 +40,13 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final String pathSeparator;
 
   final List<LogRow> rows;
+
+  /// The sink every rendered line goes to; defaults to `print`.
+  ///
+  /// Replacing it takes effect on the next line, including for levels that
+  /// have already been printed: the cached [ansi.StackedPrinter] of each
+  /// level writes through this field rather than through the function that
+  /// was installed when it was built.
   void Function(String) output;
 
   final _printers = <(bool, int), ansi.StackedPrinter>{};
@@ -127,12 +134,17 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     }
   }
 
+  void _write(String line) => output(line);
+
   void printRow(Log log, LogRow row, bool isActive, LogMainTheme main) {
     final theme = main[log.level];
     final printer = _printers[(isActive, log.level)] ??= ansi.StackedPrinter(
       defaultStyle: theme.data.normal,
       ansiCodesEnabled: main.ansiCodesEnabled,
-      output: output,
+      // Not a tear-off: the printer of a level outlives any number of
+      // `output` replacements, and a tear-off would pin it to the sink
+      // installed when the level was first printed.
+      output: _write,
     );
 
     late final defaultDividerBox = row.defaultDivider(log, theme, row, null);
