@@ -149,23 +149,34 @@ void main() {
       expect(row, isNot(contains('$_esc[31m')));
     });
 
-    test(
-      'is unusable for Loggable properties: the theme escapes its own codes',
-      () {
-        final row = _render(
-          _strictTheme(),
-          (log) => log.i(
-            'm',
-            data: Loggable.builder(Object())..prop('ok', 'plain'),
-          ),
-        );
+    test('does not escape the theme own codes in a Loggable property', () {
+      final row = _render(
+        _strictTheme(),
+        (log) => log.i(
+          'm',
+          data: Loggable.builder(Object())..prop('ok', 'plain'),
+        ),
+      );
 
-        // Nothing was injected, yet the second pass over already styled
-        // text escapes the theme's own reset. This is the double-formatting
-        // blocker recorded for the future safe mode, not a usable mode.
-        expect(row, contains(r'\x1B'));
-      },
-    );
+      // Nothing was injected here, so nothing may be escaped. The value
+      // formatter used to run a second time over text the theme had already
+      // styled, which turned its own reset into visible litter.
+      expect(row, isNot(contains(r'\x1B')));
+      expect(row, contains('plain'));
+    });
+
+    test('still escapes an injected sequence inside a Loggable property', () {
+      final row = _render(
+        _strictTheme(),
+        (log) => log.i(
+          'm',
+          data: Loggable.builder(Object())..prop('ua', '$_esc[31mred'),
+        ),
+      );
+
+      expect(row, contains(r'\x1B'));
+      expect(row, isNot(contains('$_esc[31m')));
+    });
   });
 
   group('file output', () {

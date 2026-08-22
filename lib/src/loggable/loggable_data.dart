@@ -558,7 +558,10 @@ final class Prop<T extends Object?> {
         ),
       );
 
-      return '$prefix${theme.formatValue(replacement)}';
+      // Замена уже отрендерена: её листья прошли форматтер внутри
+      // objectToString. Второй проход поверх стилизованной строки
+      // экранировал бы собственные коды темы.
+      return '$prefix$replacement';
     }
 
     // Сегмент свойства держится в стеке во ВСЕХ ветках: большинство view
@@ -580,9 +583,12 @@ final class Prop<T extends Object?> {
               '$view${Loggable.unitsToString(effectiveConfig.resolvedUnits, theme)}',
         ),
     };
-    final styledValue = theme.formatValue(
-      effectiveView ??
-          Loggable._withSegment(
+    // Форматтер применяется только к тексту view: он произвольный и до
+    // сюда ничего не проходил. Ветка objectToString уже отрендерена —
+    // повторный проход по ней и был двойным форматированием.
+    final styledValue = effectiveView != null
+        ? theme.formatValue(effectiveView)
+        : Loggable._withSegment(
             name,
             () => Loggable.objectToString(
               value,
@@ -590,8 +596,7 @@ final class Prop<T extends Object?> {
               depth: depth + 1,
               config: effectiveConfig,
             ),
-          ),
-    );
+          );
 
     return '$prefix$styledValue';
   }
