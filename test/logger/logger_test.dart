@@ -85,6 +85,41 @@ void main() {
         );
       });
     });
+
+    test('zonedTags returns an unmodifiable view', () {
+      final (log, _) = _logger();
+
+      log.trace(const TraceId.manual('a', 1), tags: {'original'}, () {
+        final tags = Logger.zonedTags();
+        expect(() => tags.add('injected'), throwsUnsupportedError);
+      });
+    });
+
+    test('a mutated zonedTags view cannot retag the rest of the zone', () {
+      final (log, out) = _logger();
+
+      log.trace(const TraceId.manual('a', 1), tags: {'original'}, () {
+        expect(
+          () => Logger.zonedTags().add('injected'),
+          throwsUnsupportedError,
+        );
+        log.i('after');
+      });
+
+      expect(out.logs.single.tags, {'original'});
+    });
+
+    test('the caller keeps no writable handle on the zone tags', () {
+      final (log, out) = _logger();
+      final passed = {'original'};
+
+      log.trace(const TraceId.manual('a', 1), tags: passed, () {
+        passed.add('late');
+        log.i('after');
+      });
+
+      expect(out.logs.single.tags, {'original'});
+    });
   });
 
   group('TraceId', () {

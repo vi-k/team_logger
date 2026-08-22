@@ -1,5 +1,11 @@
 ## 0.7.0
 
+- [breaking changes] `Logger.zonedTags()` now returns an unmodifiable view of
+  the zone's tags, the way `Logger.zonedTraceIds()` already did. Adding to or
+  removing from the returned set throws `UnsupportedError` instead of silently
+  retagging every later log in the same async zone. Code that mutated the
+  result has to pass the tags to `Logger.trace()` instead.
+
 - [breaking changes] Public configuration preconditions for `LogStorage`,
   `FileLogStorage`, `ConsoleLogPrinter`, `LogMainTheme`, and the two iterable
   string renderers now throw `ArgumentError` in production instead of relying

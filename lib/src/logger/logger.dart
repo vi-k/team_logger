@@ -266,7 +266,10 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
 
   static Set<String> zonedTags([Zone? zone]) =>
       switch ((zone ?? Zone.current)[_tagsKey]) {
-        final Set<String> list => list,
+        // Отдаём view, а не само множество зоны: мутация снаружи меняла бы
+        // теги всех последующих логов этой зоны. Симметрично
+        // [zonedTraceIds].
+        final Set<String> set => UnmodifiableSetView(set),
         _ => const <String>{},
       };
 }
