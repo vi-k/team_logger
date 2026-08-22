@@ -15,6 +15,13 @@ environment:
 
 dependencies:
   ansi_escape_codes: ^4.0.1
+  # Grapheme clusters for the display-width model: a terminal column is not
+  # a UTF-16 code unit, and splitting text anywhere but a cluster boundary
+  # breaks combining sequences and ZWJ emoji. Not ^1.4.0: Flutter 3.27 — the
+  # line carrying the Dart 3.6 floor above — pins characters 1.3.0, and a
+  # floor above that pin is a version-solving failure there. That is the
+  # exact trap `format` ^1.6.0 fell into before 0.7.0 dropped it.
+  characters: ^1.3.0
   # clock, meta and stack_trace come out of the Flutter SDK, which pins them
   # to an *exact* version, so a floor above that pin is a version-solving
   # failure on that Flutter — not a newer resolve. Flutter 3.27, the line

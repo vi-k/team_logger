@@ -220,6 +220,13 @@ different log elements:
 The `maxLength` parameter limits the width of the log message. If the log
 message exceeds the `maxLength`, it will be wrapped to the next line.
 
+Width is counted in **terminal columns**, not in characters or UTF-16 code
+units: `世` and most emoji take two columns, `e` followed by a combining
+accent takes one, and text is never cut inside a grapheme cluster. A cluster
+that does not fit the room left moves to the next line whole, so a row may
+end up one column short of `maxLength` rather than splitting a glyph in
+half.
+
 `LogMessage` takes up all the remaining space in the line. If you need to place
 something to the right of `LogMessage`, use the `tail` parameter (as is done
 for `LogTags`).

@@ -6,6 +6,12 @@ import 'log_divider.dart';
 /// [tail] is right-aligned (typically tags). [maxLength] limits the width
 /// (long content wraps or truncates), [maxLines] limits the height,
 /// [when] makes the row conditional.
+///
+/// [maxLength] counts **terminal columns**, not characters: a CJK ideograph
+/// or an emoji takes two, a combining sequence takes one however many code
+/// points it is made of, and a row is never cut inside a grapheme cluster.
+/// A cluster too wide for the room left is moved to the next line whole, so
+/// a row can come out a column short of [maxLength].
 final class LogRow {
   final int? maxLength;
   final int? maxLines;

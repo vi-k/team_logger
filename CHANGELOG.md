@@ -1,5 +1,18 @@
 ## 0.7.0
 
+- [breaking changes] Console layout measures terminal columns instead of
+  UTF-16 code units. `LogRow.maxLength`, wrapping, truncation, padding and
+  tail alignment used to count code units, so a row of CJK ran to about twice
+  the declared width, a combining sequence was charged for two columns and
+  drew one, and an emoji could be cut in half. Text is now walked in grapheme
+  clusters and each cluster is charged what a terminal draws it as — two
+  columns for East Asian Wide and Fullwidth, zero for a stray combining mark,
+  one otherwise. Nothing is ever cut inside a cluster, so a row can come out
+  one column short of `maxLength` rather than splitting a glyph; ASCII output
+  is unchanged to the byte. This adds `characters` ^1.3.0 as the first new
+  runtime dependency since 0.6.0 — the constraint stays on 1.3.x because
+  Flutter 3.27 pins that version.
+
 - A root replacement from `Loggable.sanitizer` is now rendered with the
   formatting config of `Loggable.builder()` and `Loggable.mapBuilder()` too,
   not only of `LoggableMultiData`. The README promised the container's

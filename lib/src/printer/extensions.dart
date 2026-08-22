@@ -3,8 +3,9 @@ import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
 import 'constraints.dart';
+import 'display_width.dart';
 import 'log_text_align.dart';
-import 'surrogates.dart';
+import 'measured_line.dart';
 
 extension AnsiStringExtensions on String {
   String applyConstraints(
@@ -14,7 +15,7 @@ extension AnsiStringExtensions on String {
     LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,
   }) =>
-      ansi.Parser(this).applyConstraints(
+      MeasuredLine(this).applyConstraints(
         log,
         theme,
         constraints,
@@ -23,7 +24,13 @@ extension AnsiStringExtensions on String {
       );
 }
 
-extension AnsiParserExtensions on ansi.Parser {
+extension MeasuredLineExtensions on MeasuredLine {
+  /// Brings the line to the width [constraints] allow, padding or cutting it.
+  ///
+  /// Everything here counts in terminal columns. A cut lands on a cluster
+  /// boundary, so it can come out a column short of the target — a
+  /// two-column glyph does not go into one column — and the shortfall is
+  /// padded like any other, which keeps the box rectangular.
   String applyConstraints(
     Log log,
     LogTheme theme,
@@ -31,60 +38,78 @@ extension AnsiParserExtensions on ansi.Parser {
     LogTextAlign textAlign = LogTextAlign.left,
     bool showEllipsis = true,
   }) {
-    var newLength = length;
+    final columns = width;
+    final newColumns = constraints.apply(columns);
 
-    newLength = constraints.apply(newLength);
-    if (newLength == length) {
+    if (newColumns == columns) {
       return input;
     }
 
-    if (newLength > length) {
-      switch (textAlign) {
-        case LogTextAlign.left:
-          return '$input${theme.styledPadding(newLength - length)}';
-
-        case LogTextAlign.right:
-          return '${theme.styledPadding(newLength - length)}$input';
-
-        case LogTextAlign.center:
-          final needToAdd = newLength - length;
-          final left = needToAdd ~/ 2;
-          final right = needToAdd - left;
-          return '${theme.styledPadding(left)}'
-              '$input'
-              '${theme.styledPadding(right)}';
-      }
+    if (newColumns > columns) {
+      return _align(theme, input, newColumns - columns, textAlign);
     }
 
-    if (newLength == 0) {
+    if (newColumns <= 0) {
       return '';
     }
 
-    return showEllipsis
-        ? terminatedSubstring(
+    final cut = showEllipsis
+        ? terminatedSlice(
             theme.main.ellipsis,
             theme.data.ellipsisStyle,
             0,
-            maxLength: newLength,
+            maxColumns: newColumns,
           )
-        : fixDanglingSurrogates(substring(0, maxLength: newLength));
+        : slice(0, newColumns);
+
+    return _align(theme, cut.text, newColumns - cut.columns, textAlign);
   }
 
-  String terminatedSubstring(
+  String _align(
+    LogTheme theme,
+    String text,
+    int missing,
+    LogTextAlign textAlign,
+  ) {
+    if (missing <= 0) return text;
+
+    switch (textAlign) {
+      case LogTextAlign.left:
+        return '$text${theme.styledPadding(missing)}';
+
+      case LogTextAlign.right:
+        return '${theme.styledPadding(missing)}$text';
+
+      case LogTextAlign.center:
+        final left = missing ~/ 2;
+
+        return '${theme.styledPadding(left)}'
+            '$text'
+            '${theme.styledPadding(missing - left)}';
+    }
+  }
+
+  /// At most [maxColumns] columns from [start], ending in [terminator] when
+  /// there was more line than room for it.
+  ({String text, int columns}) terminatedSlice(
     String terminator,
     ansi.Style terminatorStyle,
     int start, {
-    required int maxLength,
+    required int maxColumns,
   }) {
+    final terminatorColumns = displayWidth(terminator);
+
     if (terminator.isEmpty ||
-        maxLength < terminator.length ||
-        length - start <= maxLength) {
-      return fixDanglingSurrogates(substring(start, maxLength: maxLength));
+        maxColumns < terminatorColumns ||
+        columnsFrom(start) <= maxColumns) {
+      return slice(start, maxColumns);
     }
 
-    return '${fixDanglingSurrogates(
-      substring(start, maxLength: maxLength - terminator.length),
-    )}'
-        '${terminatorStyle(terminator)}';
+    final head = slice(start, maxColumns - terminatorColumns);
+
+    return (
+      text: '${head.text}${terminatorStyle(terminator)}',
+      columns: head.columns + terminatorColumns,
+    );
   }
 }

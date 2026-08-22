@@ -1,16 +1,15 @@
 import 'dart:math' as math;
 
-import 'package:ansi_escape_codes/style.dart' as ansi;
-
 import '../loggable/loggable.dart';
 import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
 import 'constraints.dart';
+import 'display_width.dart';
 import 'extensions.dart';
 import 'log_row.dart';
 import 'log_text_align.dart';
 import 'log_vertical_align.dart';
-import 'surrogates.dart';
+import 'measured_line.dart';
 
 abstract interface class LogBlock {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength);
@@ -36,17 +35,17 @@ final class LogBox with Loggable {
   }) {
     assert(lines.isNotEmpty, 'lines must not be empty');
 
-    final parsers = lines.map(ansi.Parser.new).toList(growable: false);
-    var width = parsers.fold(0, (w, parser) => math.max(w, parser.length));
+    final measured = lines.map(MeasuredLine.new).toList(growable: false);
+    var width = measured.fold(0, (w, line) => math.max(w, line.width));
     width = constraints.apply(width);
 
     if (width <= 0) {
       return LogBox.empty();
     }
 
-    final boxLines = parsers
+    final boxLines = measured
         .map(
-          (parser) => parser.applyConstraints(
+          (line) => line.applyConstraints(
             log,
             theme,
             LogConstraints.exact(width),
@@ -58,8 +57,7 @@ final class LogBox with Loggable {
 
     String? boxVerticalFiller;
     if (verticalFiller != null) {
-      final parser = ansi.Parser(verticalFiller);
-      boxVerticalFiller = parser.applyConstraints(
+      boxVerticalFiller = MeasuredLine(verticalFiller).applyConstraints(
         log,
         theme,
         LogConstraints.exact(width),
@@ -105,8 +103,8 @@ final class LogBox with Loggable {
     String? debugName,
   }) {
     final lines = text.split('\n');
-    final parsers = lines.map(ansi.Parser.new).toList(growable: false);
-    var boxWidth = parsers.fold(0, (w, parser) => math.max(w, parser.length));
+    final measured = lines.map(MeasuredLine.new).toList(growable: false);
+    var boxWidth = measured.fold(0, (w, line) => math.max(w, line.width));
     boxWidth = constraints.apply(boxWidth);
 
     if (boxWidth == 0) {
@@ -115,8 +113,8 @@ final class LogBox with Loggable {
 
     // Место под символ переноса нужно только строкам, которые реально
     // переносятся, — иначе односимвольное сообщение выродилось бы в пробел.
-    final needsWrap = parsers.any((parser) => parser.length > boxWidth);
-    final textWidth = boxWidth - theme.main.lineBreak.length;
+    final needsWrap = measured.any((line) => line.width > boxWidth);
+    final textWidth = boxWidth - displayWidth(theme.main.lineBreak);
     if (needsWrap && textWidth <= 0) {
       return LogBox.raw(
         boxWidth,
@@ -125,11 +123,12 @@ final class LogBox with Loggable {
       );
     }
 
+    final lineBreakColumns = displayWidth(theme.main.lineBreak);
     final boxLines = <String>[];
-    for (final parser in parsers) {
-      if (parser.length <= boxWidth) {
+    for (final line in measured) {
+      if (line.width <= boxWidth) {
         boxLines.add(
-          parser.applyConstraints(
+          line.applyConstraints(
             log,
             theme,
             LogConstraints.exact(boxWidth),
@@ -139,38 +138,46 @@ final class LogBox with Loggable {
         continue;
       }
 
+      // Позиция идёт в code units — в них же режет парсер, — а бюджет
+      // строки в колонках. Перевод между ними делает MeasuredLine, и
+      // граница среза всегда падает на границу кластера.
       var start = 0;
-      final end = parser.length;
+      final end = line.codeUnits;
       while (start < end) {
-        final remaining = end - start;
-        if (remaining <= textWidth) {
+        if (line.columnsFrom(start) <= textWidth) {
+          final rest = line.rest(start);
           boxLines.add(
-            '${fixDanglingSurrogates(parser.substring(start)).applyConstraints(
+            '${rest.text.applyConstraints(
               log,
               theme,
               LogConstraints.exact(textWidth),
               textAlign: textAlign,
-            )}${' ' * theme.main.lineBreak.length}',
+            )}${' ' * lineBreakColumns}',
           );
           start = end;
         } else if (maxLines == null || maxLines > boxLines.length + 1) {
+          // atLeastOne: символ шире всего бюджета иначе остановил бы цикл
+          // навсегда. Он уходит целиком и вылезает на колонку — половина
+          // широкого глифа не глиф.
+          final head = line.slice(start, textWidth, atLeastOne: true);
           boxLines.add(
-            '${fixDanglingSurrogates(parser.substring(start, maxLength: textWidth))}'
+            '${head.text}'
+            '${theme.styledPadding(textWidth - head.columns)}'
             '${theme.styledLineBreak}',
           );
-          start += textWidth;
+          start += line.index.codeUnitsForColumnsAtLeastOne(start, textWidth);
         } else {
           // Последняя (обрезанная) строка не содержит символа переноса и
           // занимает полную ширину бокса — иначе была бы на колонку уже.
-          boxLines.add(
-            parser.terminatedSubstring(
-              theme.main.ellipsis,
-              theme.data.ellipsisStyle,
-              start,
-              maxLength: boxWidth,
-            ),
+          final tail = line.terminatedSlice(
+            theme.main.ellipsis,
+            theme.data.ellipsisStyle,
+            start,
+            maxColumns: boxWidth,
           );
-          start += boxWidth;
+          boxLines.add(
+            '${tail.text}${theme.styledPadding(boxWidth - tail.columns)}',
+          );
           break;
         }
       }
@@ -178,8 +185,7 @@ final class LogBox with Loggable {
 
     String? boxVerticalFiller;
     if (verticalFiller != null) {
-      final parser = ansi.Parser(verticalFiller);
-      boxVerticalFiller = parser.applyConstraints(
+      boxVerticalFiller = MeasuredLine(verticalFiller).applyConstraints(
         log,
         theme,
         LogConstraints.exact(boxWidth),
