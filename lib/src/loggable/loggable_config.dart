@@ -25,6 +25,12 @@ import 'loggable_json_config.dart';
 /// [collectionShowIndexes] - показывать ли индексы элементов в виде `₀:`,
 /// `₁:` и т.д. Если равно null, решают слои цепочки; по умолчанию `true`.
 ///
+/// [escapeAnsiCodes] - безопасный вывод: управляющая последовательность в
+/// тексте показывается (`[CSI 2 ED]forged`), а не отправляется в терминал.
+/// Включено по умолчанию. Выключать стоит там, где значение стилизовано
+/// осознанно; для недоверенного ввода — наоборот, включать через
+/// [Loggable.forceConfig], чтобы место вызова не могло снять.
+///
 /// [units] - единицы измерения, будут добавлены к представлению объекта
 /// в виде суффикса. Если равно null, единицы не добавляются.
 ///
@@ -78,6 +84,7 @@ final class LoggableConfig with Loggable {
   final String? doubleFormat;
   final String? intFormat;
   final bool? stringInQuotes;
+  final bool? escapeAnsiCodes;
 
   const LoggableConfig({
     this.enumDotShorthand,
@@ -89,6 +96,7 @@ final class LoggableConfig with Loggable {
     this.doubleFormat,
     this.intFormat,
     this.stringInQuotes,
+    this.escapeAnsiCodes,
   });
 
   /// Дефолты пакета — нижний пол цепочки, ниже [Loggable.defaultConfig].
@@ -101,6 +109,20 @@ final class LoggableConfig with Loggable {
   static const bool defaultCollectionShowCount = true;
   static const bool defaultCollectionShowIndexes = true;
   static const bool defaultStringInQuotes = true;
+
+  /// Безопасный вывод включён по умолчанию: недоверенный текст попадает в
+  /// логи не по злому умыслу, а потому что так устроены логи.
+  static const bool defaultEscapeAnsiCodes = true;
+
+  /// Значение [escapeAnsiCodes] там, где локального конфига нет вовсе.
+  ///
+  /// Сообщение лога, текст ошибки и `units` конфига не имеют: `config:` с
+  /// места вызова оборачивает только `data`. Для них цепочка состоит из
+  /// слоёв приложения, и это правильный набор — сообщение ровно то место,
+  /// где нужна политика, а не вкус вызывающего.
+  @internal
+  static bool get appEscapeAnsiCodes =>
+      const LoggableConfig().resolvedEscapeAnsiCodes;
 
   /// Значения с наложенной цепочкой `default ← этот конфиг ← force`.
   ///
@@ -135,6 +157,13 @@ final class LoggableConfig with Loggable {
       stringInQuotes ??
       Loggable.defaultConfig.stringInQuotes ??
       defaultStringInQuotes;
+
+  @internal
+  bool get resolvedEscapeAnsiCodes =>
+      Loggable.forceConfig.escapeAnsiCodes ??
+      escapeAnsiCodes ??
+      Loggable.defaultConfig.escapeAnsiCodes ??
+      defaultEscapeAnsiCodes;
 
   @internal
   int? get resolvedCollectionMaxCount =>
@@ -179,6 +208,7 @@ final class LoggableConfig with Loggable {
         doubleFormat: doubleFormat ?? other.doubleFormat,
         intFormat: intFormat ?? other.intFormat,
         stringInQuotes: stringInQuotes ?? other.stringInQuotes,
+        escapeAnsiCodes: escapeAnsiCodes ?? other.escapeAnsiCodes,
       );
 
   /// Копия конфигурации без [units].
@@ -196,6 +226,7 @@ final class LoggableConfig with Loggable {
         doubleFormat: doubleFormat,
         intFormat: intFormat,
         stringInQuotes: stringInQuotes,
+        escapeAnsiCodes: escapeAnsiCodes,
       );
 
   /// Конфиг со всеми слоями цепочки, разрешёнными до конца.
@@ -209,6 +240,7 @@ final class LoggableConfig with Loggable {
         doubleFormat: resolvedDoubleFormat,
         intFormat: resolvedIntFormat,
         stringInQuotes: resolvedStringInQuotes,
+        escapeAnsiCodes: resolvedEscapeAnsiCodes,
       );
 
   LoggableJsonConfig mergeWithJsonConfig(LoggableJsonConfig config) =>
@@ -228,7 +260,8 @@ final class LoggableConfig with Loggable {
       ..prop('units', units)
       ..prop('doubleFormat', doubleFormat)
       ..prop('intFormat', intFormat)
-      ..prop('stringInQuotes', stringInQuotes);
+      ..prop('stringInQuotes', stringInQuotes)
+      ..prop('escapeAnsiCodes', escapeAnsiCodes);
   }
 }
 
@@ -243,6 +276,7 @@ final class LoggableEffectiveConfig extends LoggableConfig with Loggable {
     required super.doubleFormat,
     required super.intFormat,
     required bool super.stringInQuotes,
+    required bool super.escapeAnsiCodes,
   });
 
   @override
@@ -256,4 +290,7 @@ final class LoggableEffectiveConfig extends LoggableConfig with Loggable {
 
   @override
   bool get stringInQuotes => super.stringInQuotes!;
+
+  @override
+  bool get escapeAnsiCodes => super.escapeAnsiCodes!;
 }

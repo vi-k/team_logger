@@ -1,4 +1,5 @@
 import '../loggable/loggable.dart';
+import '../loggable/loggable_config.dart';
 import '../loggable/loggable_multi_data.dart';
 import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
@@ -34,7 +35,13 @@ final class LogMessage implements LogBlock {
   LogBox call(Log log, LogTheme theme, LogRow row, int? remainingLength) {
     final messageStr = switch (log.message) {
       '' => '',
-      final message => theme.formatMessage(theme.formatValue(message)),
+      final message => theme.formatMessage(
+          theme.formatValue(
+            message,
+            escapeAnsiCodes: LoggableConfig.appEscapeAnsiCodes,
+          ),
+          escapeAnsiCodes: false,
+        ),
     };
 
     var dataStr = '';
@@ -115,8 +122,15 @@ final class LogMessage implements LogBlock {
       // suppressed, so a `depth == 0` rule can neither erase it —
       // leaving a dangling colon — nor rewrite it.
       final errorText = Loggable.renderOutsideSanitizerScope(error.toString);
-      errorStr = errorTheme.data
-          .normal(theme.formatMessage(theme.formatValue(errorText)));
+      errorStr = errorTheme.data.normal(
+        theme.formatMessage(
+          theme.formatValue(
+            errorText,
+            escapeAnsiCodes: LoggableConfig.appEscapeAnsiCodes,
+          ),
+          escapeAnsiCodes: false,
+        ),
+      );
       if (messageStr.isNotEmpty || log.hasData) {
         final colon = errorTheme.styledColon;
         final newLine =

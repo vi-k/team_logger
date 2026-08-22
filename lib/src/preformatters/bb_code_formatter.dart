@@ -8,9 +8,9 @@ import 'log_pre_formatter.dart';
 /// Properly nested tags, including identical tags, are supported. Unknown,
 /// unclosed, and mismatched tag tokens are left as-is.
 ///
-/// ESC is not escaped here either: a control sequence already present in
-/// the message text reaches the terminal as-is. See `ControlCodeFormatter`
-/// and "Untrusted Text and Terminal Output" in the README.
+/// ESC is not escaped here: by the time this runs the safe mode has taken
+/// the control sequences out of the text (`LoggableConfig.escapeAnsiCodes`,
+/// on by default). See "Untrusted Text and Terminal Output" in the README.
 final class BbCodeFormatter with Loggable implements LogPreFormatter {
   const BbCodeFormatter();
 

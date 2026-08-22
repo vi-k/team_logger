@@ -71,7 +71,13 @@ final class FileLogCodec {
       if (log.path.isNotEmpty) 'path': log.path,
       if (log.traceIds.isNotEmpty)
         'traceIds': [for (final id in log.traceIds) id.toString()],
-      'message': levelTheme.formatMessage(levelTheme.formatValue(log.message)),
+      'message': levelTheme.formatMessage(
+        levelTheme.formatValue(
+          log.message,
+          escapeAnsiCodes: LoggableConfig.appEscapeAnsiCodes,
+        ),
+        escapeAnsiCodes: false,
+      ),
       if (log.tags.isNotEmpty) 'tags': [...log.tags],
       if (hasData) 'data': data,
       // The error and the stack trace are outside the sanitizer's

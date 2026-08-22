@@ -858,7 +858,10 @@ abstract mixin class Loggable {
           depth: depth,
           config: config,
         ),
-      _ => theme.formatValue(obj.toString())
+      _ => theme.formatValue(
+          obj.toString(),
+          escapeAnsiCodes: config.resolvedEscapeAnsiCodes,
+        )
     };
   }
 
@@ -1813,7 +1816,10 @@ abstract mixin class Loggable {
     final String key;
     final String? name;
     if (entry.key case final String stringKey) {
-      key = theme.formatValue(stringKey);
+      key = theme.formatValue(
+        stringKey,
+        escapeAnsiCodes: config.resolvedEscapeAnsiCodes,
+      );
       name = stringKey;
     } else {
       final objectKey = entry.key;
@@ -1934,7 +1940,10 @@ abstract mixin class Loggable {
     LogTheme theme = LogTheme.noColors,
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final dotShorthand = '.${theme.formatValue(obj.name)}';
+    final dotShorthand = '.${theme.formatValue(
+      obj.name,
+      escapeAnsiCodes: config.resolvedEscapeAnsiCodes,
+    )}';
     return config.resolvedEnumDotShorthand
         ? dotShorthand
         : '${obj.runtimeType}${theme.data.emphasis(dotShorthand)}';
@@ -2037,25 +2046,39 @@ abstract mixin class Loggable {
     LoggableConfig config = const LoggableConfig(),
   }) {
     final stringInQuotes = config.resolvedStringInQuotes;
+    final escapeAnsiCodes = config.resolvedEscapeAnsiCodes;
 
     return stringInQuotes
         ? '${theme.styledOpeningQuote}'
-            '${theme.formatValue(obj)}'
+            '${theme.formatValue(obj, escapeAnsiCodes: escapeAnsiCodes)}'
             '${theme.styledClosingQuote}'
-        : theme.formatValue(obj);
+        : theme.formatValue(obj, escapeAnsiCodes: escapeAnsiCodes);
   }
 
   static String _dateTimeToString(
     DateTime obj, {
     LogTheme theme = LogTheme.noColors,
   }) =>
-      theme.formatValue(obj.toIso8601String());
+      theme.formatValue(
+        obj.toIso8601String(),
+        // Дата собрана пакетом, недоверенного текста в ней нет; слои
+        // приложения всё равно спрашиваем, чтобы политика была одна.
+        escapeAnsiCodes: LoggableConfig.appEscapeAnsiCodes,
+      );
 
   static String unitsToString(
     String? units,
     LogTheme theme,
   ) =>
-      units == null ? '' : theme.data.unitsStyle(theme.formatValue(units));
+      units == null
+          ? ''
+          : theme.data.unitsStyle(
+              theme.formatValue(
+                units,
+                // Единицы пишет разработчик в конфиге, не внешний ввод.
+                escapeAnsiCodes: LoggableConfig.appEscapeAnsiCodes,
+              ),
+            );
 }
 
 final class LoggableWrapper {
@@ -2142,7 +2165,13 @@ final class _LoggableView implements LoggableView {
   }) =>
       switch (this.value) {
         null => 'null',
-        final value => '$value${Loggable.unitsToString(units, theme)}',
+        // Значение интерполирует пакет, поэтому обезвреживает тоже он:
+        // собранный текст view уже считается отрендеренным, и там режим
+        // выключен (см. `Prop.toLogString`).
+        final value => '${theme.formatValue(
+            '$value',
+            escapeAnsiCodes: LoggableConfig.appEscapeAnsiCodes,
+          )}${Loggable.unitsToString(units, theme)}',
       };
 }
 

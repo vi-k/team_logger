@@ -535,9 +535,15 @@ final class Prop<T extends Object?> {
     LoggableConfig config = const LoggableConfig(),
     Object? sanitized = _notSanitized,
   }) {
-    String name2str() => theme.data.keyStyle(theme.formatValue(name));
-
     final effectiveConfig = this.config.merge(config);
+
+    String name2str() => theme.data.keyStyle(
+          theme.formatValue(
+            name,
+            escapeAnsiCodes: effectiveConfig.resolvedEscapeAnsiCodes,
+          ),
+        );
+
     final effectiveSanitized = _effectiveSanitized(sanitized);
     final depthTheme = theme.depthTheme(depth);
     final prefix =
@@ -586,8 +592,14 @@ final class Prop<T extends Object?> {
     // Форматтер применяется только к тексту view: он произвольный и до
     // сюда ничего не проходил. Ветка objectToString уже отрендерена —
     // повторный проход по ней и был двойным форматированием.
+    //
+    // Безопасный режим здесь выключен намеренно: view — точка расширения
+    // рендеринга, ей передана тема, и `LoggableMultiView`/`unitsToString`
+    // кладут в результат собственные стили пакета. Обезвреживать надо
+    // значение, которое view интерполирует, а не собранный им текст, — это
+    // и делает `_LoggableView`.
     final styledValue = effectiveView != null
-        ? theme.formatValue(effectiveView)
+        ? theme.formatValue(effectiveView, escapeAnsiCodes: false)
         : Loggable._withSegment(
             name,
             () => Loggable.objectToString(

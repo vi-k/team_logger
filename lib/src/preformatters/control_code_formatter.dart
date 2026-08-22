@@ -7,19 +7,16 @@ import 'log_pre_formatter.dart';
 /// Escapes C0 control characters into visible symbols.
 ///
 /// With [excludeEscCode] (the default) ESC is passed through so that ANSI
-/// codes survive the render. That passthrough is not selective: text that
-/// arrived from outside the program carries its own control sequences to
-/// the terminal intact, where they can clear the screen, move the cursor,
-/// overwrite lines already printed, recolor the rest of the output or forge
-/// an OSC 8 hyperlink. The package does not draw that trust boundary — see
-/// "Untrusted Text and Terminal Output" in the README.
+/// codes survive the render. That is safe here because the sequences are
+/// already gone by the time this runs: `LoggableConfig.escapeAnsiCodes`,
+/// on by default, shows them rather than sending them. See "Untrusted Text
+/// and Terminal Output" in the README for where the trust boundary runs.
 ///
-/// `excludeEscCode: false` escapes ESC as well. It is a working strict mode
-/// for the message and for values inside plain containers, but not for
-/// `Loggable`/`LoggableData` properties: `Prop.toLogString` runs the value
-/// formatter a second time over text the theme has already styled, so the
-/// theme's own codes are escaped along with the injected ones and the
-/// property output falls apart.
+/// `excludeEscCode: false` escapes ESC into `\\x1B` text everywhere,
+/// properties included. It is not the way to reach for: `escapeAnsiCodes`
+/// in `LoggableConfig` — on by default — shows the sequence as its parts
+/// instead, is readable, and takes the config layers, so a policy set in
+/// `Loggable.forceConfig` cannot be lifted at a call site.
 final class ControlCodeFormatter with Loggable implements LogPreFormatter {
   final bool excludeEscCode;
 

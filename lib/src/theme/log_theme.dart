@@ -37,9 +37,32 @@ final class LogTheme with Loggable {
           },
       };
 
-  String formatValue(String value) => main.valueFormatter(this, value);
+  /// Прогоняет [value] через value-форматтер темы.
+  ///
+  /// С [escapeAnsiCodes] сырой текст сначала показывается, а не
+  /// отправляется: последовательность печатается частями
+  /// (`[CSI 2 ED]forged`), и `ESC` в результате не остаётся ни одного —
+  /// сформировать управляющую последовательность больше нечем. Форматтер
+  /// темы работает уже по инертному тексту, а стили ложатся поверх.
+  ///
+  /// Порядок именно такой и обратным быть не может: после стилизации
+  /// собственные коды темы от чужих не отличить.
+  String formatValue(String value, {required bool escapeAnsiCodes}) =>
+      main.valueFormatter(this, _safe(value, escapeAnsiCodes));
 
-  String formatMessage(String value) => main.messageFormatter(this, value);
+  /// Прогоняет [value] через message-форматтер темы. См. [formatValue].
+  String formatMessage(String value, {required bool escapeAnsiCodes}) =>
+      main.messageFormatter(this, _safe(value, escapeAnsiCodes));
+
+  /// Текст без управляющих последовательностей, если режим включён.
+  ///
+  /// Проверка на `ESC` — не микрооптимизация: `ansiShowEscapeSequences()`
+  /// каждый раз гоняет regex по всей строке, а подавляющее большинство
+  /// значений в логе никаких кодов не содержит.
+  static String _safe(String value, bool escapeAnsiCodes) =>
+      escapeAnsiCodes && value.contains('\x1B')
+          ? value.ansiShowEscapeSequences()
+          : value;
 
   String formatIndex(int index) => main.indexFormatter(this, index);
 

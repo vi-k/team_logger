@@ -1,5 +1,22 @@
 ## 0.7.0
 
+- [breaking changes] Control sequences in logged text are shown instead of
+  being sent, and the safe mode is on by default
+  (`LoggableConfig.escapeAnsiCodes`). Untrusted text — an HTTP header, an
+  exception message, a filename — used to carry its own ANSI straight to the
+  terminal, where it could clear the screen, overwrite lines already printed
+  or forge an OSC 8 hyperlink. Such a sequence now prints as its parts,
+  `[CSI 2 ED]forged`, with no ESC left in the result: the message, the error
+  text, string values, map keys, property names, enum names and the value
+  handed to a `LoggableView`, in the console and in `FileLogStorage` alike.
+  What a view renders is left alone — it is a rendering extension handed the
+  theme, and its result carries the package's own styling.
+  Ordinary text and the theme's own styling are untouched, and BBCode in a
+  message still compiles. Logging text you styled yourself is an explicit
+  opt-out — `config: LoggableConfig(escapeAnsiCodes: false)` — that a
+  `Loggable.forceConfig` policy can refuse. Rendering a data-heavy log
+  measured about 1.6% slower.
+
 - [breaking changes] Formatting settings resolve through a chain of layers:
   the package default, `Loggable.defaultConfig`, the call site and the
   containers on the way to the value, and `Loggable.forceConfig` on top. The

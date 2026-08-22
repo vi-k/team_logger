@@ -76,8 +76,10 @@ final class LogMainTheme with Loggable {
   /// dates, units — and to the message before [messageFormatter].
   ///
   /// The default [ControlCodeFormatter] makes C0 control characters visible
-  /// but lets ESC through, so untrusted text can inject terminal control
-  /// sequences. See "Untrusted Text and Terminal Output" in the README.
+  /// and lets ESC through, because the safe mode
+  /// (`LoggableConfig.escapeAnsiCodes`, on by default) has already taken
+  /// the sequences out. See "Untrusted Text and Terminal Output" in the
+  /// README.
   final LogPreFormatter valueFormatter;
 
   /// Pre-formatter applied to the log message after [valueFormatter].
