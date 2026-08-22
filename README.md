@@ -57,6 +57,7 @@ formatting, and customizable styling themes.
   - [8. Circular Buffer (`LogStorage`)](#8-circular-buffer-logstorage)
   - [9. Saving Logs to Files (`FileLogStorage`)](#9-saving-logs-to-files-filelogstorage)
   - [10. Redacting Logs (`Logger.transformer` and `Loggable.sanitizer`)](#10-redacting-logs-loggertransformer-and-loggablesanitizer)
+  - [11. Untrusted Text and Terminal Output](#11-untrusted-text-and-terminal-output)
 - [License](#license)
 
 ---
@@ -1718,6 +1719,68 @@ A few things worth knowing before writing a rule:
   limits and lazy iterables are unaffected, and filtered-out logs still
   cost nothing. The raw value still lives in `Log.data` — reach for
   `Logger.transformer` when a value must not exist in memory at all.
+
+### 11. Untrusted Text and Terminal Output
+
+The default console theme is built for styled output, and it pays for that
+with a deliberate hole: the ESC character (`0x1B`) is passed through
+untouched so that BBCode tags, theme colors and any ANSI codes you write
+yourself reach the terminal intact. The passthrough is not selective. It
+applies to text you wrote and to text that arrived from outside your
+program alike.
+
+`ControlCodeFormatter` — the default `LogMainTheme.valueFormatter` — turns
+C0 control characters into visible symbols (`\x07` for BEL, `\r` for CR)
+but keeps ESC, because `excludeEscCode` defaults to `true`.
+`BbCodeFormatter`, the default `messageFormatter`, does not touch ESC
+either. So a control sequence that starts with ESC survives the whole
+render, in the message and in data alike:
+
+```dart
+log.i('\x1B[2Jforged');                        // clears the screen
+log.i('login', data: {'ua': '\x1B[31mred'});   // recolors the rest of the row
+```
+
+A sequence terminated by ST (`ESC \`) survives in full, including OSC 8 —
+which makes the text a clickable hyperlink pointing wherever the author of
+the string chose. One terminated by BEL does not survive whole: BEL is
+escaped, so the sequence is left unterminated instead, which some emulators
+handle worse.
+
+**This is a trust boundary, and the package does not draw it for you.** Log
+a string that came from an HTTP header, an exception message, a filename, a
+query parameter or any other outside source, and that string can clear the
+screen, move the cursor, overwrite log lines already printed, recolor the
+rest of the output, fake the visual structure of a log, and forge a
+hyperlink. None of it is memory-unsafe; all of it makes the log lie about
+what happened.
+
+If your logs carry untrusted text and are read in a terminal, escape that
+text before it reaches the logger. Escaping it inside the theme is possible
+today only in part:
+
+```dart
+LogMainTheme.defaultActiveTheme.copyWith(
+  valueFormatter: const ControlCodeFormatter(excludeEscCode: false),
+);
+```
+
+That strict formatter does what it says for the message and for values
+inside plain containers — `Map`, `List`, a bare `String`. It is **not**
+usable for `Loggable` and `LoggableData` properties: `Prop.toLogString`
+runs the value formatter a second time over a string the theme has already
+styled, so with `excludeEscCode: false` the theme's own color codes are
+escaped into visible litter and the property output falls apart. A safe
+mode that escapes untrusted text without disarming the theme has to move
+the escaping to the leaf, and that is a planned change, not a setting you
+can flip in this version.
+
+Files are a separate case with a better outcome. `FileLogStorage` renders
+the message through the same formatters, so ESC does reach the JSONL line —
+but `jsonEncode` writes it as a `\u001b` escape, so `cat` and `tail` on the
+file itself are safe. The sequence only becomes live again when a reader
+decodes the JSON and prints the message to a terminal. That reader is where
+the escaping belongs.
 
 ---
 

@@ -231,6 +231,15 @@
   `dart create` boilerplate used to be. The 288-line "print everything"
   program that lived there has moved to `tool/` and is not published; the
   per-section code behind the README screenshots stays where it was.
+- Documented the terminal-output trust boundary. The default theme passes the
+  ESC character through so that BBCode tags and theme colors survive, which
+  also lets untrusted text — an HTTP header, an exception message, a filename
+  — carry its own control sequences to the terminal. README gains a section,
+  and `ControlCodeFormatter`, `BbCodeFormatter`, `LogMainTheme.valueFormatter`
+  and `LogMainTheme.messageFormatter` say so in their dartdoc. Behavior is
+  unchanged: escaping untrusted text remains the application's job, and
+  `ControlCodeFormatter(excludeEscCode: false)` covers the message and plain
+  containers but not `Loggable` properties.
 
 ## 0.6.0
 

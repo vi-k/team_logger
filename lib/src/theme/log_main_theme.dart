@@ -74,7 +74,19 @@ final class LogMainTheme with Loggable {
   final bool enumDotShorthand;
   final bool collectionShowCount;
   final bool collectionShowIndexes;
+
+  /// Pre-formatter applied to every rendered value — keys, strings, numbers,
+  /// dates, units — and to the message before [messageFormatter].
+  ///
+  /// The default [ControlCodeFormatter] makes C0 control characters visible
+  /// but lets ESC through, so untrusted text can inject terminal control
+  /// sequences. See "Untrusted Text and Terminal Output" in the README.
   final LogPreFormatter valueFormatter;
+
+  /// Pre-formatter applied to the log message after [valueFormatter].
+  ///
+  /// The default [BbCodeFormatter] compiles BBCode tags into ANSI codes and
+  /// leaves ESC untouched.
   final LogPreFormatter messageFormatter;
   final LogThemeFormatter<int> countFormatter;
   final LogThemeFormatter<int> indexFormatter;
