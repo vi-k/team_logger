@@ -5,6 +5,13 @@ part of 'loggable.dart';
 final class LoggableData {
   static const _computed = _ComputedProp();
 
+  /// Собственный config контейнера или `null`, если своего у него нет.
+  ///
+  /// Нужен корневой sanitizer-замене: она встаёт на место контейнера и
+  /// печатается его настройками (см. `Loggable._containerConfig`). Сам
+  /// [LoggableData] своего config не имеет — его задают билдеры.
+  LoggableConfig? get _ownConfig => null;
+
   /// Тип класса.
   ///
   /// Не используем [runtimeType], т.к.:
@@ -620,6 +627,9 @@ final class TypeProp extends Prop<Type> {
 final class _LoggableBuilder extends LoggableData {
   final LoggableConfig config;
 
+  @override
+  LoggableConfig? get _ownConfig => config;
+
   _LoggableBuilder(
     Object? obj, {
     required String? name,
@@ -658,6 +668,9 @@ final class _LoggableBuilder extends LoggableData {
 
 final class _LoggableMapBuilder extends LoggableData {
   final LoggableConfig config;
+
+  @override
+  LoggableConfig? get _ownConfig => config;
 
   _LoggableMapBuilder({this.config = const LoggableConfig()})
       : super._(TypeProp._(Map<String, Object?>, showName: false));

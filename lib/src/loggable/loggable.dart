@@ -324,18 +324,32 @@ abstract mixin class Loggable {
   /// (`collectionMaxCount`, `stringInQuotes`, форматы чисел) — они
   /// наследуются.
   static LoggableConfig _rootConfig(Object? obj, LoggableConfig config) =>
-      (obj is LoggableMultiData ? obj.config.merge(config) : config)
-          .withoutUnits();
+      (_containerConfig(obj)?.merge(config) ?? config).withoutUnits();
 
   /// То же, что [_rootConfig], но для JSON-вывода.
   static LoggableJsonConfig _rootJsonConfig(
     Object? obj,
     LoggableJsonConfig config,
   ) =>
-      (obj is LoggableMultiData
-              ? obj.config.mergeWithJsonConfig(config)
-              : config)
+      (_containerConfig(obj)?.mergeWithJsonConfig(config) ?? config)
           .copyWith(units: null);
+
+  /// Собственный config контейнера, стоящего в корне, или `null`.
+  ///
+  /// Единая точка для [_rootConfig] и [_rootJsonConfig]: контейнеров с
+  /// собственным config несколько, и раньше общий код видел только
+  /// [LoggableMultiData]. У билдеров config лежит в приватном поле
+  /// подкласса, поэтому спрашиваем его через [LoggableData._ownConfig].
+  ///
+  /// `LoggableWrapper` сюда не попадает намеренно: он разворачивает себя
+  /// до обхода (`toString`/`toJson` зовут `objectToString`/`objectToJson`
+  /// на своих данных со своим config), поэтому правилу предлагается уже
+  /// содержимое, а не обёртка.
+  static LoggableConfig? _containerConfig(Object? obj) => switch (obj) {
+        LoggableMultiData() => obj.config,
+        LoggableData() => obj._ownConfig,
+        _ => null,
+      };
 
   /// Рендерит КОРНЕВОЕ значение и сообщает, отбросило ли его правило.
   ///

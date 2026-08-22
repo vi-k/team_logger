@@ -1,5 +1,14 @@
 ## 0.7.0
 
+- A root replacement from `Loggable.sanitizer` is now rendered with the
+  formatting config of `Loggable.builder()` and `Loggable.mapBuilder()` too,
+  not only of `LoggableMultiData`. The README promised the container's
+  formatting for a replacement; a builder's own `collectionMaxCount`,
+  `stringInQuotes` and number formats were being dropped on the redaction
+  path, so a masked root could print longer than the container it replaced —
+  in the string output and in `objectToJson()` alike. `units` are still
+  removed, as before.
+
 - [breaking changes] `Logger.zonedTags()` now returns an unmodifiable view of
   the zone's tags, the way `Logger.zonedTraceIds()` already did. Adding to or
   removing from the returned set throws `UnsupportedError` instead of silently

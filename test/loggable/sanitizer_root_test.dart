@@ -105,6 +105,74 @@ void main() {
     });
   });
 
+  group('sanitizer root — a replacement inherits the container config', () {
+    tearDown(() => Loggable.sanitizer = null);
+
+    // Замена встаёт на место контейнера, поэтому печатается его настройками.
+    // `units` при этом снимаются, остальное — способ печати — наследуется.
+    // Раньше это умели только `LoggableMultiData` и `LoggableWrapper`:
+    // билдеры держат свой config приватным полем, и общий код его не видел.
+    const config = LoggableConfig(collectionMaxCount: 1, units: 'kg');
+
+    setUp(() {
+      Loggable.sanitizer = (ctx) => ctx.depth == 0 ? [1, 2, 3] : ctx.value;
+    });
+
+    test('builder applies collectionMaxCount to a root replacement', () {
+      final data = Loggable.builder(Object(), config: config)
+        ..prop('s', 'topsecret');
+
+      expect(Loggable.objectToString(data), '[₌₃ ₀:1, …]');
+      expect(Loggable.objectToJson(data), {
+        ':k': 'list',
+        ':l': 3,
+        ':v': [1],
+      });
+    });
+
+    test('mapBuilder applies collectionMaxCount to a root replacement', () {
+      final data = Loggable.mapBuilder(config: config)..prop('s', 'topsecret');
+
+      expect(Loggable.objectToString(data), '[₌₃ ₀:1, …]');
+      expect(Loggable.objectToJson(data), {
+        ':k': 'list',
+        ':l': 3,
+        ':v': [1],
+      });
+    });
+
+    test('multi-data does the same in JSON, not only in the string', () {
+      final data = LoggableMultiData({'s': 'topsecret'}, config: config);
+
+      expect(Loggable.objectToString(data), '[₌₃ ₀:1, …]');
+      expect(Loggable.objectToJson(data), {
+        ':k': 'list',
+        ':l': 3,
+        ':v': [1],
+      });
+    });
+
+    test('a wrapper keeps doing it by unwrapping before the root offer', () {
+      final data = LoggableWrapper('topsecret', config: config);
+
+      expect(Loggable.objectToString(data), '[₌₃ ₀:1, …]');
+      expect(Loggable.objectToJson(data), {
+        ':k': 'list',
+        ':l': 3,
+        ':v': [1],
+      });
+    });
+
+    test('a builder without its own config still takes the outer one', () {
+      final data = Loggable.builder(Object())..prop('s', 'topsecret');
+
+      expect(
+        Loggable.objectToString(data, config: config),
+        '[₌₃ ₀:1, …]',
+      );
+    });
+  });
+
   group('sanitizer root — an empty rendering is not a drop', () {
     tearDown(() => Loggable.sanitizer = null);
 
