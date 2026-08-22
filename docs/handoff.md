@@ -192,7 +192,7 @@ cd example && dart pub get && dart analyze && dart run example.dart
 - `dart analyze` — чисто в корне и в `example/`.
 - `dart format` — чисто.
 - Финальный чистый `dart pub publish --dry-run` — **0 предупреждений**,
-  архив 170 КБ.
+  архив 179 КБ.
 - `scripts/screenshots.sh --check` — код 0: 41 кадр, ни одного `skip:`,
   сирот нет; повторная пересборка не меняет ни одного файла.
 - На настоящем Dart 3.6 (SDK внутри fvm-сборки Flutter 3.27) — `analyze`
@@ -207,8 +207,8 @@ cd example && dart pub get && dart analyze && dart run example.dart
   `example/bin/file_storage_example.dart`, восемь
   `example/bin/readme_examples/*.dart`, `tool/playground.dart` из корня.
 - `dart compile exe example.dart` и `dart compile js example.dart` — успешно.
-- `dart doc --validate-links` — 0 ошибок, одно предупреждение о
-  `[a, b, c, d]` в dartdoc; записано находкой №16 ревью.
+- `dart doc --validate-links` — **0 предупреждений и 0 ошибок** (прежнее
+  предупреждение о `[a, b, c, d]` снято находкой №16).
 
 ## Матрица Flutter (переснята 2026-08-22)
 
