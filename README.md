@@ -450,6 +450,29 @@ right-aligned `tail` in place. Sent somewhere that keeps the text rather
 than paints it, a file or a log aggregator, those spaces come along.
 `LogRow.singleLine` has no width to pad to and does not pad.
 
+**The width is yours to choose, and the package never reads the terminal's.**
+Partly because it cannot — this library carries no `dart:io`, and the sink
+behind `output` need not be a terminal at all — but mostly because a log is
+appended, never redrawn. A line printed 120 columns wide stays 120 columns
+wide in the scrollback; narrowing the window reflows nothing already there.
+A printer that followed the window would only put two grids in one log, and
+a grid that changes halfway down is worse than one that is merely too wide.
+That is a terminal UI's problem to solve, and a terminal UI can, because it
+owns the screen and redraws it.
+
+Read the width once at startup if you want it, with a fallback for when
+there is no terminal — `stdout.terminalColumns` throws in a pipe:
+
+```dart
+import 'dart:io';
+
+final width = stdout.hasTerminal ? stdout.terminalColumns : 120;
+```
+
+And if you do want to follow a resize, drive it yourself: build a new printer
+and assign it. `log.publisher = ConsoleLogPrinter(/* ... */)` takes effect
+from the next log, and the sequence numbering carries on across the swap.
+
 #### Where the Output Goes
 
 `ConsoleLogPrinter` writes through its `output` parameter, which defaults to
