@@ -12,6 +12,12 @@ large teams, complex applications, and high-volume logs in Dart & Flutter.
 trace propagation, custom object formatting (`Loggable`), inline BBCode
 formatting, and customizable styling themes.
 
+It is built on [`logger_builder`](https://pub.dev/packages/logger_builder)
+and re-exports it whole, so the parts that are not about console output —
+`MultiPublisher`, `TransformPublisher`, `AsyncPublisher`, `Lazy`, the level
+constants — come from there and need no separate import. Where they appear
+below, that is where they are from.
+
 ---
 
 ## Features
@@ -67,6 +73,32 @@ formatting, and customizable styling themes.
 ---
 
 ## Quick Start
+
+Two gates gate every log, and both are shut by default: a logger's `level`
+starts at `LogLevels.off`, and until a publisher is attached a log has
+nowhere to go. A `Logger` you merely constructed prints nothing and does not
+complain about it:
+
+```dart
+Logger('app').i('nothing happens'); // no output, no warning
+```
+
+The smallest thing that prints:
+
+```dart
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    rows: const [LogRow.singleLine(children: [LogMessage()])],
+  );
+
+log.i('hello');
+// hello
+```
+
+`LogRow` requires a `maxLength` — the width it wraps at. `LogRow.singleLine`
+is the variant without one: no width limit, no wrapping, one line per log.
+Everything else on this page adds to those five lines.
 
 The following example configures theme, builds a custom console row layout,
 creates child loggers, and executes code in a trace zone.
@@ -397,6 +429,13 @@ final log = Logger('app')
 ```
 
 ![LogConstraints](screenshots/layout_6.png)
+
+**A row is padded out to its `maxLength`.** A line shorter than the row
+carries trailing spaces up to that width. On a console that is the point —
+it is what lets a background color cover the whole row and what holds the
+right-aligned `tail` in place. Sent somewhere that keeps the text rather
+than paints it, a file or a log aggregator, those spaces come along.
+`LogRow.singleLine` has no width to pad to and does not pad.
 
 #### Where the Output Goes
 
