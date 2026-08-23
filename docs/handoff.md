@@ -106,9 +106,10 @@ cd example && dart pub get && dart analyze && dart run example.dart
 
 - **нет пути «просто запустить»**: `Logger('app').i('x')` молчит (уровень
   `off` + publisher не задан), а минимальный конфиг в README не показан;
-- **реэкспорт `logger_builder` не попадает в `dart doc`**: `MultiPublisher`
-  и `TransformPublisher` используются в примерах README и отсутствуют в
-  справочнике; само имя `logger_builder` в README не встречается;
+- ~~реэкспорт `logger_builder` не попадает в `dart doc`~~ — **снято**,
+  находка была неверна: на pub.dev классы документированы, локальный
+  `dart doc` их не разрешает. Осталось лишь то, что имя `logger_builder` в
+  README не названо ни разу;
 - **нет раздела «свой publisher»**, хотя `CustomLogPublisher` назван швом
   для всего остального;
 - **нет ничего про релизные сборки** и цену выключенного лога.

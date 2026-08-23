@@ -36,13 +36,19 @@
    `ConsoleLogPrinter(rows: const [LogRow.singleLine(children: [LogMessage()])])`
    — в README не встречается: Quick Start сразу даёт ~25 строк layout'а.
 
-2. **Реэкспорт `logger_builder` не попадает в API-справочник.** `dart doc`:
-   `MultiPublisher`, `TransformPublisher`, `AsyncPublisher`,
-   `CustomLogPublisher`, `Lazy`, `Levels` отсутствуют и в `index.json`, и на
-   странице библиотеки (проверено: `grep -c MultiPublisher index.json` → 0).
-   При этом `MultiPublisher` и `TransformPublisher` используются в примерах
-   README (§8, §10), а само имя `logger_builder` в README не встречается ни
-   разу. Пользователь читает рабочий пример и не находит класс в справочнике.
+2. **~~Реэкспорт `logger_builder` не попадает в API-справочник~~ — снято
+   2026-08-23, находка была неверна.** Проверялась на локальном `dart doc`,
+   где `MultiPublisher` и соседи действительно отсутствуют. На pub.dev они
+   документированы полноценно: у `MultiPublisher` своя страница
+   `team_logger/MultiPublisher-class.html` с параметрами типа и описанием,
+   класс стоит в списке классов библиотеки `team_logger`. Локальный
+   `dart doc` не разрешает элементы зависимости так, как dartdoc на pub.dev,
+   и выводить из него состояние справочника нельзя.
+
+   Остаётся только та часть, что перечислена ниже в «непонятно»: имя
+   `logger_builder` в README не встречается ни разу, поэтому не объяснено,
+   откуда берутся `MultiPublisher` и `TransformPublisher` из примеров §8 и
+   §10. Найти их пользователь может — понять, что это чужой пакет, нет.
 
 3. **`CustomLogPublisher` назван «the seam for anything else»
    (README:427) — и всё.** Ни раздела «свой publisher», ни примера отправки
@@ -84,6 +90,10 @@
 - 0.7.0, три `[breaking changes]` в одном релизе, плана до 1.0 нет.
 
 ## Проверенные не-находки
+
+- **Классы `logger_builder` на pub.dev документированы** — см. снятую
+  находку 2. Урок общий: состояние API-справочника проверять на
+  `pub.dev/documentation/<пакет>/latest/`, а не локальным `dart doc`.
 
 - `MultiPublisher([...])` в форме из README (§8, присваивание в
   `log.publisher`) **компилируется и работает** — вывод параметра типа
