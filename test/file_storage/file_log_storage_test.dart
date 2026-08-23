@@ -213,8 +213,43 @@ void main() {
           _json(lines[0])[FileLogCodec.metaKey]! as Map<String, Object?>;
       expect(meta['sessionId'], 's1');
       expect(meta['app'], 'demo');
+      // The version has to reach the file itself, not just encodeMeta: this
+      // is the only line of a session that carries it, and a file written
+      // without it can never be given one.
+      expect(meta['formatVersion'], FileLogCodec.formatVersion);
       expect(_json(lines[1])['message'], 'first');
       expect(_json(lines[2])['message'], 'second');
+
+      await storage.close();
+    });
+
+    test('a rotated chunk carries the version in its own meta line',
+        () async {
+      // Every chunk opens with a meta line, so a reader handed one chunk out
+      // of the middle of a session can still tell what it is looking at.
+      final storage = FileLogStorage(
+        directory: tmp.path,
+        sessionId: 's1',
+        maxChunkSize: 300,
+      );
+      final log = _logger(storage);
+      for (var i = 0; i < 20; i++) {
+        log.i('message $i ${'x' * 40}');
+      }
+      await storage.flush().timeout(_timeout);
+
+      final session = (await storage.sessions.list()).single;
+      expect(session.files.length, greaterThan(1));
+
+      for (final file in session.files) {
+        final meta = _json(_lines(File(file.path)).first)[FileLogCodec.metaKey]!
+            as Map<String, Object?>;
+        expect(
+          meta['formatVersion'],
+          FileLogCodec.formatVersion,
+          reason: file.path,
+        );
+      }
 
       await storage.close();
     });

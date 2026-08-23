@@ -333,7 +333,53 @@ void main() {
       expect(line, isNot(contains('\n')));
       final metaObj =
           _decode(line)[FileLogCodec.metaKey]! as Map<String, Object?>;
-      expect(metaObj.keys, unorderedEquals(['sessionId', 'started']));
+      expect(
+        metaObj.keys,
+        unorderedEquals(['formatVersion', 'sessionId', 'started']),
+      );
+    });
+  });
+
+  group('FileLogCodec.formatVersion', () {
+    test('every meta line carries it', () {
+      // A log file outlives the application that wrote it. Without a version
+      // in the file, a reader has nothing to branch on — and a file already
+      // written can never gain one.
+      final metaObj = _decode(
+        FileLogCodec().encodeMeta(
+          sessionId: 's1',
+          started: DateTime.utc(2026),
+        ),
+      )[FileLogCodec.metaKey]! as Map<String, Object?>;
+
+      expect(metaObj['formatVersion'], FileLogCodec.formatVersion);
+      expect(FileLogCodec.formatVersion, isA<int>());
+    });
+
+    test('user meta cannot override it', () {
+      final metaObj = _decode(
+        FileLogCodec().encodeMeta(
+          sessionId: 's1',
+          started: DateTime.utc(2026),
+          meta: {'formatVersion': 'hacked'},
+        ),
+      )[FileLogCodec.metaKey]! as Map<String, Object?>;
+
+      expect(metaObj['formatVersion'], FileLogCodec.formatVersion);
+    });
+
+    test('survives the fallback taken when user meta cannot be encoded', () {
+      // The fallback drops user meta entirely; the version is not user meta
+      // and has to come through it.
+      final metaObj = _decode(
+        FileLogCodec().encodeMeta(
+          sessionId: 's1',
+          started: DateTime.utc(2026),
+          meta: {'device': Object()},
+        ),
+      )[FileLogCodec.metaKey]! as Map<String, Object?>;
+
+      expect(metaObj['formatVersion'], FileLogCodec.formatVersion);
     });
   });
 }

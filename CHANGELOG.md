@@ -1,5 +1,16 @@
 ## 0.7.0
 
+- Every JSONL meta line carries `formatVersion`, the version of the on-disk
+  format, alongside `sessionId` and `started`. A session file outlives the run
+  that wrote it — an archive exported for diagnostics may be opened much later,
+  by a tool built against a different version of this package — and until now
+  it said nothing about which shape it was. It is the one thing that cannot be
+  added afterwards: a file already written will never carry it. Compare against
+  `FileLogCodec.formatVersion`; it appears on every chunk, so a chunk taken out
+  of the middle of a session still identifies itself, and like the other two it
+  cannot be overridden through `meta`. Adding a key does not bump it — a reader
+  that ignores unknown keys is unaffected.
+
 - [breaking changes] Only the part of `logger_builder` a `team_logger` user
   has to name is re-exported: `CustomLogPublisher`, `CustomLogFormatter`,
   `MultiPublisher`, `TransformPublisher`, `AsyncPublisher`,

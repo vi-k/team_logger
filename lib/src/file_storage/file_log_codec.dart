@@ -21,6 +21,22 @@ final class FileLogCodec {
   /// The key of the metadata line written as the first line of every chunk.
   static const String metaKey = ':meta';
 
+  /// The version of the on-disk format, written to every meta line under
+  /// `formatVersion`.
+  ///
+  /// A session file outlives the application that wrote it: an archive
+  /// exported for diagnostics can be opened months later, by a tool built
+  /// against a different version of this package. The version says which
+  /// shape the reader is looking at, and it is the one thing that cannot be
+  /// added after the fact — a file already written will never carry it.
+  ///
+  /// It is bumped when the shape of a line changes in a way a reader has to
+  /// know about; adding a key is not such a change, since a reader that
+  /// ignores unknown keys is unaffected. Like `sessionId` and `started`, it
+  /// is written by the package and cannot be overridden through the `meta`
+  /// argument of [encodeMeta].
+  static const int formatVersion = 1;
+
   final FileLogDataFormat dataFormat;
   final LogMainTheme theme;
   final LoggableConfig config;
@@ -105,6 +121,7 @@ final class FileLogCodec {
     Map<String, Object?>? meta,
   }) {
     final auto = <String, Object?>{
+      'formatVersion': formatVersion,
       'sessionId': sessionId,
       'started': started.toUtc().toIso8601String(),
     };

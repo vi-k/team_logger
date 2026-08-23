@@ -1820,7 +1820,21 @@ for diagnostics. It lives in a separate library built on `dart:io` — import
 Every application run gets its own **session**. A session is a chain of chunk
 files `<sessionId>.<index>.jsonl` written as JSON Lines, one JSON object per
 log. The first line of every chunk is a metadata line (`":meta"` key) with
-the session id, start time and any fields you pass in `meta`.
+the session id, start time, the format version and any fields you pass in
+`meta`:
+
+```json
+{":meta":{"appVersion":"1.2.3","formatVersion":1,"sessionId":"s1","started":"2026-08-24T09:26:53.589Z"}}
+```
+
+`formatVersion` says which shape of the file a reader is looking at — a log
+file outlives the run that wrote it, and an archive exported for diagnostics
+may be opened much later by a tool built against a different version of this
+package. It is `FileLogCodec.formatVersion` to compare against, it appears on
+every chunk (so one chunk taken out of the middle still identifies itself),
+and like `sessionId` and `started` it cannot be overridden through `meta`.
+Adding a key does not bump it: a reader that ignores unknown keys is
+unaffected.
 
 Custom session ids are sanitized to letters, digits, `-` and `_`; an empty id
 is rejected with `ArgumentError`. Files with an unrelated name or a numeric
