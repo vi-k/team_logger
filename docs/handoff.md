@@ -192,7 +192,7 @@ cd example && dart pub get && dart analyze && dart run example.dart
 - `dart analyze` — чисто в корне и в `example/`.
 - `dart format` — чисто.
 - Финальный чистый `dart pub publish --dry-run` — **0 предупреждений**,
-  архив 188 КБ.
+  архив 192 КБ.
 - `scripts/screenshots.sh --check` — код 0: 41 кадр, ни одного `skip:`,
   сирот нет; повторная пересборка не меняет ни одного файла.
 - На настоящем Dart 3.6 (SDK внутри fvm-сборки Flutter 3.27) — `analyze`
