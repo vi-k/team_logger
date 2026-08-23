@@ -1,5 +1,12 @@
 part of 'logger.dart';
 
+/// The type of [Log.noData]: the marker that a log carries no data at all.
+///
+/// A log with no data differs from one whose data is `null`, and `null`
+/// cannot mark the difference — so `data` defaults to the single instance
+/// [Log.noData] instead. Use [Log.hasData] to ask the question; this type is
+/// named only because it is the type of that member, and it cannot be
+/// constructed.
 final class LogNoData {
   const LogNoData._();
 

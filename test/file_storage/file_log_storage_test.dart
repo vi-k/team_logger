@@ -223,8 +223,7 @@ void main() {
       await storage.close();
     });
 
-    test('a rotated chunk carries the version in its own meta line',
-        () async {
+    test('a rotated chunk carries the version in its own meta line', () async {
       // Every chunk opens with a meta line, so a reader handed one chunk out
       // of the middle of a session can still tell what it is looking at.
       final storage = FileLogStorage(

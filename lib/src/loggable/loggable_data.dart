@@ -394,6 +394,12 @@ final class LoggableData {
   String toString() => Loggable._rootToString(this, toLogString);
 }
 
+/// The type of [Prop.noView]: the marker that a property has no view.
+///
+/// A property may legitimately be given `null` as its view, so `null` cannot
+/// mean "no view was given" — the default is the single instance
+/// [Prop.noView] instead. This type is named only because it is the type of
+/// that member, and it cannot be constructed.
 final class LoggableNoView {
   const LoggableNoView._();
 

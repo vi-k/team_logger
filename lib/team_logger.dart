@@ -39,8 +39,15 @@ export 'src/preformatters/log_pre_formatter.dart';
 export 'src/preformatters/multi_log_pre_formatter.dart';
 export 'src/preformatters/null_formatter.dart';
 export 'src/printer/console_log_printer.dart';
+// `src/printer/extensions.dart` is deliberately NOT exported. It holds the
+// printer's own layout machinery — `applyConstraints` and `terminatedSlice`,
+// which need a `Log` and a `LogTheme` to call — and one of the two extensions
+// it declares is on `String`. Exporting it put that method on every String in
+// every program that imports this package, where it collided with anyone
+// else's `applyConstraints` on `String` as an ambiguous extension. The other
+// extends `MeasuredLine`, which is not exported at all, so it could never be
+// used. See docs/records/2026-08-24[5]-api-freeze-review.md.
 export 'src/printer/constraints.dart';
-export 'src/printer/extensions.dart';
 export 'src/printer/log_block.dart';
 export 'src/printer/log_custom_text.dart';
 export 'src/printer/log_divider.dart';

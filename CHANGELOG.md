@@ -1,5 +1,21 @@
 ## 0.7.0
 
+- [breaking changes] Three names leave the public API, found by the review
+  held before the surface is frozen at 1.0. `GrowableConstraintsValues` was
+  dead: nothing in the package, the tests, the example or the README ever
+  named it. `AnsiStringExtensions` and `MeasuredLineExtensions` were the
+  printer's own layout machinery — `applyConstraints` and `terminatedSlice`,
+  which take a `Log` and a `LogTheme` — and exporting them put
+  `applyConstraints` on **every String** in every program importing this
+  package, where it met anyone else's `applyConstraints` on `String` as an
+  ambiguous extension; the second extends `MeasuredLine`, which was never
+  exported, so it could not be used at all. All three still exist inside the
+  package; they are simply no longer yours to call.
+
+- `LogNoData` and `LoggableNoView` are documented. Both are named only
+  because they are the types of `Log.noData` and `Prop.noView`, both mark a
+  distinction `null` cannot make, and neither can be constructed.
+
 - Requires `logger_builder` ^0.8.0, which removed the deprecated `HasFlush`
   alias ahead of its own 1.0. Nothing here used it and it was not among the
   nine names re-exported, so no code changes with the bump.

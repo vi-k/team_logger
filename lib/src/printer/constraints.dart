@@ -111,19 +111,3 @@ final class _GrowableWrapper extends LogConstraints {
       ? this
       : _GrowableWrapper(_constraints, _restrict(max));
 }
-
-final class GrowableConstraintsValues {
-  final List<LogConstraints> values = [];
-  final int initial;
-  final int? max;
-
-  GrowableConstraintsValues({this.initial = 0, this.max});
-
-  LogConstraints operator [](int index) {
-    while (index >= values.length) {
-      values.add(LogConstraints.growable(initial: initial, max: max));
-    }
-
-    return values[index];
-  }
-}
