@@ -40,6 +40,10 @@ formatting, and customizable styling themes.
   generate structured path hierarchies (e.g. `app/network/polling`).
 * **In-Memory Circular Buffer (`LogStorage`)**: Collect a fixed number of
   recent logs in memory for diagnostic exports or in-app inspection.
+* **Log Files (`FileLogStorage`)**: Write logs to the device as JSON Lines,
+  one session per run, with rotation and retention budgets per chunk, per
+  session and across all sessions. Sessions can be listed, read back, and
+  streamed into a single gzipped file to send for diagnostics.
 
 ---
 
