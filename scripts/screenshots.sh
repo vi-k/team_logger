@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Пересобирает скриншоты README из кадров example/bin/readme_examples/*.dart.
+# Rebuilds the README screenshots from the frames in example/bin/readme_examples.
 #
 # Usage:
-#   scripts/screenshots.sh                # все переведённые группы
-#   scripts/screenshots.sh --only trace   # одну группу
-#   scripts/screenshots.sh --check        # сравнить .ansi, ничего не писать
+#   scripts/screenshots.sh                # every group declaring frames
+#   scripts/screenshots.sh --only trace   # one group
+#   scripts/screenshots.sh --check        # diff the .ansi, write nothing
 #
-# Кадр — отдельный процесс: счётчики логов и trace id глобальны на изолят,
-# и на картинках они всегда стартуют с единицы.
+# A frame is its own process: log counters and trace ids are per-isolate
+# globals, so in the pictures they always start from one.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EXAMPLE="$ROOT/example"
 SHOTS="$ROOT/screenshots"
 
-# Картинки, которые конвейер не делает и сиротами не считает.
+# Pictures the pipeline does not make and does not count as orphans.
 NOT_GENERATED=("flutter_team_logger.png")
 
 ONLY=""
@@ -51,23 +51,23 @@ for file in "$EXAMPLE"/bin/readme_examples/*.dart; do
     continue
   fi
 
-  # Положительная проверка, а не отрицательная: файл, не знающий про кадры,
-  # на `--list` не падает — он просто печатает все свои логи и выходит с
-  # нулём, и такой вывод легко принять за список имён.
+  # A positive check rather than a negative one: a file that knows nothing
+  # about frames does not fail on `--list` — it just prints all of its logs
+  # and exits zero, and that output is easy to mistake for a list of names.
   if ! grep -q 'runFrames(' "$file"; then
-    echo "skip: $group (кадры не объявлены)" >&2
+    echo "skip: $group (no frames declared)" >&2
     skipped=1
     continue
   fi
 
   list="$(cd "$EXAMPLE" && dart run "bin/readme_examples/$group.dart" --list)"
 
-  # Имя кадра — имя картинки: <группа>_<номер>. Строка, не похожая на имя,
-  # означает, что `--list` вернул что-то другое, и дальше идти нельзя.
+  # A frame name is the picture name: <group>_<number>. A line that does not
+  # look like one means `--list` returned something else, and we must stop.
   while IFS= read -r frame; do
     [[ -z "$frame" ]] && continue
     if [[ ! "$frame" =~ ^${group}_[0-9]+$ ]]; then
-      echo "$group: --list вернул не имя кадра: $frame" >&2
+      echo "$group: --list returned something other than a frame name: $frame" >&2
       exit 1
     fi
   done <<< "$list"
@@ -77,13 +77,13 @@ for file in "$EXAMPLE"/bin/readme_examples/*.dart; do
     claimed+=("$frame.png")
     echo "==> $frame"
 
-    # Без script(1): pty не нужен, принтер отдаёт ANSI и в пайп.
+    # No script(1): a pty is not needed, the printer emits ANSI into a pipe.
     (cd "$EXAMPLE" && dart run "bin/readme_examples/$group.dart" "$frame") \
       > "$OUT/$frame.ansi"
 
     if [[ "$CHECK" == 1 ]]; then
       if ! diff -q "$SHOTS/$frame.ansi" "$OUT/$frame.ansi" >/dev/null 2>&1; then
-        echo "изменился: $frame" >&2
+        echo "changed: $frame" >&2
         diff "$SHOTS/$frame.ansi" "$OUT/$frame.ansi" || true
         failed=1
       fi
@@ -94,11 +94,11 @@ for file in "$EXAMPLE"/bin/readme_examples/*.dart; do
   done <<< "$list"
 done
 
-# Сироты считаются только когда обойдены все группы и ни одна не пропущена,
-# иначе непереведённые группы дали бы 37 ложных срабатываний.
+# Orphans are counted only once every group has been walked and none was
+# skipped; otherwise groups without frames would raise 37 false positives.
 if [[ -z "$ONLY" && "$CHECK" == 0 ]]; then
   if [[ "$skipped" == 1 ]]; then
-    echo "проверка сирот пропущена: переведены не все группы" >&2
+    echo "orphan check skipped: not every group declares frames" >&2
   else
     for png in "$SHOTS"/*.png; do
       name="$(basename "$png")"
@@ -106,7 +106,7 @@ if [[ -z "$ONLY" && "$CHECK" == 0 ]]; then
       for c in "${claimed[@]}" "${NOT_GENERATED[@]}"; do
         [[ "$name" == "$c" ]] && known=1 && break
       done
-      [[ "$known" == 0 ]] && echo "сирота: $name" >&2
+      [[ "$known" == 0 ]] && echo "orphan: $name" >&2
     done
   fi
 fi

@@ -2,7 +2,7 @@ import 'package:team_logger/team_logger.dart';
 
 // ignore: avoid_classes_with_only_static_members
 abstract final class Data {
-  // Все данные ниже — синтетические (демо).
+  // Everything below is synthetic demo data.
   static const postUrl =
       '[b]POST[/b] https://api.example.com/[b]clients/addresses[/b]';
 

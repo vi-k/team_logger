@@ -75,11 +75,21 @@ cd example && dart pub get && dart analyze && dart run example.dart
 
 ## Английский: закрыто
 
-`lib/`, `example/` и `test/` переведены полностью. Правило записано в
-`AGENTS.md` и `docs/conventions.md`, проверка —
-`grep -rl '[А-Яа-яЁё]' lib/ example/ test/` (без `-P`: на macOS его нет).
-`tool/playground_data.dart` (13 строк) сознательно остаётся по-русски: в
-архив не идёт, это внутренняя кухня.
+Переведены комментарии **во всём коде пакета** — `lib/` (912 строк),
+`example/` (72), `test/` (183), `scripts/` (20), `tool/` (1) и комментарии в
+`.pubignore`. По-русски остаются только `docs/` и `README.ru.md`. Правило
+записано в `AGENTS.md` и `docs/conventions.md`, проверка —
+`grep -rn '[А-Яа-яЁё]' lib/ example/ test/ tool/ scripts/ .pubignore`
+(без `-P`: на macOS его нет).
+
+Единственная кириллица в коде — 12 строк синтетических данных в
+`tool/playground_data.dart` (`address_ru`, `address_kk`): это данные, а не
+комментарии, и они там затем, чтобы playground рисовал нелатиницу.
+
+Не тронуты как не-код: `AGENTS.md` (документ для агентов),
+`.claude/settings.json` (текст хука про `docs/handoff.md`),
+`.vscode/launch.json` (имя конфигурации запуска). Решения владельца по ним
+нет.
 
 ## Ревью глазами пользователя — findings без решений
 

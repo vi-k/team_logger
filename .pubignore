@@ -1,14 +1,14 @@
-# Внутренняя кухня — не для pub-архива.
+# Internal kitchen — not for the pub archive.
 AGENTS.md
 CLAUDE.md
 docs/
 scripts/
-# Перевод README для владельца и агентов. Лежит в корне ради видимости,
-# поэтому исключается отдельной строкой — в отличие от docs/, который
-# закрыт целиком.
+# The README translation for the owner and the agents. It sits in the root
+# to stay visible, so it takes a line of its own — unlike docs/, which is
+# excluded wholesale.
 README.ru.md
-# Картинки README pub.dev резолвит через repository (GitHub).
+# pub.dev resolves the README pictures through `repository` (GitHub).
 screenshots/
 
-# Ручная проверочная кухня — не для pub-архива.
+# The manual test kitchen — not for the pub archive.
 tool/
