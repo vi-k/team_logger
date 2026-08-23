@@ -52,7 +52,7 @@ dependencies:
   # the `@internal`, `@nonVirtual` and `@visibleForTesting` annotations all
   # predate them.
   clock: ^1.1.1
-  logger_builder: ^0.7.0
+  logger_builder: ^0.8.0
   meta: ^1.15.0
   stack_trace: ^1.12.0
 

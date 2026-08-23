@@ -1,5 +1,9 @@
 ## 0.7.0
 
+- Requires `logger_builder` ^0.8.0, which removed the deprecated `HasFlush`
+  alias ahead of its own 1.0. Nothing here used it and it was not among the
+  nine names re-exported, so no code changes with the bump.
+
 - Every JSONL meta line carries `formatVersion`, the version of the on-disk
   format, alongside `sessionId` and `started`. A session file outlives the run
   that wrote it — an archive exported for diagnostics may be opened much later,
