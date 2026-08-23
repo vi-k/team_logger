@@ -1,5 +1,35 @@
 part of 'log_main_theme.dart';
 
+/// The styles one log level is drawn with: the colours of the message, the
+/// punctuation, the key and the value, the path, the time and the rest.
+///
+/// A [LogMainTheme] holds one of these per level, and `theme[level]` hands
+/// out the [LogTheme] wrapping it. Build one with [LogThemeData.new] for full
+/// control, or with [LogThemeData.seed] to derive a whole set of styles from
+/// one accent colour.
+///
+/// ## The ready-made palette
+///
+/// 133 presets are declared here: [gray5] through [gray20], and the cube from
+/// [rgb002] to [rgb444]. Each is a [LogThemeData.seed] around one colour of
+/// `ansi_escape_codes`, with a brighter `emphasis` and a dimmer `dim` derived
+/// from it — [rgb444] emphasises with `rgb555` and dims to `rgb333`.
+///
+/// **That derivation is what decides which colours are here**, and the edges
+/// of the set are deliberate rather than arbitrary: a colour gets a preset
+/// only if it can serve as a *base*, with room for an emphasis above it and a
+/// still-visible dim below.
+///
+/// - Channel level 5 never bases a preset — nothing is brighter to emphasise
+///   with. It appears *as* an emphasis instead.
+/// - The eight darkest corners of the cube — every channel 0 or 1, `rgb000`
+///   through `rgb111` — never base a preset: their dim would be invisible.
+/// - The grey ramp is 0–23 upstream; presets stop at [gray5] and [gray20] for
+///   the same reason at either end.
+///
+/// Adding a preset is not a breaking change and removing one is, so the set
+/// only ever grows. Check the rule before adding: a preset whose dim cannot
+/// be seen is worse than no preset at all.
 final class LogThemeData with Loggable {
   final ansi.Style normal;
   final ansi.Style inverse;

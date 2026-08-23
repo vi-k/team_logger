@@ -12,6 +12,15 @@
   exported, so it could not be used at all. All three still exist inside the
   package; they are simply no longer yours to call.
 
+- `LogThemeData` is documented, class and palette both. It is the largest
+  type here — 173 members, 133 of them ready-made themes — and it carried no
+  dartdoc at all. The dartdoc now also states the rule that decides which
+  colours have a preset: a colour gets one only if it can be a *base*, with an
+  emphasis above it and a still-visible dim below. That is why channel level 5
+  never bases a preset (nothing is brighter to emphasise with, though it
+  serves as an emphasis), why the eight darkest corners `rgb000`–`rgb111` do
+  not, and why the greys stop at `gray5` and `gray20`.
+
 - `LogNoData` and `LoggableNoView` are documented. Both are named only
   because they are the types of `Log.noData` and `Prop.noView`, both mark a
   distinction `null` cannot make, and neither can be constructed.
