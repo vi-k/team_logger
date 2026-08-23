@@ -1010,8 +1010,8 @@ the log gets made at all:
 ```dart
 log.d(
   () => 'Report for ${expensiveSummary()}',
-  data: () => buildDiagnostics(),
-  tags: () => collectTags(),
+  data: buildDiagnostics, // a tear-off does just as well as () => …()
+  tags: collectTags,
 );
 ```
 
@@ -1128,8 +1128,9 @@ log.d(
   data: {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5},
   config: const LoggableConfig(collectionMaxCount: 3),
 );
-// Map: {₌₅ a: 1, b: 2, …, e: 5}
 ```
+
+![Map truncation](screenshots/data_5.png)
 
 The first entries and the last one survive a cut, as for a list — a map is
 ordered and can be walked twice. Two details are worth knowing when a
@@ -1159,8 +1160,9 @@ log.d(
     iterableEfficientLength: true,
   ),
 );
-// Iterable: (₌₅ ₀:1.2, ₁:2.3, …, ₄:5.6)
 ```
+
+![Iterable with an efficient length](screenshots/data_6.png)
 
 It is an assertion by the caller, like `units` — the package cannot tell an
 efficient-length iterable from a generator, and setting it on one that is
@@ -1185,14 +1187,13 @@ log.d(
 );
 ```
 
-![Formatting settings. Enum](screenshots/data_5.png)
+![Formatting settings. Enum](screenshots/data_7.png)
 
 Numbers take a formatting pattern, but the package does not interpret it:
 `intFormat`/`doubleFormat` are handed to the theme's `numberFormatter`
 along with the value, and a theme without one prints the number as it is.
 Install a formatter to make patterns work — for example over the
-[format](https://pub.dev/packages/format) package, which then belongs to
-your `pubspec.yaml`, not to this one:
+[format](https://pub.dev/packages/format) package:
 
 ```dart
 final theme = LogMainTheme.defaultActiveTheme.copyWith(
@@ -1218,15 +1219,15 @@ log.d(
 );
 ```
 
-![Formatting settings. Numbers](screenshots/data_6.png)
+![Formatting settings. Numbers](screenshots/data_8.png)
 
 The pattern means whatever the installed formatter says it means — the one
 above is a `format` template, and
 `(theme, value, pattern) => sprintf(pattern, [value])` would make `'%d'` the
 way to write it instead. With `format` the locale rules are its own: `,` and
-`_` group under every locale, `n` is the locale-aware form, and since it
-stopped depending on `intl` it reads no ambient locale — `n` follows the C
-locale and `Intl.defaultLocale` changes nothing. `'{:,n}'` throws there,
+`_` group under every locale, `n` is the locale-aware form, and `format`
+reads no ambient locale — `n` follows the C locale and `Intl.defaultLocale`
+changes nothing. `'{:,n}'` throws there,
 because `n` takes no grouping option.
 
 String can be displayed with or without quotation marks:
@@ -1244,7 +1245,7 @@ log.d(
 );
 ```
 
-![Formatting settings. Strings](screenshots/data_7.png)
+![Formatting settings. Strings](screenshots/data_9.png)
 
 #### Application-wide Defaults and Policy
 

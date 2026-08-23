@@ -9,9 +9,11 @@ final frames = <String, LogFrame>{
   'data_2': _deeplyNested,
   'data_3': _multiData,
   'data_4': _collections,
-  'data_5': _enums,
-  'data_6': _numbers,
-  'data_7': _strings,
+  'data_5': _map,
+  'data_6': _iterableEfficientLength,
+  'data_7': _enums,
+  'data_8': _numbers,
+  'data_9': _strings,
 };
 
 void main(List<String> args) => runFrames(frames, args);
@@ -67,6 +69,33 @@ void _collections() {
     'Iterable',
     data: [1.2, 2.3, 3.4, 4.5, 5.6].where((e) => true),
     config: const LoggableConfig(collectionMaxCount: 3),
+  );
+}
+
+/// Обрезка `Map`: те же лимиты и тот же счётчик, что у списка.
+void _map() {
+  log.d(
+    'Map',
+    data: {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5},
+    config: const LoggableConfig(collectionMaxCount: 3),
+  );
+}
+
+/// Голый `Iterable`: по умолчанию один проход, с флагом — как у списка.
+void _iterableEfficientLength() {
+  log.d(
+    'Iterable',
+    data: [1.2, 2.3, 3.4, 4.5, 5.6].where((e) => true),
+    config: const LoggableConfig(collectionMaxCount: 3),
+  );
+
+  log.d(
+    'Iterable',
+    data: [1.2, 2.3, 3.4, 4.5, 5.6].where((e) => true),
+    config: const LoggableConfig(
+      collectionMaxCount: 3,
+      iterableEfficientLength: true,
+    ),
   );
 }
 
