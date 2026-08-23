@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '=== docs/handoff.md (текущее состояние проекта) ==='; cat \"${CLAUDE_PROJECT_DIR:-.}/docs/handoff.md\" 2>/dev/null || true",
-            "statusMessage": "Читаю docs/handoff.md"
+            "command": "echo '=== docs/handoff.md (current project state) ==='; cat \"${CLAUDE_PROJECT_DIR:-.}/docs/handoff.md\" 2>/dev/null || true",
+            "statusMessage": "Reading docs/handoff.md"
           }
         ]
       }

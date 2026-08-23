@@ -92,10 +92,11 @@ cd example && dart pub get && dart analyze && dart run example.dart
 `docs/`, `README.ru.md`, `AGENTS.md` (плюс `CLAUDE.md`, который только
 подключает его ссылкой).
 
-Решения владельца пока нет по двум файлам, и оба не код: `.claude/settings.json`
-(текст хука, печатающего заголовок к `docs/handoff.md`) и
-`.vscode/launch.json` (имя конфигурации запуска `playground (не
-публикуется)`). Ни один в архив не идёт.
+Конфиги тоже переведены: `.claude/settings.json` (заголовок и
+`statusMessage` хука `SessionStart`) и `.vscode/launch.json` (имя
+конфигурации запуска — теперь `playground (not published)`, в ряд к
+соседним `README: …`). JSON валиден, команда хука проверена запуском.
+Открытых вопросов по языку не осталось.
 
 ## Ревью глазами пользователя — findings без решений
 

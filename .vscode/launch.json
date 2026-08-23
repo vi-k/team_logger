@@ -75,7 +75,7 @@
             "program": "bin/readme_examples/trace.dart",
         },
         {
-            "name": "playground (не публикуется)",
+            "name": "playground (not published)",
             "request": "launch",
             "type": "dart",
             "program": "tool/playground.dart",
