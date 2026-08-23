@@ -3,6 +3,10 @@ AGENTS.md
 CLAUDE.md
 docs/
 scripts/
+# Перевод README для владельца и агентов. Лежит в корне ради видимости,
+# поэтому исключается отдельной строкой — в отличие от docs/, который
+# закрыт целиком.
+README.ru.md
 # Картинки README pub.dev резолвит через repository (GitHub).
 screenshots/
 

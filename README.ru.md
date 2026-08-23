@@ -1,7 +1,7 @@
 # Team Logger
 
 > **Перевод `README.md` для владельца и агентов. В pub-архив не попадает
-> (`docs/` в `.pubignore`) и на pub.dev не публикуется.**
+> (отдельная строка в `.pubignore`) и на pub.dev не публикуется.**
 > Источник истины — английский `README.md`; этот файл обязан меняться
 > вместе с ним (см. `docs/conventions.md`).
 
@@ -135,22 +135,22 @@ Future<void> payment(int amount, String currency) async {
 
 Вывод:
 
-![Быстрый старт](../screenshots/quick_start_1.png)
+![Быстрый старт](screenshots/quick_start_1.png)
 
 При фильтрации по порядковому номеру показываются **все строки**, входящие в
 сообщение:
 
-![Быстрый старт. Фильтр по номеру](../screenshots/quick_start_2.png)
+![Быстрый старт. Фильтр по номеру](screenshots/quick_start_2.png)
 
 При фильтрации по trace ID показываются все сообщения, отправленные внутри
 `log.trace`, и **все строки** этих сообщений:
 
-![Быстрый старт. Фильтр по trace ID](../screenshots/quick_start_3.png)
+![Быстрый старт. Фильтр по trace ID](screenshots/quick_start_3.png)
 
 При фильтрации по тегу показываются все сообщения с тегом `#http` и **все
 строки** этих сообщений:
 
-![Быстрый старт. Фильтр по тегу](../screenshots/quick_start_4.png)
+![Быстрый старт. Фильтр по тегу](screenshots/quick_start_4.png)
 
 ---
 
@@ -209,7 +209,7 @@ log.d(
 );
 ```
 
-![Раскладка сообщения](../screenshots/layout_1.png)
+![Раскладка сообщения](screenshots/layout_1.png)
 
 У `LogBlock` есть несколько реализаций для разных элементов лога:
 - `LogNum()`: порядковый номер сообщения.
@@ -255,7 +255,7 @@ final log = Logger('app')
   );
 ```
 
-![Одна строка](../screenshots/layout_2.png)
+![Одна строка](screenshots/layout_2.png)
 
 Однострочный лог тяжелее читать глазами, зато он занимает одну строку буфера
 консоли IDE. Это важно, когда у буфера есть лимит (10 000 строк для
@@ -275,7 +275,7 @@ final theme = LogMainTheme.defaultActiveTheme.copyWith(
 );
 ```
 
-![Фильтрация логов](../screenshots/layout_3.png)
+![Фильтрация логов](screenshots/layout_3.png)
 
 Так вы всегда сможете отфильтровать по порядковому номеру, уровню, времени,
 пути неймспейса, trace ID и тегам.
@@ -311,7 +311,7 @@ int calcResult() {
 someOperation();
 ```
 
-![Стек внутри сообщения](../screenshots/layout_4.png)
+![Стек внутри сообщения](screenshots/layout_4.png)
 
 Стеку может понадобиться больше места. Тогда лучше вынести его в отдельную
 строку:
@@ -349,7 +349,7 @@ final log = Logger('app')
   );
 ```
 
-![Отдельная строка для стека](../screenshots/layout_5.png)
+![Отдельная строка для стека](screenshots/layout_5.png)
 
 #### LogConstraints
 
@@ -385,7 +385,7 @@ final log = Logger('app')
   );
 ```
 
-![LogConstraints](../screenshots/layout_6.png)
+![LogConstraints](screenshots/layout_6.png)
 
 ### 2. Цвета и динамические темы
 
@@ -437,7 +437,7 @@ final theme = LogMainTheme.defaultActiveTheme.copyWith(
 );
 ```
 
-![Цветовые темы и палитры](../screenshots/themes_1.png)
+![Цветовые темы и палитры](screenshots/themes_1.png)
 
 #### Динамический сдвиг цвета по глубине (`LogDepthTheme`)
 
@@ -492,7 +492,7 @@ final theme = LogMainTheme.defaultActiveTheme.copyWith(
 );
 ```
 
-![Динамический сдвиг цвета по глубине](../screenshots/themes_2.png)
+![Динамический сдвиг цвета по глубине](screenshots/themes_2.png)
 
 #### Без цветов
 
@@ -508,7 +508,7 @@ log = Logger('app')
     );
 ```
 
-![Без цветов](../screenshots/themes_3.png)
+![Без цветов](screenshots/themes_3.png)
 
 ---
 
@@ -551,7 +551,7 @@ final log = Logger('app')
   );
 ```
 
-![Неактивная тема](../screenshots/active_1.png)
+![Неактивная тема](screenshots/active_1.png)
 
 #### Активация по уровню
 
@@ -583,7 +583,7 @@ final log = Logger('app')
 ```
 
 
-![Активация по уровню](../screenshots/active_2.png)
+![Активация по уровню](screenshots/active_2.png)
 
 #### Активация по неймспейсу
 
@@ -598,7 +598,7 @@ final log = Logger('app')
   );
 ```
 
-![Активация по неймспейсу](../screenshots/active_3.png)
+![Активация по неймспейсу](screenshots/active_3.png)
 
 #### Активация по trace ID
 
@@ -613,7 +613,7 @@ final log = Logger('app')
   );
 ```
 
-![Активация по trace ID](../screenshots/active_4.png)
+![Активация по trace ID](screenshots/active_4.png)
 
 #### Активация по тегам
 
@@ -628,7 +628,7 @@ final log = Logger('app')
   );
 ```
 
-![Активация по тегу](../screenshots/active_5.png)
+![Активация по тегу](screenshots/active_5.png)
 
 #### Активация колбэком
 
@@ -643,7 +643,7 @@ final log = Logger('app')
   );
 ```
 
-![Активация колбэком](../screenshots/active_6.png)
+![Активация колбэком](screenshots/active_6.png)
 
 #### Как этим пользоваться
 
@@ -811,7 +811,7 @@ log.d('This is a [signal]signal[/signal] to get attention');
 только последний открытый; неизвестные, незакрытые и несовпадающие теги
 остаются литералами.
 
-![BBCode-теги](../screenshots/bbcode_1.png)
+![BBCode-теги](screenshots/bbcode_1.png)
 
 #### Свои теги
 
@@ -833,7 +833,7 @@ log.d('This is a [s]strikethrough[/s] text', theme: theme);
 log.d('This is a [u]underline[/u] text', theme: theme);
 ```
 
-![Пользовательские теги](../screenshots/bbcode_2.png)
+![Пользовательские теги](screenshots/bbcode_2.png)
 
 #### Ленивый стиль
 
@@ -849,7 +849,7 @@ final theme = LogMainTheme.defaultActiveTheme.copyWith(
 log.d('This is [fatal]a fatal error[/fatal]');
 ```
 
-![LogLazyStyle](../screenshots/bbcode_3.png)
+![LogLazyStyle](screenshots/bbcode_3.png)
 
 #### Без цветов
 
@@ -860,7 +860,7 @@ log.d('This is [fatal]a fatal error[/fatal]');
 final theme = LogMainTheme.noColors;
 ```
 
-![Без цветов](../screenshots/bbcode_4.png)
+![Без цветов](screenshots/bbcode_4.png)
 
 Чтобы теги убрались, добавьте их в `messageStyles`:
 
@@ -875,7 +875,7 @@ final theme = LogMainTheme.noColors.copyWith(
 );
 ```
 
-![Без цветов и без тегов](../screenshots/bbcode_5.png)
+![Без цветов и без тегов](screenshots/bbcode_5.png)
 
 Для стандартных тегов есть готовая тема: `LogMainTheme.noColorsNoTags`.
 
@@ -883,7 +883,7 @@ final theme = LogMainTheme.noColors.copyWith(
 final theme = LogMainTheme.noColorsNoTags;
 ```
 
-![Без цветов и без тегов 2](../screenshots/bbcode_6.png)
+![Без цветов и без тегов 2](screenshots/bbcode_6.png)
 
 ---
 
@@ -904,7 +904,7 @@ log.d('Person: $person');
 log.d('Person', data: person);
 ```
 
-![Параметр data](../screenshots/data_1.png)
+![Параметр data](screenshots/data_1.png)
 
 Это не только даёт более читаемое сообщение в консоли, оформленное
 ANSI-кодами, но и упрощает отправку данных в базу или в аналитику.
@@ -975,7 +975,7 @@ log.d(
 );
 ```
 
-![Глубоко вложенные объекты](../screenshots/data_2.png)
+![Глубоко вложенные объекты](screenshots/data_2.png)
 
 #### Секции данных
 
@@ -991,7 +991,7 @@ log.d(
 );
 ```
 
-![Секции данных](../screenshots/data_3.png)
+![Секции данных](screenshots/data_3.png)
 
 #### Обрезка и форматирование коллекций
 
@@ -1022,7 +1022,7 @@ log.d(
 );
 ```
 
-![Обрезка и форматирование коллекций](../screenshots/data_4.png)
+![Обрезка и форматирование коллекций](screenshots/data_4.png)
 
 Для строкового вывода `collectionMaxCount` должен быть неотрицательным, а
 `collectionMaxStringLength`, если задан, — положительным. Неверные лимиты
@@ -1092,7 +1092,7 @@ log.d(
 );
 ```
 
-![Настройки форматирования. Enum](../screenshots/data_5.png)
+![Настройки форматирования. Enum](screenshots/data_5.png)
 
 Числа принимают шаблон форматирования, но пакет его не интерпретирует:
 `intFormat`/`doubleFormat` уходят в `numberFormatter` темы вместе со
@@ -1125,7 +1125,7 @@ log.d(
 );
 ```
 
-![Настройки форматирования. Числа](../screenshots/data_6.png)
+![Настройки форматирования. Числа](screenshots/data_6.png)
 
 Шаблон значит ровно то, что скажет установленный форматтер: выше это шаблон
 `format`, а с `(theme, value, pattern) => sprintf(pattern, [value])` вместо
@@ -1150,7 +1150,7 @@ log.d(
 );
 ```
 
-![Настройки форматирования. Строки](../screenshots/data_7.png)
+![Настройки форматирования. Строки](screenshots/data_7.png)
 
 #### Дефолты и политика уровня приложения
 
@@ -1266,7 +1266,7 @@ abstract class Person with _$Person, Loggable {
 log.d('Person (freezed)', data: Person('John', 42));
 ```
 
-![Примесь Loggable](../screenshots/loggable_1.png)
+![Примесь Loggable](screenshots/loggable_1.png)
 
 #### Настройка свойств
 
@@ -1344,7 +1344,7 @@ log.d('Point (short)', data: Point(51.894167, 1.482222));
 log.d('Speed (short)', data: Speed(143, 2.5));
 ```
 
-![Настройка свойств](../screenshots/loggable_2.png)
+![Настройка свойств](screenshots/loggable_2.png)
 
 #### Несколько представлений
 
@@ -1388,7 +1388,7 @@ final routeInfo = RouteInfo(
 log.d('Route info', data: routeInfo);
 ```
 
-![Несколько представлений](../screenshots/loggable_3.png)
+![Несколько представлений](screenshots/loggable_3.png)
 
 #### Помощники Map и Builder
 
@@ -1420,7 +1420,7 @@ log.d(
 );
 ```
 
-![Помощники Map и Builder](../screenshots/loggable_4.png)
+![Помощники Map и Builder](screenshots/loggable_4.png)
 
 ---
 
@@ -1447,7 +1447,7 @@ log.d('NotLoggableObject (MyConverter)', data: notLoggableObject);
 Конвертер подбирается строго по `runtimeType` объекта: к наследникам
 зарегистрированного типа он не применяется.
 
-![Собственные конвертеры типов](../screenshots/loggable_5.png)
+![Собственные конвертеры типов](screenshots/loggable_5.png)
 
 ### 7. Трассировка (`TraceId`)
 
@@ -1468,7 +1468,7 @@ await log.trace(searchTrace, () async {
 });
 ```
 
-![Трассировка через зоны](../screenshots/trace_1.png)
+![Трассировка через зоны](screenshots/trace_1.png)
 
 #### Виды `TraceId`
 
@@ -1480,7 +1480,7 @@ await log.trace(searchTrace, () async {
 * `TraceId.manual(group, num)`: заранее заданные идентификаторы — полезно,
   когда нужно совпадение с внешними идентификаторами транзакций.
 
-![Виды TraceId](../screenshots/trace_2.png)
+![Виды TraceId](screenshots/trace_2.png)
 
 #### Суффикс `TraceId`
 
@@ -1501,7 +1501,7 @@ Future<Response> request(Uri uri) async {
 }
 ```
 
-![Суффикс TraceId](../screenshots/trace_3.png)
+![Суффикс TraceId](screenshots/trace_3.png)
 
 #### Ленивость `TraceId`
 
@@ -1522,7 +1522,7 @@ log.i('Info message', traceId: TraceId.auto('lazy'));    // не показан�
 log.w('Warning message', traceId: TraceId.auto('lazy')); // lazy-4
 ```
 
-![Ленивость TraceId](../screenshots/trace_4.png)
+![Ленивость TraceId](screenshots/trace_4.png)
 
 ---
 
@@ -1549,7 +1549,7 @@ List<Log> history = logStorage.snapshot();
 См. также [flutter_team_logger](https://pub.dev/packages/flutter_team_logger),
 который использует `LogStorage`.
 
-![flutter_team_logger](../screenshots/flutter_team_logger.png)
+![flutter_team_logger](screenshots/flutter_team_logger.png)
 
 ---
 
