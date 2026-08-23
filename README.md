@@ -474,6 +474,10 @@ of color. Two ways out, and they differ in where the logs end up:
   console. It does not reach the `flutter run` terminal or the device system
   log at all.
 
+This is not something this package can fix: it is
+[flutter/flutter#20663](https://github.com/flutter/flutter/issues/20663),
+open since 2018.
+
 ### 2. Colors & Dynamic Themes
 
 `team_logger` supports color-coded and structured console output using
@@ -2033,7 +2037,7 @@ rather than sent — printed as its parts, with no ESC left in the result, so
 there is nothing left to form a command out of:
 
 ```dart
-log.i('\x1B[2Jforged');                       // [CSI 2 ED]forged
+log.i('\x1B[2Jforged');                     // [CSI 2 ED]forged
 log.i('m', data: {'ua': '\x1B[31mred'});    // m: {₌₁ ua: "[CSI 31 SGR]red"}
 log.i('m', data: {'\x1B[31mk': 1});         // m: {₌₁ [CSI 31 SGR]k: 1}
 ```

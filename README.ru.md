@@ -474,6 +474,10 @@ ConsoleLogPrinter(
   терминал `flutter run`, ни в системный лог устройства он не попадает
   вовсе.
 
+Этот пакет починить такое не может: это
+[flutter/flutter#20663](https://github.com/flutter/flutter/issues/20663),
+открытая с 2018 года.
+
 ### 2. Цвета и динамические темы
 
 `team_logger` поддерживает цветной и структурированный вывод в консоль через
@@ -2039,7 +2043,7 @@ memory-safety; всё это заставляет лог врать о прои�
 больше не из чего:
 
 ```dart
-log.i('\x1B[2Jforged');                       // [CSI 2 ED]forged
+log.i('\x1B[2Jforged');                     // [CSI 2 ED]forged
 log.i('m', data: {'ua': '\x1B[31mred'});    // m: {₌₁ ua: "[CSI 31 SGR]red"}
 log.i('m', data: {'\x1B[31mk': 1});         // m: {₌₁ [CSI 31 SGR]k: 1}
 ```
