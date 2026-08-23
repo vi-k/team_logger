@@ -444,8 +444,6 @@ of color. Two ways out, and they differ in where the logs end up:
   console. It does not reach the `flutter run` terminal or the device system
   log at all.
 
-Measured on an iOS 26.5 simulator, not inferred.
-
 ### 2. Colors & Dynamic Themes
 
 `team_logger` supports color-coded and structured console output using
