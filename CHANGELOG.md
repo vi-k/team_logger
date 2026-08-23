@@ -1,5 +1,21 @@
 ## 0.7.0
 
+- [breaking changes] Only the part of `logger_builder` a `team_logger` user
+  has to name is re-exported: `CustomLogPublisher`, `CustomLogFormatter`,
+  `MultiPublisher`, `TransformPublisher`, `AsyncPublisher`,
+  `AsyncPublisherWithBuffer`, `Flushable`, `Closable` and `LogTransformer` —
+  nine names where the whole toolkit used to come through. `team_logger` is a
+  logger, not a kit for building one, and the rest was clutter in its API
+  reference: `Levels`, a second vocabulary of level constants beside
+  `LogLevels`, which is the one this package uses; `CustomLogger`,
+  `CustomLog` and `CustomLevelLogger`, the supertypes of the final `Logger`,
+  `Log` and `LevelLogger`, which nothing can extend; the `Lazy` family, which
+  a caller never constructs — closures are what the lazy parameters take; the
+  `*Base` classes, meant for subclassing this package does internally; and the
+  `*WithParam` axis, which this package does not use at all. Anyone assembling
+  a logger of their own imports `package:logger_builder/logger_builder.dart`
+  directly, and nothing there has been lost.
+
 - `ConsoleLogPrinter` no longer requires `rows`. `ConsoleLogPrinter()` now
   builds a working printer: `rows` defaults to `ConsoleLogPrinter.defaultRows`,
   one row 120 columns wide carrying the sequence number, the short level name,

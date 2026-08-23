@@ -6,7 +6,24 @@
 // ansi_escape_codes.
 export 'package:ansi_escape_codes/style.dart'
     show Color16, Color256, NoStyle, Style, Styles;
-export 'package:logger_builder/logger_builder.dart';
+// `logger_builder` is the toolkit this package is built on, and only the part
+// a team_logger user has to name is re-exported. The rest of it — the level
+// constants `LogLevels` already covers, the `Custom*` supertypes of the final
+// `Logger`/`Log`/`LevelLogger`, the `Lazy` family a caller never constructs,
+// the `*Base` classes and the `*WithParam` axis this package does not use —
+// stays where it belongs. Anyone building their own logger imports
+// `package:logger_builder/logger_builder.dart` directly.
+export 'package:logger_builder/logger_builder.dart'
+    show
+        AsyncPublisher,
+        AsyncPublisherWithBuffer,
+        Closable,
+        CustomLogFormatter,
+        CustomLogPublisher,
+        Flushable,
+        LogTransformer,
+        MultiPublisher,
+        TransformPublisher;
 
 export 'src/loggable/loggable.dart';
 export 'src/loggable/loggable_config.dart';

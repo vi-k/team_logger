@@ -18,11 +18,16 @@
 через зоны, собственное форматирование объектов (`Loggable`), инлайновый
 BBCode и настраиваемые темы оформления.
 
-Он построен на [`logger_builder`](https://pub.dev/packages/logger_builder) и
-реэкспортирует его целиком, поэтому всё, что не про вывод в консоль, —
-`MultiPublisher`, `TransformPublisher`, `AsyncPublisher`, `Lazy`, константы
-уровней — приходит оттуда и отдельного импорта не требует. Там, где они
-встречаются ниже, они именно оттуда.
+Он построен на [`logger_builder`](https://pub.dev/packages/logger_builder) —
+конструкторе логгеров — и реэкспортирует ту его часть, которую вам придётся
+называть по имени: `CustomLogPublisher`, `CustomLogFormatter`,
+`MultiPublisher`, `TransformPublisher`, `AsyncPublisher`,
+`AsyncPublisherWithBuffer`, `Flushable`, `Closable` и `LogTransformer`. Там,
+где они встречаются ниже, они именно оттуда, и отдельного импорта не требуют.
+
+Остальное остаётся в `logger_builder`. Если вы собираете собственный логгер, а
+не пользуетесь этим, импортируйте
+`package:logger_builder/logger_builder.dart` напрямую.
 
 ---
 

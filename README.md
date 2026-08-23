@@ -12,11 +12,16 @@ large teams, complex applications, and high-volume logs in Dart & Flutter.
 trace propagation, custom object formatting (`Loggable`), inline BBCode
 formatting, and customizable styling themes.
 
-It is built on [`logger_builder`](https://pub.dev/packages/logger_builder)
-and re-exports it whole, so the parts that are not about console output —
-`MultiPublisher`, `TransformPublisher`, `AsyncPublisher`, `Lazy`, the level
-constants — come from there and need no separate import. Where they appear
-below, that is where they are from.
+It is built on [`logger_builder`](https://pub.dev/packages/logger_builder),
+the toolkit for assembling loggers, and re-exports the part of it you have to
+name yourself: `CustomLogPublisher`, `CustomLogFormatter`, `MultiPublisher`,
+`TransformPublisher`, `AsyncPublisher`, `AsyncPublisherWithBuffer`,
+`Flushable`, `Closable` and `LogTransformer`. Where those appear below, that
+is where they come from, and they need no separate import.
+
+The rest of the toolkit stays in `logger_builder`. If you are assembling a
+logger of your own rather than using this one, import
+`package:logger_builder/logger_builder.dart` directly.
 
 ---
 
