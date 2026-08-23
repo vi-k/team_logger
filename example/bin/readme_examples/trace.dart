@@ -60,7 +60,7 @@ void _laziness() {
 
   print(
     Styles.rgb311('''
-                          ─────┬
-                               ╰─ lazy-4, not lazy-6'''),
+                            ─────┬
+                                 ╰─ lazy-4, not lazy-6'''),
   );
 }
