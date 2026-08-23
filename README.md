@@ -432,10 +432,19 @@ If the destination does not render ANSI escape codes, pair the sink with
 `LogMainTheme.noColors` (see "No Colors" below) so the text arrives clean
 rather than full of unrendered codes.
 
-**On iOS this is not a matter of taste.** ANSI codes break `print` output
-there, so an app that runs on iOS needs one of the two ways out: drop the
-codes with `LogMainTheme.noColors`, or send the lines through
-`dart:developer`'s `log()` as above.
+**On iOS this is not a matter of taste.** `print` mangles the escape codes
+there: the ESC byte arrives as printable text, so a colored line shows up in
+the `flutter run` console and in the device log as `\^[[31m…` litter instead
+of color. Two ways out, and they differ in where the logs end up:
+
+- `LogMainTheme.noColors` — clean text, in the `flutter run` console and in
+  the device log alike;
+- `dart:developer`'s `log()` — the escape codes survive intact, but the
+  output goes to the VM service, which means DevTools or an IDE debug
+  console. It does not reach the `flutter run` terminal or the device system
+  log at all.
+
+Measured on an iOS 26.5 simulator, not inferred.
 
 ### 2. Colors & Dynamic Themes
 
