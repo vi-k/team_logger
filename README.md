@@ -432,6 +432,11 @@ If the destination does not render ANSI escape codes, pair the sink with
 `LogMainTheme.noColors` (see "No Colors" below) so the text arrives clean
 rather than full of unrendered codes.
 
+**On iOS this is not a matter of taste.** ANSI codes break `print` output
+there, so an app that runs on iOS needs one of the two ways out: drop the
+codes with `LogMainTheme.noColors`, or send the lines through
+`dart:developer`'s `log()` as above.
+
 ### 2. Colors & Dynamic Themes
 
 `team_logger` supports color-coded and structured console output using
@@ -1515,6 +1520,66 @@ await log.trace(searchTrace, () async {
 ```
 
 ![Zone-based trace propagation](screenshots/trace_1.png)
+
+#### Tags and Nesting in a Trace Zone
+
+A zone can carry tags as well as a trace id. Every log made inside picks
+them up, without any of the calls in between knowing about them:
+
+```dart
+log.trace(TraceId.manual('t', 1), tags: {'zone'}, () {
+  log.i('inside');
+});
+// {t-1} inside                                          #zone
+```
+
+Zones nest, and nesting **accumulates** rather than replaces. A log made in
+the inner zone carries both ids, outermost first:
+
+```dart
+log.trace(TraceId.manual('outer', 1), () {
+  log.trace(TraceId.manual('inner', 2), () {
+    log.i('nested');
+  });
+});
+// {outer-1} {inner-2} nested
+```
+
+The zone ends when the callback does — including when it ends by throwing.
+An exception leaves `trace()` as it would leave any other call, and logs
+made afterwards carry nothing from it:
+
+```dart
+try {
+  log.trace(TraceId.manual('boom', 1), () => throw StateError('x'));
+} on StateError {
+  // ...
+}
+log.i('after the exception');
+// after the exception          ← no trace id, no zone tags
+```
+
+`trace()` also takes a `zone:` parameter, and so does every logging call, for
+the cases where the zone to run in — or to read the context from — is not the
+current one.
+
+#### Reading the Zone Context
+
+`Logger.zonedTraceIds()` and `Logger.zonedTags()` answer what the current
+zone carries, which is useful for attaching the same context to something
+that is not a log — an HTTP header, a span, an error report:
+
+```dart
+log.trace(TraceId.manual('r', 1), tags: {'a'}, () {
+  Logger.zonedTraceIds(); // [r-1]
+  Logger.zonedTags();     // {a}
+});
+```
+
+Both return unmodifiable views. Adding to one throws `UnsupportedError`
+rather than quietly retagging every later log in the same zone — the context
+is set by `trace()` and read everywhere else. Both take an optional zone if
+you need to ask about one other than the current.
 
 #### `TraceId` configurations
 

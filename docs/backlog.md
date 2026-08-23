@@ -11,4 +11,3 @@
 
 ## README
 
-- [ ] zones
