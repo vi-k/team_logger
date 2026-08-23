@@ -1224,11 +1224,7 @@ log.d(
 The pattern means whatever the installed formatter says it means — the one
 above is a `format` template, and
 `(theme, value, pattern) => sprintf(pattern, [value])` would make `'%d'` the
-way to write it instead. With `format` the locale rules are its own: `,` and
-`_` group under every locale, `n` is the locale-aware form, and `format`
-reads no ambient locale — `n` follows the C locale and `Intl.defaultLocale`
-changes nothing. `'{:,n}'` throws there,
-because `n` takes no grouping option.
+way to write it instead.
 
 String can be displayed with or without quotation marks:
 
