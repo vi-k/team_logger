@@ -39,17 +39,16 @@ abstract mixin class Loggable {
 
   static final Map<Type, LoggableTypeConverter<Object?>> _converters = {};
 
-  /// Глобальный санитайзер выводимых значений.
+  /// The global sanitizer for values on their way into the output.
   ///
-  /// `null` (по умолчанию) — вывод без обработки и без накладных
-  /// расходов. Применяется в [objectToString] и [objectToJson], то есть
-  /// ко ВСЕМ выводам: publisher'ам, in-app просмотрщику логов, экспорту
-  /// сессий.
+  /// `null` (the default) means output with no processing and no overhead.
+  /// It applies in [objectToString] and [objectToJson], and therefore to
+  /// ALL outputs: publishers, an in-app log viewer, session export.
   ///
-  /// Каждое значение обрабатывается ровно один раз, тем местом, которое
-  /// знает его позицию (свойство, ключ [Map], индекс элемента).
-  /// Правило получает [SanitizeContext] и возвращает исходное значение,
-  /// замену или [Sanitize.drop].
+  /// Every value is processed exactly once, by whoever knows its position
+  /// (a property, a [Map] key, an element index). The rule is given a
+  /// [SanitizeContext] and returns the original value, a replacement, or
+  /// [Sanitize.drop].
   ///
   /// ```dart
   /// Loggable.sanitizer = (ctx) => switch (ctx.name) {
@@ -58,147 +57,153 @@ abstract mixin class Loggable {
   /// };
   /// ```
   ///
-  /// Правило обязано быть чистой функцией от [SanitizeContext]: без
-  /// побочных эффектов (сам факт вызова не гарантирует, что значение
-  /// будет напечатано, — см. спеку, «Циклы, лимиты, ленивость») и без
-  /// рендеринга. Рендеринг — это не только явные
-  /// [objectToString]/[objectToJson], но и интерполяция `'${ctx.value}'`
-  /// либо `ctx.value.toString()` для [Loggable], [LoggableData],
-  /// [LoggableWrapper] и [LoggableMultiData]: их `toString` заходит в те
-  /// же обходчики, из которых правило и было вызвано. Логировать изнутри
-  /// правила тоже нельзя.
+  /// The rule has to be a pure function of [SanitizeContext]: no side
+  /// effects (being called does not guarantee the value will be printed —
+  /// see the spec, "Cycles, limits, laziness") and no rendering. Rendering
+  /// is not only an explicit [objectToString]/[objectToJson], but also
+  /// interpolating `'${ctx.value}'` or calling `ctx.value.toString()` for
+  /// [Loggable], [LoggableData], [LoggableWrapper] and [LoggableMultiData]:
+  /// their `toString` enters the very walkers the rule was called from.
+  /// Logging from inside the rule is out too.
   ///
-  /// Ключ [Map] правилу не предлагается: правило получает значение
-  /// записи, а ключ видит как [SanitizeContext.name] и часть
-  /// [SanitizeContext.path]. Секрет в самом ключе
-  /// (`{'ann@example.com': {...}}`) заменой не вычистить — правило по
-  /// имени может только выбросить запись целиком через [Sanitize.drop].
+  /// A [Map] key is not offered to the rule: the rule gets the entry's
+  /// value and sees the key as [SanitizeContext.name] and as part of
+  /// [SanitizeContext.path]. A secret in the key itself
+  /// (`{'ann@example.com': {...}}`) cannot be cleaned out by replacement —
+  /// a name-based rule can only drop the whole entry with
+  /// [Sanitize.drop].
   ///
-  /// Значения ВНУТРИ объекта-ключа предлагаются только там, где рендер
-  /// ключа заходит в обходчики: в строковом выводе — всегда, в JSON —
-  /// только у ключей, чей `toString()` сам зовёт обходчик ([Loggable],
-  /// [LoggableData], [LoggableWrapper], [LoggableMultiData]). Любой
-  /// другой ключ [objectToJson] рисует обычным `key.toString()`, мимо
-  /// обходчиков, — поэтому секрет внутри обычного контейнера-ключа
-  /// (`{{'pw': 'hunter2'}: 'primary'}`) на консоли замаскируется
-  /// (`{{pw: "<masked>"}: "primary"}`), а в [objectToJson] уцелеет
-  /// (`{"{pw: hunter2}": "primary"}`) — и попадёт в JSONL-файл, если тот
-  /// пишется с `dataFormat: FileLogDataFormat.json` (по умолчанию
-  /// `text`, то есть строковая — уже замаскированная — форма). Убрать
-  /// секрет оттуда можно только выбросив запись целиком, причём правилом
-  /// по ЗНАЧЕНИЮ: текст ключа у двух выводов разный (см. ниже), и правило
-  /// по нему сработало бы только в одном. Там же, где содержимое
-  /// ключа предлагается, оно идёт под путём КОНТЕЙНЕРА, а не записи: в
-  /// `{'acc': {Account('DE89'): 'x'}}` свойство ключа придёт как
-  /// `acc.iban`, тогда как сама запись — `acc.Account(iban: "DE89")`.
+  /// Values INSIDE a key object are offered only where rendering the key
+  /// enters the walkers: in the string output always, in JSON only for
+  /// keys whose `toString()` calls a walker itself ([Loggable],
+  /// [LoggableData], [LoggableWrapper], [LoggableMultiData]). Any other key
+  /// [objectToJson] draws with a plain `key.toString()`, past the walkers —
+  /// so a secret inside an ordinary container key
+  /// (`{{'pw': 'hunter2'}: 'primary'}`) is masked on the console
+  /// (`{{pw: "<masked>"}: "primary"}`) and survives into [objectToJson]
+  /// (`{"{pw: hunter2}": "primary"}`), and therefore into a JSONL file
+  /// written with `dataFormat: FileLogDataFormat.json` (the default,
+  /// `text`, writes the string — already masked — form). The only way to
+  /// get the secret out of there is to drop the whole entry, and by a rule
+  /// on the VALUE: the key's text differs between the two outputs (see
+  /// below), so a rule on it would fire in one of them only. And where a
+  /// key's contents are offered, they come under the CONTAINER's path
+  /// rather than the entry's: in `{'acc': {Account('DE89'): 'x'}}` the
+  /// key's property arrives as `acc.iban`, while the entry itself is
+  /// `acc.Account(iban: "DE89")`.
   ///
-  /// Для нестрокового ключа [SanitizeContext.name] — это ключ в том виде,
-  /// в каком его рисует ИМЕННО ЭТОТ вывод: строковый — обходчиком и
-  /// темой (`[₌₂ ₀:1, ₁:2]`, `.admin`), JSON — через `key.toString()`
-  /// (`[1, 2]`, `Role.admin`). Формы разные, а строковая ещё и зависит от
-  /// темы, поэтому правило по тексту ключа сработает в одном выводе и
-  /// пропустит запись в другом: такие записи редактируйте по значению
-  /// либо выбрасывайте целиком.
+  /// For a non-`String` key, [SanitizeContext.name] is the key as THIS
+  /// PARTICULAR output draws it: the string one through the walker and the
+  /// theme (`[₌₂ ₀:1, ₁:2]`, `.admin`), JSON through `key.toString()`
+  /// (`[1, 2]`, `Role.admin`). The forms differ, and the string one depends
+  /// on the theme as well, so a rule on the key's text fires in one output
+  /// and lets the entry through in the other: redact such entries by value,
+  /// or drop them whole.
   ///
-  /// Санитайзер — статическое поле, то есть живёт в пределах одного
-  /// изолята: правило, установленное в главном изоляте, не применится к
-  /// логам, отрисованным в порождённом, — там его нужно установить
-  /// заново.
+  /// The sanitizer is a static field and therefore lives within one
+  /// isolate: a rule installed in the main isolate does not apply to logs
+  /// rendered in a spawned one — it has to be set again there.
   ///
-  /// КОРНЕВОЕ значение — сам объект `data` — предлагается правилу как
-  /// безымянное на `depth == 0`. Предлагают его и прямые
-  /// пользовательские пути, в обходчики не заходящие: [toString] у
-  /// [Loggable] и [LoggableData], `LoggableMultiData.toString`,
-  /// `LogMessage` в принтере. Поэтому правило по `depth == 0` меняет и
-  /// то, что печатает `'$obj'`/`print(obj)`, а [Sanitize.drop] в корне
-  /// даёт там пустую строку.
+  /// The ROOT value — the `data` object itself — is offered to the rule
+  /// unnamed, at `depth == 0`. The direct user paths offer it too, the ones
+  /// that never enter the walkers: [toString] on [Loggable] and
+  /// [LoggableData], `LoggableMultiData.toString`, `LogMessage` in the
+  /// printer. So a `depth == 0` rule also changes what `'$obj'`/`print(obj)`
+  /// prints, and [Sanitize.drop] at the root renders an empty string
+  /// there.
   ///
-  /// Замена корня рендерится настройками контейнера
-  /// (`collectionMaxCount`, `stringInQuotes`, форматы чисел), но БЕЗ его
-  /// `units`: единицы описывают исходную величину, а маска ею не
-  /// является. Ровно так же ведёт себя замена свойства.
+  /// A root replacement renders with the container's settings
+  /// (`collectionMaxCount`, `stringInQuotes`, the number formats) but
+  /// WITHOUT its `units`: units describe the original quantity, and a mask
+  /// is not that quantity. A property replacement behaves exactly the
+  /// same.
   ///
-  /// Область действия — только значения ВНУТРИ `data`. `message`,
-  /// `error`, `stackTrace`, теги и путь неймспейса через обходчики
-  /// [objectToString]/[objectToJson] не проходят: принтер печатает
-  /// `log.message` как есть и `error` через `toString()`, `FileLogCodec`
-  /// пишет их так же, теги и имя логгера превращают в строки `LazyTags` и
-  /// `LazyString`, — так что санитайзер эти поля не видит и подменить не
-  /// может. Корневое предложение до них тоже не достаёт: всё это
-  /// библиотека рендерит через [renderOutsideSanitizerScope].
-  /// Замаскировать эти поля или отбросить лог целиком — задача
+  /// The scope is values INSIDE `data` only. `message`, `error`,
+  /// `stackTrace`, the tags and the namespace path do not pass through the
+  /// [objectToString]/[objectToJson] walkers: the printer prints
+  /// `log.message` as it is and `error` through `toString()`,
+  /// `FileLogCodec` writes them the same way, and the tags and the logger
+  /// name are turned into strings by `LazyTags` and `LazyString` — so the
+  /// sanitizer never sees these fields and cannot substitute them. The root
+  /// offer does not reach them either: the library renders all of it
+  /// through [renderOutsideSanitizerScope]. Masking these fields, or
+  /// dropping the log entirely, is the job of
   /// `Logger.transformer`.
   ///
-  /// ГРАНИЦА: подавляется только `toString()`, который зовёт САМА
-  /// библиотека. Интерполяцию, которую сделал вызывающий, — `log.i('$obj')`
-  /// или `log.i(() => '$obj')` — правило по-прежнему видит: она
-  /// выполняется в пользовательском коде, до библиотеки доходит уже
-  /// готовая строка. Это единственный случай, когда `depth == 0` меняет
-  /// текст лога.
+  /// THE BOUNDARY: only a `toString()` the library itself calls is
+  /// suppressed. Interpolation the caller did — `log.i('$obj')` or
+  /// `log.i(() => '$obj')` — is still seen by the rule: it runs in user
+  /// code and reaches the library as a finished string. That is the one
+  /// case where `depth == 0` changes the text of a log.
   ///
-  /// Бросать из правила нельзя: fail-closed здесь нет, в отличие от
-  /// `Logger.transformer`. Исключение уходит в тот publisher, который в
-  /// этот момент рендерил: `FileLogStorage` отдаст его своему `onError` и
-  /// запишет fallback-строку без данных, а `ConsoleLogPrinter` его не
-  /// ловит — исключение покинет `publish()`, и `MultiPublisher` его
-  /// изолирует, но принтер сам по себе пробросит его в точку логирования.
+  /// The rule must not throw: there is no fail-closed guard here, unlike
+  /// in `Logger.transformer`. The exception escapes into whichever
+  /// publisher was rendering at the time: `FileLogStorage` hands it to its
+  /// `onError` and writes a fallback line without the data, while
+  /// `ConsoleLogPrinter` does not catch it — the exception leaves
+  /// `publish()`, and `MultiPublisher` isolates it, but a printer on its
+  /// own propagates it to the logging call site.
   static LogValueSanitizer? sanitizer;
 
-  /// Дефолт приложения: чем рендерить то, о чём место вызова промолчало.
+  /// The application's default: how to render what the call site left
+  /// unsaid.
   ///
-  /// Самый слабый слой цепочки `defaultConfig ← вызов ← [forceConfig]`.
-  /// Любой конфиг с места вызова и любой конфиг контейнера его перебивают,
-  /// поэтому сюда кладут предпочтения («у нас строки без кавычек»), а не
-  /// политику — для политики есть [forceConfig].
+  /// The weakest layer of the `defaultConfig ← call site ← [forceConfig]`
+  /// chain. Any config from a call site and any container's config
+  /// override it, so this is where preferences go ("our strings carry no
+  /// quotes") rather than policy — policy has [forceConfig].
   ///
-  /// Статика на изолят, как и [sanitizer]: [objectToString] и
-  /// [objectToJson] зовут и без темы, и без логгера, и там дефолт обязан
-  /// действовать тоже. В порождённом изоляте задать заново.
+  /// A per-isolate static, like [sanitizer]: [objectToString] and
+  /// [objectToJson] are called without a theme and without a logger too,
+  /// and the default has to apply there as well. Set it again in a spawned
+  /// isolate.
   static LoggableConfig defaultConfig = const LoggableConfig();
 
-  /// Политика приложения: то, что не снимается с места вызова.
+  /// The application's policy: what a call site cannot lift.
   ///
-  /// Самый сильный слой цепочки `[defaultConfig] ← вызов ← forceConfig`.
-  /// Перебивает и конфиг вызова, и конфиг контейнера — в том числе тот,
-  /// что подмешивается уже во время обхода, глубоко внутри данных.
-  /// Незаданные (`null`) поля политикой не являются и решаются слоями ниже.
+  /// The strongest layer of the `[defaultConfig] ← call site ← forceConfig`
+  /// chain. It overrides both the call's config and a container's — including
+  /// one merged in during the walk, deep inside the data. Unset (`null`)
+  /// fields are not policy and are decided by the layers below.
   ///
-  /// Единицы измерения сюда класть не стоит: `units` описывают конкретную
-  /// величину, а не способ печати, и форсированные припишутся всему подряд.
-  /// Запрета нет — контракт «force перебивает всё» важнее частного
-  /// предохранителя, — но корневая sanitizer-замена единицы снимает и
-  /// вопреки force: замена не является исходной величиной.
+  /// Units do not belong here: `units` describe one particular quantity
+  /// rather than a way of printing, and forced ones would be pinned onto
+  /// everything. There is no prohibition — the "force overrides everything"
+  /// contract matters more than one special guard — but a root sanitizer
+  /// replacement strips units even against force: a replacement is not the
+  /// original quantity.
   ///
-  /// Статика на изолят, как и [sanitizer]. В порождённом изоляте задать
-  /// заново.
+  /// A per-isolate static, like [sanitizer]. Set it again in a spawned
+  /// isolate.
   static LoggableConfig forceConfig = const LoggableConfig();
 
-  /// Сегменты пути к текущему значению: [String] — имя или ключ,
-  /// [int] — индекс. Статический стек, как и [_visiting], чтобы не
-  /// менять сигнатуры обходчиков.
+  /// Path segments down to the current value: a [String] is a name or a
+  /// key, an [int] is an index. A static stack, like [_visiting], so that
+  /// the walkers' signatures do not have to change.
   static final List<Object> _sanitizeSegments = <Object>[];
 
   static bool get _sanitizing => sanitizer != null;
 
-  /// Сегмент-заглушка корневой позиции: держит [_sanitizeSegments]
-  /// непустым, оставаясь вне пути и вне счёта глубины.
+  /// The guard segment for the root position: it keeps [_sanitizeSegments]
+  /// non-empty while staying out of the path and out of the depth count.
   ///
-  /// Ставится дважды (см. [_sanitizeRoot]): на время вызова правила для
-  /// корня — иначе рендер изнутри правила снова попал бы в корневую
-  /// ветку и зациклился, — и на повторный рендер значения, заменившего
-  /// корень, — иначе санитайзер сработал бы на замену второй раз.
+  /// It is pushed twice (see [_sanitizeRoot]): for the duration of the
+  /// rule's call on the root — otherwise rendering from inside the rule
+  /// would land in the root branch again and recurse — and for re-rendering
+  /// the value that replaced the root — otherwise the sanitizer would fire
+  /// on the replacement a second time.
   ///
-  /// Собственный приватный тип, а не `const Object()`: два разных
-  /// `const Object()` идентичны, и маркер спутался бы с любым другим
-  /// (см. [Prop._notSanitized]).
+  /// A private type of its own rather than `const Object()`: two different
+  /// `const Object()`s are identical, and the marker would be confused with
+  /// any other (see [Prop._notSanitized]).
   static const Object _rootGuardSegment = _SanitizeGuardSegment();
 
-  /// Сколько заглушек сейчас в [_sanitizeSegments] (0 или 1) —
-  /// чтобы [_sanitizeChild] и [SanitizeContext.path] могли исключить их
-  /// за O(1), не сканируя стек на каждый узел.
+  /// How many guards are in [_sanitizeSegments] right now (0 or 1), so
+  /// that [_sanitizeChild] and [SanitizeContext.path] can exclude them in
+  /// O(1) instead of scanning the stack for every node.
   static int _placeholderCount = 0;
 
-  /// Применяет санитайзер к ребёнку, зная его позицию.
+  /// Applies the sanitizer to a child, knowing its position.
   ///
   /// Возвращает исходное значение (не трогали), замену или
   /// [Sanitize.drop]. Вызывать ровно один раз на значение: обходчики
