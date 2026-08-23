@@ -387,6 +387,51 @@ final log = Logger('app')
 
 ![LogConstraints](screenshots/layout_6.png)
 
+#### Where the Output Goes
+
+`ConsoleLogPrinter` writes through its `output` parameter, which defaults to
+`print`. Replace it to send lines elsewhere — `dart:developer`'s `log()` in a
+Flutter app, a buffer in a test, a socket, a file:
+
+```dart
+import 'dart:developer' as developer;
+
+final log = Logger('app')
+  ..level = LogLevels.all
+  ..publisher = ConsoleLogPrinter(
+    rows: const [/* ... */],
+    output: (line) => developer.log(line, name: 'app'),
+  );
+```
+
+`output` can be replaced at any time, and the replacement takes effect from
+the next line for every level at once — handy for swapping the sink in a
+test.
+
+**It is called once per rendered line, not once per log.** A message that
+wraps costs one call per line, and a layout with two `LogRow`s costs two:
+
+```dart
+log.i('a very long message that will definitely wrap across lines');
+// (2) a very long message that -
+// (2) will definitely wrap acro-
+// (2) ss lines
+```
+
+Three calls, not one. That is also why each line repeats the sequence
+number, level, time and the rest — hidden by default, see "Filter logs"
+above: a line has to stand on its own, because whatever consumes it may
+timestamp, prefix or reorder it independently of its neighbours.
+
+So a `developer.log` sink makes one entry per *line*. There is no signal
+marking where a log's lines end, and `output` is the wrong seam if you need
+one entry per log — implement a `CustomLogPublisher` instead and render the
+log yourself.
+
+If the destination does not render ANSI escape codes, pair the sink with
+`LogMainTheme.noColors` (see "No Colors" below) so the text arrives clean
+rather than full of unrendered codes.
+
 ### 2. Colors & Dynamic Themes
 
 `team_logger` supports color-coded and structured console output using

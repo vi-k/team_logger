@@ -11,5 +11,4 @@
 
 ## README
 
-- [ ] output: print/log
 - [ ] zones
