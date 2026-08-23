@@ -41,10 +41,10 @@ void main() {
     });
 
     test('is applied exactly once per rendered value', () {
-      // Правило ведёт себя по-разному при повторном применении: первый
-      // вызов заменяет значение, любой следующий — убрал бы его. Тест
-      // остаётся осмысленным только если санитайзер не сработает дважды
-      // на одно и то же (в т.ч. на замену корня).
+      // The rule behaves differently when applied twice: the first call
+      // replaces the value, any later one would remove it. The test only
+      // stays meaningful if the sanitizer never fires twice on the same thing
+      // (a root replacement included).
       var calls = 0;
       Loggable.sanitizer = (ctx) {
         calls++;
@@ -150,9 +150,9 @@ void main() {
     test(
       'Sanitize.drop as ordinary map data is not swallowed when unset',
       () {
-        // Loggable.sanitizer остаётся null: Sanitize.drop — публичный API,
-        // и приложение вправе хранить его как обычные данные. Проверка
-        // на drop не должна срабатывать без установленного санитайзера.
+        // Loggable.sanitizer stays null: Sanitize.drop is public API and an
+        // app is free to keep it around as ordinary data. The drop check must
+        // not fire when no sanitizer is installed.
         final data = {'a': 1, 'b': Sanitize.drop, 'c': 3};
         final droppedText = Loggable.objectToString(Sanitize.drop);
         expect(
@@ -258,10 +258,10 @@ void main() {
         config: const LoggableConfig(collectionMaxCount: 3),
       );
 
-      // Санитайзер не вызывается для того, что лимит не вывел: корень
-      // плюс ровно три выведенных элемента (первый, последний и один
-      // промежуточный). Число точное — «меньше десяти» пропускало
-      // лишний рендер отсечённого хвоста.
+      // The sanitizer is not called for what the limit did not print: the
+      // root plus exactly the three printed elements (the first, the last and
+      // one in between). The number is exact — "fewer than ten" used to let
+      // an extra render of the cut-off tail slip through.
       expect(calls, 4);
     });
 
@@ -269,16 +269,15 @@ void main() {
       'a candidate evicted by the length budget may still be offered '
       '(the rule must have no side effects)',
       () {
-        // В отличие от collectionMaxCount (тест выше), бюджет длины
-        // измеряет уже отрендеренный — и потому уже санитизированный —
-        // текст кандидата, а буферизованный элемент может быть задним
-        // числом вытеснен многоточием. Это не баг, а задокументированное
-        // следствие того, как считается бюджет (см. дизайн-спеку,
-        // раздел «Циклы, лимиты, ленивость»): значение может быть
-        // предложено правилу и не попасть в вывод. Пин теста намеренно
-        // жёсткий — если бюджет когда-нибудь станет считать размер без
-        // рендера кандидата, это изменение контракта, и тест обязан
-        // упасть.
+        // Unlike collectionMaxCount (the test above), the length budget
+        // measures the candidate's already rendered — and therefore already
+        // sanitized — text, and a buffered element can be evicted by the
+        // ellipsis after the fact. This is not a bug but a documented
+        // consequence of how the budget is computed (see the design spec,
+        // section "Cycles, limits, laziness"): a value may be offered to the
+        // rule and never reach the output. The pin is deliberately strict —
+        // if the budget ever starts measuring size without rendering the
+        // candidate, that is a contract change and this test must fail.
         final offered = <String>[];
         Loggable.sanitizer = (ctx) {
           final value = ctx.value;
@@ -296,9 +295,9 @@ void main() {
           ),
         );
 
-        // (a) вывод обрезан бюджетом, как и ожидается.
+        // (a) the output is truncated by the budget, as expected.
         expect(out, '("v0", "v1", …)');
-        // (b) правилу предложили значение, которого нет в выводе.
+        // (b) the rule was offered a value that is absent from the output.
         expect(offered, contains('v2'));
         expect(out, isNot(contains('v2')));
       },
@@ -438,13 +437,14 @@ void main() {
       'sanitizes a single prop exactly once — the root path does not '
       're-fire on it',
       () {
-        // Свойство должно попадать под санитайзер ровно один раз — своим
-        // собственным вызовом (depth > 0). До фикса значение свойства
-        // рендерилось через objectToString с пустым стеком сегментов, что
-        // било по корневому пути (depth 0) вместо/вместе с позиционным.
-        // Правило вида `(ctx) => ctx.name == 'p' ? Sanitize.drop : ctx.value`
-        // ломается при повторном применении к собственному результату —
-        // поэтому здесь важен именно счётчик вызовов, а не факт замены.
+        // A property must go through the sanitizer exactly once — via its
+        // own call (depth > 0). Before the fix the property value was
+        // rendered through objectToString with an empty segment stack, which
+        // hit the root path (depth 0) instead of, or alongside, the
+        // positional one. A rule like
+        // `(ctx) => ctx.name == 'p' ? Sanitize.drop : ctx.value` breaks when
+        // reapplied to its own result — which is why the call counter, not
+        // the fact of replacement, is what matters here.
         var propCalls = 0;
         Loggable.sanitizer = (ctx) {
           if (ctx.depth > 0) propCalls++;

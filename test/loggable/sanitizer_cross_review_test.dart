@@ -2,23 +2,25 @@ import 'package:ansi_escape_codes/extensions.dart';
 import 'package:team_logger/team_logger.dart';
 import 'package:test/test.dart';
 
-/// Регрессии кросс-ревью 0.6.1 (Codex + адверсариальный ревьюер).
+/// Regressions from the 0.6.1 cross-review (Codex plus an adversarial
+/// reviewer).
 ///
-/// Каждая группа пинит одну находку: двойной рендер ключа [Map] (B1),
-/// его безусловность (B2), санитайз отсечённого лимитом элемента (B4),
-/// поведение [Prop] при `Sanitize.drop` (B9.2). Отдельная группа пинит
-/// то, что README §10 и dartdoc `Loggable.sanitizer` обещают про
-/// содержимое объекта-ключа: где оно предлагается правилу, под каким
-/// путём и где НЕ предлагается (утечка в JSON).
+/// Each group pins one finding: the double render of a [Map] key (B1), its
+/// unconditional nature (B2), sanitizing an element cut off by a limit (B4),
+/// and how [Prop] behaves under `Sanitize.drop` (B9.2). A separate group pins
+/// what README §10 and the `Loggable.sanitizer` dartdoc promise about the
+/// contents of a key object: where it is offered to the rule, under which
+/// path, and where it is NOT offered (the leak into JSON).
 void main() {
   group('cross-review — a map key is rendered exactly once', () {
     tearDown(() => Loggable.sanitizer = null);
 
     test('a Loggable key offers its props once, at one path in both outputs',
         () {
-      // Ключ рендерился дважды: черновым `entry.key.toString()` (для
-      // пути) и ещё раз в вывод — с расходящимися путями, из-за чего
-      // правило по пути маскировало черновик и пропускало напечатанное.
+      // The key used to be rendered twice: once as a draft
+      // `entry.key.toString()` (for the path) and once more into the output,
+      // with diverging paths, so a path rule masked the draft and let the
+      // printed one through.
       final seen = <String>[];
       Loggable.sanitizer = (ctx) {
         seen.add('${ctx.path}@${ctx.depth}');
@@ -35,8 +37,9 @@ void main() {
       Loggable.objectToJson(map);
       final json = [...seen];
 
-      // Свойства ключа предлагаются под путём самого ключа (ключ — не
-      // сегмент пути, см. README §10), значение записи — под ключом.
+      // The key's props are offered under the key's own path (a key is not a
+      // path segment, see README §10); the entry's value is offered under the
+      // key.
       expect(text, ['@0', 'iban@1', '_Account(iban: "DE89")@1']);
       expect(json, text);
     });
@@ -59,8 +62,8 @@ void main() {
     });
 
     test('a non-String key is rendered exactly once without a sanitizer', () {
-      // «Одна проверка на null на значение, больше ничего»: без правила
-      // ключ обязан рендериться ровно так же, как до 0.6.0.
+      // "One null check per value, nothing more": with no rule installed the
+      // key must render exactly as it did before 0.6.0.
       final key = _CountingKey();
 
       Loggable.objectToString(<Object?, Object?>{key: 1});
@@ -84,8 +87,8 @@ void main() {
     });
 
     test('a Loggable key with a throwing toString still renders as text', () {
-      // До 0.6.0 строковый путь рисовал нестроковые ключи через
-      // objectToString, поэтому toString() такого ключа не звался вовсе.
+      // Before 0.6.0 the string output drew non-String keys through
+      // objectToString, so toString() of such a key was never called at all.
       final map = <Object?, Object?>{_ThrowingKey('DE89'): 'primary'};
 
       expect(
@@ -95,9 +98,10 @@ void main() {
     });
 
     test('the same key still throws in JSON, as it did before 0.6.0', () {
-      // Асимметрия двух путей, а не недосмотр: JSON рисует ключ через
-      // `key.toString()` и звал его и в 0.5.2. Пин, чтобы «строковый путь
-      // toString не зовёт» не прочиталось как «не зовёт нигде».
+      // An asymmetry between the two outputs, not an oversight: JSON draws
+      // the key through `key.toString()` and already called it in 0.5.2.
+      // Pinned so that "the string output does not call toString" is not read
+      // as "nothing calls it anywhere".
       final map = <Object?, Object?>{_ThrowingKey('DE89'): 'primary'};
 
       expect(() => Loggable.objectToJson(map), throwsStateError);
@@ -114,8 +118,8 @@ void main() {
         return ctx.value;
       };
 
-      // Тема со стилями: сам напечатанный ключ раскрашен, но имя и путь —
-      // это данные для правила, а не вывод.
+      // A theme with styles: the printed key itself is colored, but the name
+      // and the path are data for the rule, not output.
       final theme = LogMainTheme(info: LogThemeData.gray10).info;
       final out = Loggable.objectToString(
         <Object?, Object?>{_Account('DE89'): 'primary'},
@@ -131,11 +135,12 @@ void main() {
     tearDown(() => Loggable.sanitizer = null);
 
     test('a secret inside a non-Loggable key survives into JSON', () {
-      // Документированное поведение, не баг «на будущее»: строковый путь
-      // рисует любой ключ обходчиком, а JSON — через `key.toString()`,
-      // поэтому внутрь обычного контейнера-ключа правило в JSON не
-      // заходит. Если этот вывод когда-нибудь закроют, тест упадёт — и
-      // вместе с ним придётся править README §10 и dartdoc [sanitizer].
+      // Documented behavior, not a bug filed "for later": the string output
+      // draws any key with the walker, while JSON goes through
+      // `key.toString()`, so in JSON the rule never descends into a plain
+      // container used as a key. If this leak is ever closed the test fails —
+      // and README §10 and the [sanitizer] dartdoc have to be updated with
+      // it.
       Loggable.sanitizer = (ctx) => ctx.name == 'pw' ? '<masked>' : ctx.value;
 
       final map = <Object?, Object?>{
@@ -150,8 +155,9 @@ void main() {
     });
 
     test('a Loggable key is offered in both outputs', () {
-      // Обратная сторона той же асимметрии: `toString` [Loggable]-ключа
-      // заходит в обходчики, поэтому в JSON он всё-таки санитайзится.
+      // The flip side of the same asymmetry: `toString` of a [Loggable] key
+      // goes through the walkers, so in JSON it does get sanitized after
+      // all.
       Loggable.sanitizer = (ctx) => ctx.name == 'iban' ? '<masked>' : ctx.value;
 
       final map = <Object?, Object?>{_Account('DE89'): 'primary'};
@@ -178,17 +184,17 @@ void main() {
         'acc': <Object?, Object?>{_Account('DE89'): 'x'},
       });
 
-      // Свойство ключа — `acc.iban`, то есть путь КОНТЕЙНЕРА `acc`, а не
-      // путь записи `acc._Account(iban: "DE89")`.
+      // The key's prop is `acc.iban`, i.e. the path of the CONTAINER `acc`,
+      // not the entry path `acc._Account(iban: "DE89")`.
       expect(seen, ['', 'acc', 'acc.iban', 'acc._Account(iban: "DE89")']);
     });
 
     test('ctx.name of a non-String key is the key as that output renders it',
         () {
-      // Следствие правильного исправления (имя = ключ в том виде, в
-      // каком он напечатан, посчитанный один раз и переиспользованный), а
-      // не баг: строковый путь берёт имя из objectToString, JSON — из
-      // key.toString(). Формы разные, и строковая зависит от темы.
+      // A consequence of the correct fix (the name is the key exactly as it
+      // is printed, computed once and reused), not a bug: the string output
+      // takes the name from objectToString, JSON from key.toString(). The two
+      // forms differ, and the string one depends on the theme.
       final names = <String>[];
       Loggable.sanitizer = (ctx) {
         if (ctx.name case final name?) names.add(name);
@@ -218,8 +224,9 @@ void main() {
     });
 
     test('a name rule written for one output misses the other', () {
-      // Поэтому README и dartdoc велят редактировать такие записи по
-      // значению или выбрасывать целиком, а не правилом по тексту ключа.
+      // This is why the README and the dartdoc tell you to edit such entries
+      // by value, or drop them whole, rather than with a rule matching the
+      // key text.
       Loggable.sanitizer =
           (ctx) => ctx.name == '[1, 2]' ? '<masked>' : ctx.value;
 

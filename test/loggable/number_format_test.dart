@@ -2,15 +2,15 @@ import 'package:format/format.dart';
 import 'package:team_logger/team_logger.dart';
 import 'package:test/test.dart';
 
-/// Пины на форматирование чисел через форматтер темы.
+/// Pins for number formatting done by the theme formatter.
 ///
-/// `intFormat`/`doubleFormat` — непрозрачные шаблоны: пакет передаёт их в
-/// `LogMainTheme.numberFormatter` вместе со значением и сам не разбирает.
-/// Здесь в тему кладётся рецепт поверх `package:format` — тот самый, что
-/// документирует README, — поэтому файл продолжает пинить и поведение
-/// `format`. Пробел вскрылся при переборе его версий: между ветками 1.x и
-/// 4.x расходится `{:g}` — для 1234.5678 ветка 1.x печатала `1234.57`,
-/// ветка 4.x печатает `1234.5678`.
+/// `intFormat`/`doubleFormat` are opaque patterns: the package hands them to
+/// `LogMainTheme.numberFormatter` together with the value and never parses
+/// them itself. The theme here is given the `package:format` recipe — the one
+/// the README documents — so this file also pins the behavior of `format`
+/// itself. The gap surfaced while sweeping its versions: `{:g}` diverges
+/// between the 1.x and 4.x branches — for 1234.5678 the 1.x branch printed
+/// `1234.57`, the 4.x branch prints `1234.5678`.
 void main() {
   final formatting = LogMainTheme.noColors
       .copyWith(
@@ -58,9 +58,10 @@ void main() {
       );
     });
 
-    // Локалезависимого варианта здесь нет: `format` читает свою
-    // `NumberLocale` из инстанса `Format`, а рецепт зовёт топ-уровневый
-    // `format()`. С версии 3.0.0 он не смотрит и в `Intl.defaultLocale`.
+    // There is no locale-dependent variant here: `format` reads its
+    // `NumberLocale` from a `Format` instance, while the recipe calls the
+    // top-level `format()`. Since 3.0.0 it does not consult
+    // `Intl.defaultLocale` either.
     test('n follows the C locale and does not group', () {
       expect(
         render(1234567, const LoggableConfig(intFormat: '{:n}')),
@@ -86,7 +87,7 @@ void main() {
       '{:,.2f}': '1,234.57',
       '{:+.2f}': '+1234.57',
       '{:.3e}': '1.235e+3',
-      // На ветке 1.x здесь было '1234.57' — см. шапку файла.
+      // On the 1.x branch this used to be '1234.57' — see the file header.
       '{:g}': '1234.5678',
     };
 

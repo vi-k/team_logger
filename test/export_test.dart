@@ -3,9 +3,9 @@ import 'package:test/test.dart';
 
 void main() {
   test('team_logger re-exports the minimal ansi style set', () {
-    // Компилируемость и есть проверка: Style/NoStyle/Color16/Color256
-    // и таблица Styles доступны без прямой зависимости от
-    // ansi_escape_codes.
+    // Compiling is the check itself: Style/NoStyle/Color16/Color256 and the
+    // Styles table are reachable without depending on ansi_escape_codes
+    // directly.
     const style = Style(foreground: Color256.rgb431);
     const noStyle = NoStyle();
     const color16 = Color16.red;

@@ -1,19 +1,19 @@
 import 'package:team_logger/team_logger.dart';
 import 'package:test/test.dart';
 
-/// Регрессии по финальному ревью фичи санитайзера (0.6.0).
+/// Regressions from the final review of the sanitizer feature (0.6.0).
 ///
-/// Каждая группа пинит один найденный дефект — тесты намеренно жёсткие:
-/// они должны падать, если поведение вернётся к дореviewному.
+/// Each group pins one defect that review found — the tests are deliberately
+/// strict: they must fail if the behavior reverts to its pre-review state.
 void main() {
   group('sanitizer review — root reentrancy', () {
     tearDown(() => Loggable.sanitizer = null);
 
     test('a rule that renders its own value does not recurse forever', () {
-      // Контракт запрещает правилу рендерить (см. Loggable.sanitizer), но
-      // нарушение контракта не должно вешать процесс: до фикса
-      // _sanitizeRoot звал правило с пустым стеком сегментов, поэтому
-      // objectToString изнутри правила снова попадал в корневую ветку.
+      // The contract forbids a rule from rendering (see Loggable.sanitizer),
+      // but breaking the contract must not hang the process: before the fix
+      // _sanitizeRoot called the rule with an empty segment stack, so an
+      // objectToString from inside the rule landed in the root branch again.
       Loggable.sanitizer = (ctx) =>
           Loggable.objectToString(ctx.value).contains('secret')
               ? '***'
@@ -24,10 +24,10 @@ void main() {
     });
 
     test('a render from inside the root rule does not re-enter the root', () {
-      // Рендер изнутри правила — нарушение контракта (в т.ч. неявное:
-      // интерполяция '${ctx.value}' для LoggableWrapper зовёт
-      // objectToString). Стоить оно должно лишним проходом, а не
-      // зависанием: повторного входа в корневую ветку быть не должно.
+      // Rendering from inside a rule breaks the contract (including
+      // implicitly: interpolating '${ctx.value}' for a LoggableWrapper calls
+      // objectToString). It should cost an extra pass, not a hang: the root
+      // branch must not be re-entered.
       var rootCalls = 0;
       Loggable.sanitizer = (ctx) {
         if (ctx.name == null) {
@@ -61,8 +61,9 @@ void main() {
     tearDown(() => Loggable.sanitizer = null);
 
     test('children of a replacement container ARE offered to the rule', () {
-      // Внутрь ОРИГИНАЛА обход не идёт, но замена рендерится как обычное
-      // значение — значит её собственные дети проходят через правило.
+      // The walk never descends into the ORIGINAL, but the replacement is
+      // rendered as an ordinary value — so its own children go through the
+      // rule.
       final names = <String?>[];
       Loggable.sanitizer = (ctx) {
         names.add(ctx.name);
@@ -76,8 +77,8 @@ void main() {
         }),
         '{₌₁ card: {₌₁ inner: "x"}}',
       );
-      // 'pan'/'cvv' — дети оригинала — не предлагались, 'inner' — ребёнок
-      // замены — предлагался.
+      // 'pan'/'cvv' — the original's children — were not offered; 'inner',
+      // the replacement's child, was.
       expect(names, [null, 'card', 'inner']);
     });
 
@@ -114,7 +115,8 @@ void main() {
       final data = Loggable.mapBuilder()
         ..prop('password', Loggable.from('hunter2'));
 
-      // mapBuilder — структура свойств, а не коллекция, счётчика нет.
+      // mapBuilder is a structure of props, not a collection, so there is no
+      // counter.
       expect(Loggable.objectToString(data), '{password: "***"}');
       expect(Loggable.objectToJson(data), {'password': '***'});
     });
@@ -131,8 +133,8 @@ void main() {
     });
 
     test('an untouched wrapper keeps its own config', () {
-      // Правило вернуло содержимое без изменений — рендерим ИСХОДНУЮ
-      // обёртку, иначе её config (здесь — units) потерялся бы.
+      // The rule returned the contents unchanged — render the ORIGINAL
+      // wrapper, otherwise its config (units here) would be lost.
       Loggable.sanitizer = (ctx) => ctx.value;
 
       final data = {
@@ -179,7 +181,8 @@ void main() {
       };
 
       expect(Loggable.objectToString({'a': 1}), isNot(contains('a: 1')));
-      // Замена корня отрендерилась, но повторно правилу не предлагалась.
+      // The root replacement was rendered but never offered to the rule
+      // again.
       expect(paths, ['']);
     });
   });
@@ -213,8 +216,8 @@ void main() {
       Loggable.sanitizer =
           (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
 
-      // LoggableData.props публичен: in-app просмотрщик вполне может
-      // рендерить свойства поштучно.
+      // LoggableData.props is public: an in-app viewer may well render props
+      // one by one.
       final props = _User('ann', 'hunter2').logClassInfo().props;
       final out = props.map((p) => p.toLogString()).join(', ');
 
@@ -239,8 +242,8 @@ void main() {
     });
 
     test('rendering through LoggableData still fires the rule once', () {
-      // LoggableData всегда передаёт `sanitized:`, поэтому fallback выше
-      // не должен приводить к двойному вызову правила.
+      // LoggableData always passes `sanitized:`, so the fallback above must
+      // not make the rule fire twice.
       var calls = 0;
       Loggable.sanitizer = (ctx) {
         if (ctx.name == 'password') calls++;
@@ -400,14 +403,14 @@ void main() {
         'req': {'pan': '4111'},
       }).toString();
 
-      // Первое наблюдение — КОРЕНЬ (пустой путь): альтернативный
-      // рендерер обязан предложить правилу и сам объект данных.
+      // The first observation is the ROOT (empty path): an alternative
+      // renderer must offer the data object itself to the rule as well.
       expect(paths, ['', 'req', 'req.pan']);
     });
 
     test('offers the root value to the rule', () {
-      // До фикса toString() входил сразу в обход секций, минуя корневое
-      // предложение, которое живёт в objectToString/objectToJson.
+      // Before the fix toString() went straight into the section walk,
+      // skipping the root offer that lives in objectToString/objectToJson.
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? Sanitize.drop : ctx.value;
 
       expect(LoggableMultiData({'s': 'topsecret'}).toString(), '');
@@ -437,9 +440,9 @@ void main() {
     tearDown(() => Loggable.sanitizer = null);
 
     test('a Loggable view nests under the property path', () {
-      // Сырой view (и LoggableView) рендерился без сегмента свойства:
-      // вложенный обход стартовал с пустого пути, а заодно вторично
-      // предлагал правилу собственный аргумент как корень.
+      // A raw view (and LoggableView) used to render without the property
+      // segment: the nested walk started from an empty path and, on top of
+      // that, offered its own argument to the rule a second time as a root.
       final paths = <String>[];
       Loggable.sanitizer = (ctx) {
         paths.add(ctx.path);
@@ -473,8 +476,8 @@ void main() {
     });
 
     test('a rule on the short path leaves a sibling top-level prop alone', () {
-      // Пере-редакция: укороченный путь совпадал с настоящим
-      // верхнеуровневым свойством и вычищал заодно и его.
+      // Over-redaction: the shortened path collided with a real top-level
+      // property and wiped that one out too.
       Loggable.sanitizer = (ctx) => ctx.path == 'pan' ? '***' : ctx.value;
 
       final data = Loggable.mapBuilder()
@@ -498,7 +501,8 @@ void main() {
       final data = Loggable.mapBuilder()
         ..prop('user', 0, view: Loggable.from({'password': 'hunter2'}));
 
-      // Корень, свойство `user`, вложенный `password` — и ничего сверх.
+      // The root, the `user` prop, the nested `password` — and nothing
+      // more.
       Loggable.objectToString(data);
       expect(calls, 3);
 

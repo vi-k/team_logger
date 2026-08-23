@@ -47,9 +47,9 @@ final class _Point with Loggable {
 
 void main() {
   group('Loggable', () {
-    /// Отличается от `efficientLengthIterableToJson` тем, что
-    /// несокращаемый список, у которого нет units, передаётся прямо, без
-    /// преобразования в Map.
+    /// Differs from `efficientLengthIterableToJson` in that a list that is
+    /// not truncated and carries no units is passed through directly, without
+    /// being converted to a Map.
     group('listToJson', () {
       void expectNoLimit(List<String> items, Object expected, {String? units}) {
         expect(
@@ -871,7 +871,7 @@ void main() {
             Loggable.objectToJson(12345678.9, config: config),
             {':v': 12345678.9, ':u': 'm'},
           );
-          // Units — визуальная сущность: для nan/inf не показываются.
+          // Units are a visual notion: they are not shown for nan/inf.
           expect(
             Loggable.objectToJson(double.nan, config: config),
             {':k': 'double', ':v': 'nan'},

@@ -70,8 +70,8 @@ void main() {
     });
 
     test('clears the error without re-deriving the stack trace', () {
-      // У не-брошенного StateError stackTrace == null, поэтому трейс
-      // передаётся явно — иначе утверждения были бы слепыми.
+      // An unthrown StateError has stackTrace == null, so the trace is passed
+      // explicitly — otherwise the assertions below would be blind.
       final original = capture(
         (log) => log.e(
           'fail',

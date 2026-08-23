@@ -49,9 +49,9 @@ void main() {
         ..i('payment', data: {'pin': 1234});
 
       final output = lines.join('\n');
-      // Положительное утверждение защищает от слепого теста: если data
-      // вообще не печатается с этой конфигурацией rows, тест упадёт —
-      // поправить rows, а не убирать проверку.
+      // The positive assertion guards against a blind test: if data is not
+      // printed at all with this rows configuration the test fails — fix rows
+      // rather than dropping the check.
       expect(output, contains('***'));
       expect(output, isNot(contains('1234')));
     });

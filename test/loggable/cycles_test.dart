@@ -53,7 +53,7 @@ void main() {
       final map = <String, Object?>{'list': list};
       list.add(map);
 
-      // Цикл через два уровня: list -> map -> list.
+      // A cycle spanning two levels: list -> map -> list.
       expect(Loggable.objectToString(list), contains('↺₂'));
     });
 

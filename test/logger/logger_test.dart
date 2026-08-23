@@ -141,8 +141,8 @@ void main() {
       log.d('disabled', traceId: before);
       log.w('enabled', traceId: TraceId.auto('lazy-group'));
 
-      // Отключённый лог не потребил номер: первый resolve достался
-      // включённому логу.
+      // The disabled log did not consume a number: the first resolve went to
+      // the enabled log.
       expect(out.logs.single.traceIds.single.num, 1);
     });
   });
@@ -173,8 +173,8 @@ void main() {
       expect(pinned.logs.map((e) => e.message), ['error']);
       expect(child.publisherLinked, isTrue);
 
-      // Приколотый уровень не отвязывает ребёнка целиком: смена publisher'а
-      // у родителя по-прежнему доходит до остальных уровней.
+      // A pinned level does not detach the child as a whole: replacing the
+      // parent's publisher still reaches the remaining levels.
       final replaced = _Capture();
       parent.publisher = replaced;
 

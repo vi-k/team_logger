@@ -116,7 +116,7 @@ void main() {
       );
       await storage.ready;
 
-      // Разрешено для старых сессий: 3000 - 1000 (резерв) = 2000 байт.
+      // Allowed for older sessions: 3000 - 1000 (reserve) = 2000 bytes.
       expect(File('${tmp.path}/a.1.jsonl').existsSync(), isFalse);
       expect(File('${tmp.path}/b.1.jsonl').existsSync(), isFalse);
       expect(File('${tmp.path}/c.1.jsonl').existsSync(), isTrue);
@@ -631,8 +631,8 @@ void main() {
       final lines = _lines(File('${tmp.path}/s1.1.jsonl'));
       expect(lines, hasLength(4));
       expect(_json(lines[1])['message'], 'one');
-      // Только тип ошибки: её текст может нести те самые данные, ради
-      // сокрытия которых правило и бросило (см. тест ниже).
+      // The error type only: its text may carry the very data the rule threw
+      // to hide (see the test below).
       expect(_json(lines[2])['encodeError'], 'StateError');
       expect(_json(lines[3])['message'], 'three');
       expect(reports, hasLength(1));
@@ -673,9 +673,9 @@ void main() {
 
     test('an encode error carrying a secret is not written to the file',
         () async {
-      // ArgumentError.value(ctx.value) — совершенно естественная форма
-      // отказа для правила: до фикса fallback-строка писала в JSONL
-      // текст исключения вместе с секретом.
+      // ArgumentError.value(ctx.value) is a perfectly natural way for a rule
+      // to refuse: before the fix the fallback line wrote the exception text,
+      // secret included, into the JSONL.
       addTearDown(() => Loggable.sanitizer = null);
       Loggable.sanitizer = (ctx) => ctx.name == 'password'
           ? throw ArgumentError.value(ctx.value, 'value')
@@ -695,7 +695,7 @@ void main() {
 
       final lines = _lines(File('${tmp.path}/s1.1.jsonl'));
       expect(_json(lines[1])['encodeError'], 'ArgumentError');
-      // Полная информация — только в onError.
+      // The full information goes to onError only.
       expect(reports.single.toString(), contains('hunter2'));
 
       await storage.close();
@@ -783,9 +783,11 @@ void main() {
       final session = (await storage.sessions.list()).single;
       final lastIndex =
           parseChunkName(session.files.last.uri.pathSegments.last)!.index;
-      // Один батч разрезан на несколько чанков, а не записан целиком.
+      // A single batch is cut into several chunks instead of being written
+      // as a whole.
       expect(lastIndex, greaterThanOrEqualTo(3));
-      // Хвост сессии в пределах лимита (плюс одна строка сверх target).
+      // The session tail stays within the limit (plus one line over the
+      // target).
       expect(session.size, lessThanOrEqualTo(1200 + 400));
       expect(await session.readAsString(), contains('msg49 '));
 
@@ -897,8 +899,8 @@ void main() {
       );
       final log = _logger(storage);
 
-      // Очередь не разгружается, пока не провернётся event loop, так что
-      // из трёх синхронных публикаций принята будет только первая.
+      // The queue is not drained until the event loop turns, so out of three
+      // synchronous publications only the first one is accepted.
       log.i('accepted');
       log.i('refused1');
       log.i('refused2');

@@ -340,8 +340,8 @@ void main() {
       log.i('a long message that wraps over lines');
 
       expect(out.length, greaterThan(1));
-      // Первая строка может содержать многоточие усечения времени,
-      // невидимые филлеры продолжений — не должны.
+      // The first line may carry the ellipsis of a truncated timestamp; the
+      // invisible continuation fillers must not.
       for (final line in out.skip(1)) {
         expect(line, isNot(contains('…')), reason: 'line: $line');
       }
@@ -362,8 +362,9 @@ void main() {
         ),
       );
 
-      // Фрейм переносится с маркером переноса '-'; после склейки строк и
-      // удаления маркеров/пробелов имя файла должно сохраниться целиком.
+      // The frame wraps with a '-' wrap marker; after gluing the lines back
+      // together and removing markers and spaces the file name must survive
+      // in one piece.
       final glued = out.join().replaceAll('-', '').replaceAll(' ', '');
       expect(glued, contains('file_name.dart'));
     });

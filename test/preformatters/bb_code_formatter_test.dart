@@ -52,9 +52,9 @@ void main() {
         messageStyles: const {'a.b': LogStyle(ansi.NoStyle())},
       );
 
-      // Настоящий тег обрабатывается (NoStyle снимает разметку)...
+      // A real tag is handled (NoStyle strips the markup)...
       expect(_formatter(theme.info, '[a.b]x[/a.b] tail'), 'x tail');
-      // ...а 'aXb' ключом 'a.b' не матчится, текст не искажается.
+      // ...while 'aXb' does not match the 'a.b' key, so the text is intact.
       const other = '[aXb]y[/aXb] tail2';
       expect(_formatter(theme.info, other), other);
     });

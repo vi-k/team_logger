@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:team_logger/team_logger.dart';
 import 'package:test/test.dart';
 
-/// Захватывает то, что напечатал `print`.
+/// Captures whatever `print` wrote.
 String _captured(void Function() body) {
   final lines = <String>[];
   runZoned(
@@ -16,26 +16,26 @@ String _captured(void Function() body) {
   return lines.join('\n');
 }
 
-/// Данные, которые легитимно рендерятся в пустую строку.
+/// Data that legitimately renders to an empty string.
 LoggableData _emptyRendering() => Loggable.builder(
       Object(),
       showName: false,
       showBrackets: false,
     );
 
-/// Регрессии по задаче D кросс-ревью 0.6.1: единая политика `units` у
-/// корневой замены (D1), явный сигнал «отброшено» вместо пустой строки
-/// (D2), multi-data со всеми выброшенными секциями (D3) и корневое
-/// предложение на `toString()` (D4).
+/// Regressions from task D of the 0.6.1 cross-review: one `units` policy for
+/// a root replacement (D1), an explicit "dropped" signal instead of an empty
+/// string (D2), multi-data with every section dropped (D3), and the root
+/// offer on `toString()` (D4).
 void main() {
   group('sanitizer root — units are not inherited by a replacement', () {
     tearDown(() => Loggable.sanitizer = null);
 
     test('a multi-data root replacement drops the container units', () {
-      // `units` — утверждение о величине, а замена ею не является: то же
-      // правило, что уже действует у свойства (`LoggableConfig
-      // .withoutUnits`), теперь действует и в корне. Все четыре
-      // рендерера multi-data обязаны совпасть.
+      // `units` is a claim about a quantity, and a replacement is not that
+      // quantity: the same rule that already applies to a property
+      // (`LoggableConfig.withoutUnits`) now applies at the root too. All four
+      // multi-data renderers must agree.
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? 12 : ctx.value;
 
       final data = LoggableMultiData(
@@ -54,9 +54,9 @@ void main() {
     });
 
     test('the rest of the container config still applies to a replacement', () {
-      // Наследование конфига контейнера снимается только с `units`:
-      // `collectionMaxCount` и прочие поля описывают не величину, а
-      // способ печати, и остаются в силе.
+      // Only `units` is stripped from the inherited container config:
+      // `collectionMaxCount` and the other fields describe how to print
+      // rather than a quantity, and stay in force.
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? [1, 2, 3] : ctx.value;
 
       final data = LoggableMultiData(
@@ -108,10 +108,11 @@ void main() {
   group('sanitizer root — a replacement inherits the container config', () {
     tearDown(() => Loggable.sanitizer = null);
 
-    // Замена встаёт на место контейнера, поэтому печатается его настройками.
-    // `units` при этом снимаются, остальное — способ печати — наследуется.
-    // Раньше это умели только `LoggableMultiData` и `LoggableWrapper`:
-    // билдеры держат свой config приватным полем, и общий код его не видел.
+    // A replacement takes the container's place, so it is printed with the
+    // container's settings. `units` is stripped; the rest — how to print — is
+    // inherited. Only `LoggableMultiData` and `LoggableWrapper` used to manage
+    // this: the builders keep their config in a private field the shared code
+    // could not see.
     const config = LoggableConfig(collectionMaxCount: 1, units: 'kg');
 
     setUp(() {
@@ -177,9 +178,9 @@ void main() {
     tearDown(() => Loggable.sanitizer = null);
 
     test('a replacement rendering empty keeps the colon on the console', () {
-      // До фикса дроп сообщался пустой строкой, и замена, легитимно
-      // отрендерившаяся в пустоту, читалась как дроп: печаталось `login`
-      // вместо `login: `.
+      // Before the fix a drop was reported as an empty string, so a
+      // replacement that legitimately rendered to nothing read as a drop:
+      // `login` was printed instead of `login: `.
       Loggable.sanitizer =
           (ctx) => ctx.depth == 0 ? _emptyRendering() : ctx.value;
 
@@ -199,8 +200,8 @@ void main() {
     tearDown(() => Loggable.sanitizer = null);
 
     test('leaves no data block at all', () {
-      // Висящая метка `login: ` без содержимого — шум: блок данных
-      // пропадает, если текст пуст И хотя бы одна запись отброшена.
+      // A dangling `login: ` label with no contents is noise: the data block
+      // disappears if the text is empty AND at least one entry was dropped.
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? ctx.value : Sanitize.drop;
 
       expect(
@@ -210,8 +211,8 @@ void main() {
     });
 
     test('an empty multi-data keeps its colon with a rule armed', () {
-      // Пустая сама по себе multi-data — законный пустой рендер, не дроп
-      // (закреплено в B6).
+      // A multi-data that is empty on its own is a legitimate empty render,
+      // not a drop (pinned in B6).
       Loggable.sanitizer = (ctx) => ctx.value;
 
       expect(_printData(LoggableMultiData({})), 'login:');
@@ -274,8 +275,8 @@ void main() {
       expect('$user', '_User(name: "ann", password: "***")');
       expect(
         '${Loggable.mapBuilder()..prop('password', 'hunter2')}',
-        // mapBuilder — структура свойств, а не коллекция: лимиты к ней не
-        // применяются, счётчика записей у неё нет.
+        // mapBuilder is a structure of props, not a collection: limits do
+        // not apply to it and it has no entry counter.
         '{password: "***"}',
       );
     });
@@ -320,8 +321,8 @@ void main() {
     });
 
     test('a nested Loggable is not offered a second time as a root', () {
-      // `toString()` вложенного объекта зовётся изнутри обхода — там
-      // значение уже предложено своей позицией.
+      // `toString()` of a nested object is called from inside the walk —
+      // there the value has already been offered at its own position.
       final seen = <String>[];
       Loggable.sanitizer = (ctx) {
         seen.add('${ctx.path}@${ctx.depth}');
@@ -356,11 +357,11 @@ void main() {
 
     test('a Loggable reached through a plain toString is not a second root',
         () {
-      // Обходчик рисует незнакомый тип его собственным `toString()`, а
-      // тот вправе интерполировать [Loggable]. Без заглушки на весь
-      // рендер корня стек в этот момент был бы пуст — и вложенный
-      // объект сделал бы ВТОРОЙ корневой офер (`@0`), затерев в правилах
-      // по depth == 0 настоящий корень.
+      // The walker draws an unknown type with its own `toString()`, and that
+      // is free to interpolate a [Loggable]. Without a guard covering the
+      // whole root render the stack would be empty at that moment — and the
+      // nested object would make a SECOND root offer (`@0`), shadowing the
+      // real root for rules keyed on depth == 0.
       final seen = <String>[];
       Loggable.sanitizer = (ctx) {
         seen.add('${ctx.path}@${ctx.depth}');
@@ -379,9 +380,9 @@ void main() {
     });
 
     test('a rule rendering the value it was handed does not recurse', () {
-      // Нарушение контракта (правилу рендерить нельзя), но повесить
-      // процесс оно не должно: заглушка держится и на время вызова
-      // правила, и на весь рендер корня.
+      // A contract violation (a rule must not render), but it must not hang
+      // the process: the guard is held both for the duration of the rule call
+      // and for the whole root render.
       Loggable.sanitizer = (ctx) => ctx.depth == 0 ? '${ctx.value}' : ctx.value;
 
       expect('${_User('ann', 'hunter2')}', contains('_User'));
@@ -400,7 +401,7 @@ void main() {
   });
 }
 
-/// Прогоняет лог через настоящий [ConsoleLogPrinter] в одну строку.
+/// Runs a log through a real [ConsoleLogPrinter] into a single line.
 String _printData(Object? data) {
   final lines = <String>[];
   Logger('app')
@@ -440,8 +441,8 @@ final class _Account with Loggable {
   void collectLoggableData(LoggableData data) => data.prop('iban', iban);
 }
 
-/// Тип, о котором обходчик ничего не знает: он рисуется собственным
-/// `toString()`, а тот заходит в [Loggable].
+/// A type the walker knows nothing about: it is drawn by its own
+/// `toString()`, which in turn reaches into [Loggable].
 final class _Envelope {
   final _Account inner;
 
