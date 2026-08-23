@@ -4,74 +4,74 @@ import '../theme/log_main_theme.dart';
 import 'loggable.dart';
 import 'loggable_json_config.dart';
 
-/// Конфигурация для [objectToString].
+/// Configuration for [objectToString].
 ///
-/// [enumDotShorthand] - сокращенное представление enums в виде `.value`.
-/// Если равно null, решают слои цепочки (см. ниже); по умолчанию `true`.
+/// [enumDotShorthand] - the shorthand `.value` form for enums. When null,
+/// the chain layers decide (see below); `true` by default.
 ///
-/// [collectionMaxCount] - максимальное количество элементов в коллекции
-/// (для [List], [Set], [Map] и [Iterable]). Если равно null, нет
-/// ограничений. У [Map] лимит считает выжившие записи: выброшенная
-/// правилом запись слот не занимает.
+/// [collectionMaxCount] - the maximum number of elements in a collection
+/// (for [List], [Set], [Map] and [Iterable]). No limit when null. For a
+/// [Map] the limit counts the entries that survive the rule: a dropped
+/// entry does not use up a slot.
 ///
-/// [collectionMaxStringLength] - максимальная длина результирующей строки
-/// после преобразования коллекции. В реальности строка может быть больше,
-/// т.к. итерируемые объекты обязательно должны содержать первый элемент,
-/// а списки первый и последний элемент без сокращений. Если равно null,
-/// ограничений.
+/// [collectionMaxStringLength] - the maximum length of the string a
+/// collection renders to. The result may be longer in practice, because an
+/// iterable always keeps its first element and a list keeps its first and
+/// last unabridged. No limit when null.
 ///
-/// [collectionShowCount] - показывать ли длину коллекции в виде `₌₄`
-/// (для [List], [Set] и [Map]). Если равно null, решают слои цепочки;
-/// по умолчанию `true`. У [Map] это длина исходной коллекции — записи,
-/// выброшенные правилом, в выводе не видны, и счётчик остаётся
-/// единственным их следом.
+/// [collectionShowCount] - whether to show a collection's length as `₌₄`
+/// (for [List], [Set] and [Map]). When null, the chain layers decide;
+/// `true` by default. For a [Map] this is the length of the original
+/// collection — entries the rule dropped are not visible in the output, and
+/// the count is the only trace they leave.
 ///
-/// [collectionShowIndexes] - показывать ли индексы элементов в виде `₀:`,
-/// `₁:` и т.д. Если равно null, решают слои цепочки; по умолчанию `true`.
+/// [collectionShowIndexes] - whether to show element indexes as `₀:`, `₁:`
+/// and so on. When null, the chain layers decide; `true` by default.
 ///
-/// [iterableEfficientLength] - утверждение вызывающего, что у голого
-/// [Iterable] длина и последний элемент дёшевы. Без него коллекция, которая
-/// не [List] и не [Set], обходится ровно один раз: печатаются первые
-/// элементы и многоточие, а длина не читается вовсе — иначе однопроходный
-/// или дорогой итератор пострадал бы. С ним вывод становится таким же
-/// богатым, как у [List]: количество (`₌₅`) и последний элемент. По
-/// умолчанию выключено; на генераторе включать нельзя.
+/// [iterableEfficientLength] - the caller's assertion that a bare
+/// [Iterable] has a cheap length and last element. Without it a collection
+/// that is neither a [List] nor a [Set] is walked exactly once: the leading
+/// elements and an ellipsis are printed and the length is not read at all,
+/// or a single-pass or expensive iterator would suffer. With it the output
+/// gets as rich as a [List]'s: the count (`₌₅`) and the last element. Off
+/// by default; must not be turned on for a generator.
 ///
-/// [escapeAnsiCodes] - безопасный вывод: управляющая последовательность в
-/// тексте показывается (`[CSI 2 ED]forged`), а не отправляется в терминал.
-/// Включено по умолчанию. Выключать стоит там, где значение стилизовано
-/// осознанно; для недоверенного ввода — наоборот, включать через
-/// [Loggable.forceConfig], чтобы место вызова не могло снять.
+/// [escapeAnsiCodes] - safe output: a control sequence in the text is shown
+/// (`[CSI 2 ED]forged`) rather than sent to the terminal. On by default.
+/// Turn it off where a value is styled deliberately; for untrusted input do
+/// the opposite and turn it on through [Loggable.forceConfig], so that a
+/// call site cannot lift it.
 ///
-/// [units] - единицы измерения, будут добавлены к представлению объекта
-/// в виде суффикса. Если равно null, единицы не добавляются.
+/// [units] - the unit of measurement, appended to the object's
+/// representation as a suffix. No units are added when null.
 ///
-/// [intFormat] и [doubleFormat] - шаблоны для чисел. Пакет их не
-/// разбирает: шаблон уходит в [LogMainTheme.numberFormatter] темы вместе
-/// со значением, и смысл ему придаёт форматтер. Тема без форматтера
-/// шаблон игнорирует и печатает число как есть - исключения не будет.
-/// Рецепт поверх `package:format`:
+/// [intFormat] and [doubleFormat] - patterns for numbers. The package does
+/// not parse them: the pattern goes to the theme's
+/// [LogMainTheme.numberFormatter] together with the value, and the
+/// formatter is what gives it meaning. A theme without one ignores the
+/// pattern and prints the number as it is - no exception is thrown. The
+/// recipe over `package:format`:
 /// `numberFormatter: (theme, value, pattern) => format(pattern, value)`,
-/// и тогда в конфиге пишут `'{:,d}'`, `'{:.4f}'` и так далее.
+/// and then the config carries `'{:,d}'`, `'{:.4f}'` and so on.
 ///
-/// Обратите внимание! Все параметры действуют рекурсивно не только на сам
-/// объект, но и на все вложенные в него объекты. При этом установленные
-/// параметры сбросить в null уже нельзя.
+/// Note that every setting applies recursively, to the object itself and
+/// to everything nested inside it, and that a setting once given cannot be
+/// reset to null.
 ///
-/// ## Слои
+/// ## Layers
 ///
-/// Незаданное (`null`) поле разрешается цепочкой, от слабого к сильному:
+/// An unset (`null`) field is resolved through a chain, weakest first:
 ///
-/// 1. дефолт пакета — то, что печатается, если не сказано ничего;
-/// 2. [Loggable.defaultConfig] — дефолт приложения;
-/// 3. этот конфиг: с места вызова и от контейнеров по пути к значению
-///    (ближний к значению сильнее);
-/// 4. [Loggable.forceConfig] — политика приложения, которую нельзя снять
-///    ни с места вызова, ни вложенным контейнером.
+/// 1. the package default — what is printed when nobody said anything;
+/// 2. [Loggable.defaultConfig] — the application's default;
+/// 3. this config: from the call site and from the containers on the way to
+///    the value (the one closest to the value wins);
+/// 4. [Loggable.forceConfig] — the application's policy, which neither a
+///    call site nor a nested container can lift.
 ///
-/// Раньше слои 1 и 2 отсутствовали, а дефолты четырёх булевых настроек
-/// брались из темы. Тема отвечает за то, как вывод выглядит; конфиг — за
-/// то, что в нём печатается.
+/// Layers 1 and 2 did not exist before, and the defaults of four boolean
+/// settings came from the theme. The theme answers for how the output
+/// looks; the config for what is printed in it.
 ///
 /// ```dart
 /// log.d(
@@ -113,41 +113,43 @@ final class LoggableConfig with Loggable {
     this.iterableEfficientLength,
   });
 
-  /// Дефолты пакета — нижний пол цепочки, ниже [Loggable.defaultConfig].
+  /// The package defaults — the floor of the chain, below
+  /// [Loggable.defaultConfig].
   ///
-  /// Раньше их держала тема (`LogMainTheme.stringInQuotes` и соседние), и
-  /// разрешение «конфиг, иначе тема» было размазано по пяти местам
-  /// рендеринга. Теперь тема отвечает за то, как вывод выглядит, а конфиг —
-  /// за то, что в нём печатается.
+  /// The theme used to hold them (`LogMainTheme.stringInQuotes` and its
+  /// neighbours), and resolving "the config, else the theme" was spread
+  /// across five places in the renderer. The theme now answers for how the
+  /// output looks, and the config for what is printed in it.
   static const bool defaultEnumDotShorthand = true;
   static const bool defaultCollectionShowCount = true;
   static const bool defaultCollectionShowIndexes = true;
   static const bool defaultStringInQuotes = true;
 
-  /// Безопасный вывод включён по умолчанию: недоверенный текст попадает в
-  /// логи не по злому умыслу, а потому что так устроены логи.
+  /// Safe output is on by default: untrusted text ends up in logs not out
+  /// of malice, but because that is what logs are.
   static const bool defaultEscapeAnsiCodes = true;
 
-  /// Голый [Iterable] по умолчанию обходится один раз: он может быть
-  /// однопроходным или дорогим, и читать его длину пакет не вправе.
+  /// A bare [Iterable] is walked once by default: it may be single-pass or
+  /// expensive, and the package is not entitled to read its length.
   static const bool defaultIterableEfficientLength = false;
 
-  /// Значение [escapeAnsiCodes] там, где локального конфига нет вовсе.
+  /// The value of [escapeAnsiCodes] where there is no local config at all.
   ///
-  /// Сообщение лога, текст ошибки и `units` конфига не имеют: `config:` с
-  /// места вызова оборачивает только `data`. Для них цепочка состоит из
-  /// слоёв приложения, и это правильный набор — сообщение ровно то место,
-  /// где нужна политика, а не вкус вызывающего.
+  /// The log message, the error text and `units` have no config: the
+  /// call-site `config:` wraps `data` only. For them the chain consists of
+  /// the application layers, and that is the right set — the message is
+  /// exactly the place that wants a policy rather than the caller's
+  /// taste.
   @internal
   static bool get appEscapeAnsiCodes =>
       const LoggableConfig().resolvedEscapeAnsiCodes;
 
-  /// Значения с наложенной цепочкой `default ← этот конфиг ← force`.
+  /// The values with the `default ← this config ← force` chain applied.
   ///
-  /// Спрашиваются в точке использования, а не собираются заранее: конфиг
-  /// контейнера подмешивается уже во время обхода, и слой, свёрнутый до
-  /// него, вложенный контейнер перебил бы. Здесь перебить нечего — порядок
-  /// задан прямо в выражении.
+  /// They are asked at the point of use rather than folded in beforehand: a
+  /// container's config is merged in during the walk, and a layer folded in
+  /// before that would be overridden by a nested container. Here there is
+  /// nothing to override — the order is written into the expression.
   @internal
   bool get resolvedEnumDotShorthand =>
       Loggable.forceConfig.enumDotShorthand ??
@@ -202,9 +204,10 @@ final class LoggableConfig with Loggable {
       collectionMaxStringLength ??
       Loggable.defaultConfig.collectionMaxStringLength;
 
-  /// `units` разрешаются цепочкой, но снимаются `withoutUnits()` на пути
-  /// корневой sanitizer-замены — там `units` уже вычеркнуты из самого
-  /// конфига, и force их не возвращает.
+  /// `units` resolve through the chain, but are removed by
+  /// `withoutUnits()` on the path of a root sanitizer replacement — there
+  /// `units` are already struck out of the config itself, and force does
+  /// not bring them back.
   @internal
   String? get resolvedUnits =>
       Loggable.forceConfig.units ?? units ?? Loggable.defaultConfig.units;
@@ -238,11 +241,11 @@ final class LoggableConfig with Loggable {
             iterableEfficientLength ?? other.iterableEfficientLength,
       );
 
-  /// Копия конфигурации без [units].
+  /// A copy of the configuration without [units].
   ///
-  /// Нужна там, где значение подставлено санитайзером: units описывают
-  /// исходную величину, а замаскированное значение — уже не она
-  /// (см. `Prop.toLogString`).
+  /// Needed where the sanitizer substituted the value: units describe the
+  /// original quantity, and a masked value is no longer that quantity (see
+  /// `Prop.toLogString`).
   @internal
   LoggableConfig withoutUnits() => LoggableConfig(
         enumDotShorthand: enumDotShorthand,
@@ -257,7 +260,7 @@ final class LoggableConfig with Loggable {
         iterableEfficientLength: iterableEfficientLength,
       );
 
-  /// Конфиг со всеми слоями цепочки, разрешёнными до конца.
+  /// The config with every layer of the chain resolved to the end.
   LoggableEffectiveConfig toEffectiveConfig() => LoggableEffectiveConfig(
         enumDotShorthand: resolvedEnumDotShorthand,
         collectionMaxCount: resolvedCollectionMaxCount,
