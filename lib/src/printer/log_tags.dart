@@ -35,7 +35,7 @@ final class LogTags implements LogBlock {
     if (this.tags.isNotEmpty) {
       tags.addAll(this.tags);
     }
-    // Без тегов не печатаем и пустые скобки.
+    // With no tags, the empty brackets are not printed either.
     if (tags.isEmpty) {
       return LogBox.empty(debugName: 'tags');
     }

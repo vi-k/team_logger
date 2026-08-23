@@ -37,28 +37,28 @@ final class LogTheme with Loggable {
           },
       };
 
-  /// Прогоняет [value] через value-форматтер темы.
+  /// Runs [value] through the theme's value formatter.
   ///
-  /// С [escapeAnsiCodes] сырой текст сначала показывается, а не
-  /// отправляется: последовательность печатается частями
-  /// (`[CSI 2 ED]forged`), и `ESC` в результате не остаётся ни одного —
-  /// сформировать управляющую последовательность больше нечем. Форматтер
-  /// темы работает уже по инертному тексту, а стили ложатся поверх.
+  /// With [escapeAnsiCodes] the raw text is first shown rather than sent:
+  /// a sequence is printed as its parts (`[CSI 2 ED]forged`) and no ESC is
+  /// left in the result, so there is nothing left to form a control
+  /// sequence out of. The theme's formatter then works on inert text, and
+  /// the styling goes on top.
   ///
-  /// Порядок именно такой и обратным быть не может: после стилизации
-  /// собственные коды темы от чужих не отличить.
+  /// The order cannot be the other way round: once the theme has styled
+  /// the text, its own codes cannot be told from injected ones.
   String formatValue(String value, {required bool escapeAnsiCodes}) =>
       main.valueFormatter(this, _safe(value, escapeAnsiCodes));
 
-  /// Прогоняет [value] через message-форматтер темы. См. [formatValue].
+  /// Runs [value] through the theme's message formatter. See [formatValue].
   String formatMessage(String value, {required bool escapeAnsiCodes}) =>
       main.messageFormatter(this, _safe(value, escapeAnsiCodes));
 
-  /// Текст без управляющих последовательностей, если режим включён.
+  /// The text with its control sequences shown, when the mode is on.
   ///
-  /// Проверка на `ESC` — не микрооптимизация: `ansiShowEscapeSequences()`
-  /// каждый раз гоняет regex по всей строке, а подавляющее большинство
-  /// значений в логе никаких кодов не содержит.
+  /// The ESC check is not a micro-optimization: `ansiShowEscapeSequences()`
+  /// runs a regex over the whole string every time, and the overwhelming
+  /// majority of logged values carry no codes at all.
   static String _safe(String value, bool escapeAnsiCodes) =>
       escapeAnsiCodes && value.contains('\x1B')
           ? value.ansiShowEscapeSequences()
@@ -73,8 +73,8 @@ final class LogTheme with Loggable {
   String formatNumber(num value, String pattern) =>
       main.numberFormatter(this, value, pattern);
 
-  // Пустой depthThemes деградирует в бесстилевой вариант, а не роняет
-  // форматирование первого же объекта.
+  // An empty depthThemes degrades to the style-less variant rather than
+  // breaking the formatting of the very first object.
   LogDepthTheme depthTheme(int depth) => data.depthThemes.isNotEmpty
       ? data.depthThemes[depth % data.depthThemes.length]
       : const LogDepthTheme.noStyle();

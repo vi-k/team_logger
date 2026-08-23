@@ -117,7 +117,7 @@ final class FileLogCodec {
           userMeta = converted;
         }
       } on Object {
-        // Невалидные метаданные не должны блокировать запись логов.
+        // Invalid metadata must not block writing logs.
       }
     }
 

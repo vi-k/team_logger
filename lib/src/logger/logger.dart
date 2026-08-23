@@ -258,16 +258,16 @@ final class Logger extends CustomLogger<Logger, LevelLogger, LogFn, Log> {
 
   static List<TraceId> zonedTraceIds([Zone? zone]) =>
       switch ((zone ?? Zone.current)[TraceId]) {
-        // Отдаём view, а не сам список зоны: мутация снаружи ломала бы
-        // трассировку всех логов этой зоны.
+        // A view, not the zone's own list: mutating it from outside would
+        // break the trace of every log in this zone.
         final List<TraceId> list => UnmodifiableListView(list),
         _ => const <TraceId>[],
       };
 
   static Set<String> zonedTags([Zone? zone]) =>
       switch ((zone ?? Zone.current)[_tagsKey]) {
-        // Отдаём view, а не само множество зоны: мутация снаружи меняла бы
-        // теги всех последующих логов этой зоны. Симметрично
+        // A view, not the zone's own set: mutating it from outside would
+        // retag every later log in this zone. Symmetric with
         // [zonedTraceIds].
         final Set<String> set => UnmodifiableSetView(set),
         _ => const <String>{},

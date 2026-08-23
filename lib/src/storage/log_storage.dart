@@ -167,7 +167,7 @@ final class _LogStorageImpl implements LogStorage {
 
   @override
   void clear() {
-    // После dispose хранилище не используется.
+    // After dispose the storage is not used any more.
     if (_onChangedController.isClosed) return;
 
     _logs.fillRange(0, maxCount, null);
@@ -179,8 +179,8 @@ final class _LogStorageImpl implements LogStorage {
 
   @override
   void publish(Log log) {
-    // После dispose публикация — no-op: иначе StateError вылетал бы
-    // прямо из вызова логирования.
+    // After dispose publishing is a no-op: otherwise a StateError would
+    // fly straight out of the logging call.
     if (_onChangedController.isClosed) return;
 
     if (log.level < minLevel) {

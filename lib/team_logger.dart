@@ -1,9 +1,9 @@
-// Минимальный набор для настройки тем. Полный баррель style.dart
-// экспортирует имена, конфликтующие с Flutter (Color, Stack, State,
-// Text и др.). Styles — таблица готовых стилей (Styles.red,
-// Styles.rgb050, Styles.bold): в 4.0.0 они перестали быть именами
-// верхнего уровня, поэтому один класс закрывает настройку темы без
-// прямой зависимости от ansi_escape_codes.
+// The minimum needed to configure a theme. The full style.dart barrel
+// exports names that clash with Flutter (Color, Stack, State, Text and
+// others). Styles is the table of ready-made styles (Styles.red,
+// Styles.rgb050, Styles.bold): in 4.0.0 they stopped being top-level
+// names, so this one class covers theming without a direct dependency on
+// ansi_escape_codes.
 export 'package:ansi_escape_codes/style.dart'
     show Color16, Color256, NoStyle, Style, Styles;
 export 'package:logger_builder/logger_builder.dart';

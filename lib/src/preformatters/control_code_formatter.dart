@@ -25,8 +25,9 @@ final class ControlCodeFormatter with Loggable implements LogPreFormatter {
   @override
   String call(LogTheme theme, String text) {
     final buf = StringBuffer();
-    // Стиль применяется вызовом, а не парой open/close: `Style.close` — это
-    // безусловный reset, который просачивался бы даже в noColors-вывод.
+    // The style is applied by calling it rather than as an open/close pair:
+    // `Style.close` is an unconditional reset, which would leak even into
+    // noColors output.
     final style = theme.data.paddingStyle;
 
     for (final charCode in text.codeUnits) {

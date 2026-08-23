@@ -62,8 +62,8 @@ final class LogBox with Loggable {
         theme,
         LogConstraints.exact(width),
         textAlign: textAlign,
-        // Многоточие обрезки на филлерах не показывается: на скрытых
-        // строках-продолжениях оно оставалось бы видимым.
+        // Truncation ellipsis is not shown on fillers: it would stay
+        // visible on the hidden continuation lines.
         showEllipsis: false,
       );
     }
@@ -111,8 +111,9 @@ final class LogBox with Loggable {
       return LogBox.empty(debugName: debugName);
     }
 
-    // Место под символ переноса нужно только строкам, которые реально
-    // переносятся, — иначе односимвольное сообщение выродилось бы в пробел.
+    // Room for the wrap character is only needed by lines that actually
+    // wrap — otherwise a one-character message would degenerate into a
+    // space.
     final needsWrap = measured.any((line) => line.width > boxWidth);
     final textWidth = boxWidth - displayWidth(theme.main.lineBreak);
     if (needsWrap && textWidth <= 0) {
@@ -138,9 +139,9 @@ final class LogBox with Loggable {
         continue;
       }
 
-      // Позиция идёт в code units — в них же режет парсер, — а бюджет
-      // строки в колонках. Перевод между ними делает MeasuredLine, и
-      // граница среза всегда падает на границу кластера.
+      // The position counts code units — what the parser slices by — while
+      // the line budget counts columns. MeasuredLine converts between them,
+      // and a cut always lands on a cluster boundary.
       var start = 0;
       final end = line.codeUnits;
       while (start < end) {
@@ -156,9 +157,9 @@ final class LogBox with Loggable {
           );
           start = end;
         } else if (maxLines == null || maxLines > boxLines.length + 1) {
-          // atLeastOne: символ шире всего бюджета иначе остановил бы цикл
-          // навсегда. Он уходит целиком и вылезает на колонку — половина
-          // широкого глифа не глиф.
+          // atLeastOne: a character wider than the whole budget would
+          // otherwise stall this loop forever. It goes out whole and
+          // overflows by a column — half a wide glyph is not a glyph.
           final head = line.slice(start, textWidth, atLeastOne: true);
           boxLines.add(
             '${head.text}'
@@ -167,8 +168,9 @@ final class LogBox with Loggable {
           );
           start += line.index.codeUnitsForColumnsAtLeastOne(start, textWidth);
         } else {
-          // Последняя (обрезанная) строка не содержит символа переноса и
-          // занимает полную ширину бокса — иначе была бы на колонку уже.
+          // The last (truncated) line carries no wrap character and takes
+          // the full width of the box — otherwise it would be one column
+          // narrower.
           final tail = line.terminatedSlice(
             theme.main.ellipsis,
             theme.data.ellipsisStyle,
@@ -190,7 +192,7 @@ final class LogBox with Loggable {
         theme,
         LogConstraints.exact(boxWidth),
         textAlign: textAlign,
-        // См. комментарий в фабрике LogBox: без многоточия на филлерах.
+        // See the comment in the LogBox factory: no ellipsis on fillers.
         showEllipsis: false,
       );
     }

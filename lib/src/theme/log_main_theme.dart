@@ -113,15 +113,15 @@ final class LogMainTheme with Loggable {
   final String errorTitle;
   final String stackTraceTitle;
 
-  /// Излучает ли тема ANSI-коды. Для собственных «бесцветных» тем передайте
-  /// `false`, чтобы принтер не добавлял служебные escape-коды.
+  /// Whether the theme emits ANSI codes. Pass `false` for a colorless theme
+  /// of your own, so the printer adds no service escape codes.
   final bool ansiCodesEnabled;
 
-  /// Форматтер маркера циклической ссылки; получает количество уровней
-  /// вверх до объекта, на который указывает цикл. По умолчанию — `↺₂`.
+  /// Formatter of the cycle marker; it is given how many levels up the
+  /// object the cycle points to sits. `↺₂` by default.
   final LogThemeFormatter<int> cycleFormatter;
 
-  /// Стиль маркера циклической ссылки.
+  /// Style of the cycle marker.
   final ansi.Style cycleStyle;
 
   LogMainTheme({
@@ -222,9 +222,9 @@ final class LogMainTheme with Loggable {
     ansiCodesEnabled: false,
   );
 
-  /// Кэш уровневых [LogTheme]: темы иммутабельны, а новый экземпляр на
-  /// каждый лог ломал бы кэши, ключуемые по [LogTheme] (например, регулярку
-  /// BbCodeFormatter), заставляя пересоздавать их на каждое сообщение.
+  /// Cache of per-level [LogTheme]s: themes are immutable, and a fresh
+  /// instance per log would break caches keyed by [LogTheme], forcing them
+  /// to be rebuilt for every message.
   static final Expando<Map<int, LogTheme>> _levelThemeCache = Expando();
 
   LogTheme get verbose => this[LogLevels.verbose];
@@ -467,9 +467,9 @@ final class LogMainTheme with Loggable {
               '${theme.styledClosingQuote}',
         ),
       )
-      // Без сэмпла, в отличие от соседей: любой пример шаблона был бы
-      // синтаксисом конкретного форматтера, а пакет как раз это знание
-      // и не держит.
+      // No sample here, unlike its neighbours: any example pattern would be
+      // the syntax of one particular formatter, and that is exactly the
+      // knowledge this package does not hold.
       ..prop('numberFormatter', numberFormatter)
       ..prop('tags', tags)
       ..prop('errorTitle', errorTitle)

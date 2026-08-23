@@ -173,7 +173,7 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   Future<void>? _closeFuture;
   (Object, StackTrace)? _durabilityFailure;
 
-  /// Размеры чанков текущей сессии на диске (индекс -> байты).
+  /// Sizes of the current session's chunks on disk (index -> bytes).
   final Map<int, int> _chunkSizes = {};
 
   // Explicit callback and queue parameters let the super invocation keep
@@ -214,7 +214,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
           maxQueueSize: _validateMaxQueueSize(maxQueueSize),
         ) {
     _sessionId = sanitizeSessionId(sessionId ?? defaultSessionId(_started));
-    // Инициализация стартует в фоне, future сохраняется в [ready].
+    // Initialization starts in the background; its future is kept in
+    // [ready].
     // ignore: discarded_futures
     ready = _init();
   }
@@ -234,8 +235,9 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
 
   @override
   void publish(Log log) {
-    // После close публикация — no-op: базовый publish бросил бы StateError
-    // в точку логирования, а буфер никогда не был бы обработан.
+    // After close, publishing is a no-op: the base publish would throw a
+    // StateError into the logging call, and the buffer would never be
+    // drained.
     if (_closed || log.level < minLevel) return;
 
     super.publish(log);
@@ -250,9 +252,9 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
   }
 
   Future<void> _flush() async {
-    // flush гарантирует не только запись опубликованного (drain-семантика
-    // базового flush), но и завершение инициализации: первый чанк с
-    // meta-строкой уже на диске.
+    // flush guarantees not only that what was published is written (the
+    // drain semantics of the base flush), but that initialization finished:
+    // the first chunk, with its meta line, is already on disk.
     await ready;
     await super.flush();
     _throwIfDurabilityFailed();
@@ -294,8 +296,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
         try {
           encodedLogs.add((log: log, line: _codec.encode(log)));
         } on Object catch (error, stackTrace) {
-          // Ошибка кодирования одного лога (бросающий toString и т.п.)
-          // не должна терять соседние логи батча.
+          // A failure encoding one log (a throwing toString and the like)
+          // must not lose its neighbours in the batch.
           _report(error, stackTrace);
           encodedLogs.add((log: log, line: _encodeFallback(log, error)));
         }
@@ -324,8 +326,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
       await Directory(directory).create(recursive: true);
       await _cleanupOnStartup();
 
-      // Свободный id: сначала по существующим файлам (включая сессии,
-      // у которых первый чанк уже удалён ротацией)...
+      // A free id: first by the existing files (including sessions whose
+      // first chunk rotation has already deleted)...
       final existingIds = _existingSessionIds();
       final base = _sessionId;
       var n = 0;
@@ -335,9 +337,9 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
         candidate = '$base-$n';
       }
 
-      // ...затем резервируем сессию, эксклюзивно создавая первый чанк, —
-      // защита от гонки двух инстансов с одинаковым id, ещё не успевших
-      // ничего записать.
+      // ...then the session is reserved by creating its first chunk
+      // exclusively — protection against two instances racing on the same
+      // id before either has written anything.
       late File file;
       while (true) {
         file = File('$directory/${chunkName(candidate, 1)}');
@@ -371,15 +373,15 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     }
   }
 
-  /// Удаляет сессии старше [maxAge], затем — старейшие сессии, пока
-  /// остальные не влезут в `maxTotalSize - maxSessionSize` (резерв под
-  /// рост текущей сессии).
+  /// Deletes sessions older than [maxAge], then the oldest sessions until
+  /// the rest fit into `maxTotalSize - maxSessionSize` (the reserve for the
+  /// current session to grow into).
   Future<void> _cleanupOnStartup() async {
     final maxAge = this.maxAge;
     final maxTotalSize = this.maxTotalSize;
     if (maxAge == null && maxTotalSize == null) return;
 
-    // Старые -> новые.
+    // Oldest to newest.
     final kept = await sessions.list().then(List.of);
 
     if (maxAge != null) {
@@ -410,9 +412,10 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
               parsed.sessionId,
       };
 
-  /// Дописывает строки батча в чанки, режа батч по [maxChunkSize],
-  /// чтобы один большой батч не раздувал чанк и не выбрасывался ротацией
-  /// целиком. Только append: файлы никогда не усекаются.
+  /// Appends a batch's lines to chunks, splitting the batch by
+  /// [maxChunkSize] so that one large batch neither inflates a chunk nor
+  /// gets discarded whole by rotation. Append only: files are never
+  /// truncated.
   Future<_WriteFailure?> _write(List<_EncodedLog> logs) async {
     final target = maxChunkSize;
     final pending = BytesBuilder(copy: false);
@@ -512,9 +515,10 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     }
   }
 
-  /// После ошибки записи текущий чанк может содержать частично записанную
-  /// строку — переходим на новый чанк, чтобы следующая запись не склеилась
-  /// с обрывком в невалидный JSONL, и сверяем учтённый размер с фактическим.
+  /// After a write failure the current chunk may hold a partially written
+  /// line, so the next chunk is started: otherwise the following record
+  /// would join that fragment into invalid JSONL. The tracked size is
+  /// reconciled with the actual one as well.
   Future<void> _recoverAfterWriteError() async {
     final chunk = _currentChunk;
     if (chunk != null) {
@@ -529,8 +533,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     _chunkSize = 0;
   }
 
-  /// Удаляет старейшие чанки, пока суммарный размер сессии превышает
-  /// [maxSessionSize]. Последний записанный чанк не удаляется никогда.
+  /// Deletes the oldest chunks while the session's total exceeds
+  /// [maxSessionSize]. The most recently written chunk is never deleted.
   Future<void> _deleteOldestChunks() async {
     var total = _chunkSizes.values.fold(0, (sum, size) => sum + size);
     while (total > maxSessionSize && _chunkSizes.length > 1) {
@@ -581,8 +585,8 @@ final class FileLogStorage extends AsyncPublisherWithBufferBase<Log> {
     try {
       onError?.call(error, stackTrace);
     } on Object {
-      // Пользовательский onError не должен ронять конвейер записи
-      // и подвешивать flush().
+      // A user's onError must not break the write pipeline or leave
+      // flush() hanging.
     }
   }
 }

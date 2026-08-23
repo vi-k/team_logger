@@ -35,25 +35,25 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final Set<String> activeTraceGroups;
   final Set<String> activeTags;
 
-  /// Разделитель пути неймспейсов для префикс-матчинга [activeNamespaces]
-  /// (см. `Logger.pathSeparator`).
+  /// Namespace path separator for prefix matching of [activeNamespaces]
+  /// (see `Logger.pathSeparator`).
   final String pathSeparator;
 
   final List<LogRow> rows;
 
-  /// Отдавать лог одним вызовом [output] вместо вызова на каждую строку.
+  /// Deliver a log in one [output] call instead of one call per line.
   ///
-  /// По умолчанию `false`: принтер строчный, и строка — самостоятельная
-  /// единица (каждая повторяет номер, уровень и время, см. README). Так
-  /// удобно консоли и фильтрации в IDE, но приёмнику, у которого запись —
-  /// это одно событие (`dart:developer`, отправка наружу, группировка),
-  /// приходится собирать лог обратно, а сигнала о его границах у [output]
-  /// нет.
+  /// `false` by default: the printer is line-oriented, and a line is a unit
+  /// of its own — each repeats the number, level and time so it can stand
+  /// alone in a console or an IDE filter (see the README). A sink whose
+  /// unit is an event instead — `dart:developer`, forwarding, grouping —
+  /// then has to reassemble the log, and [output] gives it no signal for
+  /// where the lines of one log end.
   ///
-  /// С `true` строки одного лога — все строки всех его [rows], включая
-  /// перенесённые, — склеиваются через `\n` и уходят одним вызовом.
-  /// Текст при этом тот же: меняется только количество вызовов. Лог, не
-  /// напечатавший ни строки, не даёт вызова вовсе.
+  /// With `true` the lines of one log — every line of every one of its
+  /// [rows], wrapped lines included — are joined with `\n` and sent in a
+  /// single call. The text is the same; only the number of calls changes. A
+  /// log that prints nothing makes no call at all.
   final bool oneCallPerLog;
 
   /// The sink every rendered line goes to; defaults to `print`.
@@ -103,8 +103,8 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       inactiveTheme == null ||
       (isLogActive?.call(log) ?? false) ||
       activeLevels.contains(log.level) ||
-      // Неймспейс активирует и себя, и дочерние: 'app' матчит 'app'
-      // и 'app/...', но не 'application'.
+      // A namespace activates itself and its children: 'app' matches
+      // 'app' and 'app/...', but not 'application'.
       activeNamespaces.any(
         (ns) => log.path == ns || log.path.startsWith('$ns$pathSeparator'),
       ) ||
@@ -133,8 +133,8 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   void publish(Log log) {
     final isActive = _isLogActive(log);
     final theme = (isActive ? this.theme : inactiveTheme ?? this.theme);
-    // Порог — минимум из двух тем: активный лог не должен подавляться
-    // сильнее фонового того же уровня.
+    // The threshold is the lower of the two themes: an active log must not
+    // be suppressed harder than a background one of the same level.
     final minLevel = switch (inactiveTheme) {
       null => theme.minLevel,
       final inactive => math.min(this.theme.minLevel, inactive.minLevel),
@@ -153,9 +153,9 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       return;
     }
 
-    // Буфер живёт только на время рендера этого лога: _write кладёт строки
-    // в него, а не в output. finally обязателен — исключение из рендера не
-    // должно оставить принтер с включённым буфером навсегда.
+    // The buffer lives only for this log's render: _write puts lines into
+    // it rather than into output. The finally is required — a throwing
+    // render must not leave the printer buffering forever.
     final buffer = _buffer = <String>[];
     try {
       for (final row in rows) {
@@ -170,7 +170,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     if (buffer.isNotEmpty) output(buffer.join('\n'));
   }
 
-  /// Куда уходят строки, пока собирается один лог (см. [oneCallPerLog]).
+  /// Where lines go while one log is being assembled (see [oneCallPerLog]).
   List<String>? _buffer;
 
   void _write(String line) {
@@ -207,8 +207,9 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       final needDivider = (lastBlock == null || lastBlock is! LogDivider) &&
           block is! LogDivider;
       final dividerWidth = needDivider ? defaultDividerBox.width : 0;
-      // Tail ограничен maxLength: иначе при широком tail все children
-      // получили бы отрицательный лимит и строка лога молча пропадала бы.
+      // The tail is bounded by maxLength: otherwise a wide tail would give
+      // every child a negative limit and the log line would vanish
+      // silently.
       final available = switch (row.maxLength) {
         null => null,
         final maxLength => maxLength - tailLength - dividerWidth,
@@ -235,8 +236,8 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       null => null,
       final maxLength => maxLength - tailLength,
     };
-    // Высота строки учитывает и tail: если все children пусты, строка
-    // всё равно печатается.
+    // The row height accounts for the tail as well: the row is printed
+    // even when every child is empty.
     var linesCount = tailBoxes.fold(
       0,
       (count, box) => math.max(count, box.lines.length),

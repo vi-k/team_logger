@@ -87,8 +87,9 @@ final class FileLogSessions {
       if (parsed == null) continue;
       if (!_isRegularFile(file)) continue;
       final stat = file.statSync();
-      // Файл могли удалить между list() и statSync (ротация/очистка другого
-      // процесса) — иначе сессия получит size -1 и lastModified около эпохи.
+      // The file may have been deleted between list() and statSync
+      // (rotation or cleanup by another process) — otherwise the session
+      // would get size -1 and a lastModified near the epoch.
       if (stat.type == FileSystemEntityType.notFound) continue;
       if (!_isRegularFile(file)) continue;
       chunksById
@@ -288,7 +289,7 @@ final class FileLogSession {
           if (meta is Map<String, Object?>) return meta;
         }
       } on FormatException {
-        // Не meta-строка — считаем, что метаданных нет.
+        // Not a meta line — treat the session as having no metadata.
       }
 
       return const {};
@@ -365,7 +366,7 @@ final class FileLogSession {
       if (newline + 1 < block.length) yield block.sublist(newline + 1);
     }
 
-    // Файл короче meta-префикса и без завершающего \n.
+    // The file is shorter than the meta prefix and has no trailing \n.
     if (!passThrough && !skipUntilNewline && candidate.isNotEmpty) {
       yield candidate;
     }

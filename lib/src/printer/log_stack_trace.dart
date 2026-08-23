@@ -138,8 +138,8 @@ final class LogStackTrace implements LogBlock {
       }
     }
 
-    // fromText переносит фреймы шире строки на следующие строки, вместо
-    // обрезки с потерей имени файла.
+    // fromText wraps frames wider than the line onto the following lines,
+    // rather than truncating them and losing the file name.
     return LogBox.fromText(
       log,
       stackTraceTheme,

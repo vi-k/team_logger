@@ -101,8 +101,9 @@ final class _DateTime implements LogTime {
     if (utc) {
       time = time.toUtc();
     }
-    // DateTime.toString() опускает нулевые микросекунды — ширина колонки
-    // дрожала бы; собираем строку через dateToString/timeToString всегда.
+    // DateTime.toString() omits zero microseconds, which would make the
+    // column width jitter; always build the string through
+    // dateToString/timeToString instead.
     final timeStr = '$open'
         '${LogTime.dateToString(time)}'
         ' ${LogTime.timeToString(time, microseconds: microseconds)}'

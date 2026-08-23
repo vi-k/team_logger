@@ -169,26 +169,25 @@ final class LazyTags extends TypedLazy<Set<String>> {
 
   LazyTags.resolved(super.resolved) : super.resolved();
 
-  /// Конвертация целиком идёт вне области действия санитайзера.
+  /// The whole conversion runs outside the sanitizer's scope.
   ///
-  /// Теги в неё не входят (она — только значения внутри `data`), а
-  /// [Log.tags] — вообще не рендер: набор кэшируется в логе, участвует в
-  /// фильтре `activeTags` и именно его видят publisher'ы, ничего не
-  /// рисующие. Диагностика невалидного значения — там же: правило не
-  /// должно замазать значение, о котором ругается исключение.
+  /// Tags are not in that scope (it covers values inside `data` only), and
+  /// [Log.tags] is not a render at all: the set is cached in the log, feeds
+  /// the `activeTags` filter, and is what publishers that draw nothing see.
+  /// Diagnosing an invalid value belongs here too: a rule must not mask the
+  /// very value an exception is complaining about.
   ///
-  /// Резолв ленивого значения к этому моменту уже произошёл (его делает
-  /// `TypedLazy.value`), поэтому замыкание пользователя выполняется
-  /// СНАРУЖИ подавления — подавляется только `toString()` самой
-  /// библиотеки.
+  /// A lazy value has already been resolved by this point (`TypedLazy.value`
+  /// does it), so the user's closure runs OUTSIDE the suppression — only the
+  /// library's own `toString()` is suppressed.
   @override
   Set<String> convert(Object? resolved) => Loggable.renderOutsideSanitizerScope(
         () => switch (resolved) {
           null => const {},
           String() => {resolved},
-          // Тип элементов проверяется поэлементно: Iterable<String>()
-          // матчит только коллекции, типизированные строкой, и
-          // List<Object> со строками ронял бы вызов логирования.
+          // Element types are checked one by one: Iterable<String>()
+          // matches only collections typed as strings, and a List<Object>
+          // holding strings would then break the logging call.
           Iterable<Object?>() => {
               for (final tag in resolved)
                 if (tag != null) tag.toString(),
@@ -198,21 +197,21 @@ final class LazyTags extends TypedLazy<Set<String>> {
       );
 }
 
-/// `LazyString`, который зовёт `toString()` ВНЕ области действия
-/// санитайзера.
+/// A `LazyString` whose `toString()` runs OUTSIDE the sanitizer's scope.
 ///
-/// Нужен для значений, которые библиотека приводит к строке сама, но
-/// которые в `data` не входят: сообщение лога и имя неймспейса (см.
-/// [Loggable.sanitizer]). Правило по `depth == 0` иначе стирало бы текст
-/// лога, а путь — он мемоизируется в [Logger] и участвует в фильтре
-/// `activeNamespaces` — оставался бы замазанным до конца процесса.
+/// Needed for values the library turns into strings itself but which are
+/// not part of `data`: the log message and the namespace name (see
+/// [Loggable.sanitizer]). Without it a `depth == 0` rule would erase the
+/// log's text, and the path — memoized in [Logger] and used by the
+/// `activeNamespaces` filter — would stay masked for the rest of the
+/// process.
 ///
-/// Подавление стоит именно в [convert], а не вокруг чтения `value`:
-/// значение к этому моменту уже резолвнуто (`TypedLazy.value` сначала
-/// читает `resolved`), поэтому пользовательское замыкание выполняется
-/// снаружи — если оно само что-то рендерит, санитайзер работает там как
-/// обычно. Готовую строку [convert] вообще не увидит: `TypedLazy` зовёт
-/// его, только если тип не совпал.
+/// The suppression sits in [convert] rather than around reading `value`:
+/// by then the value is already resolved (`TypedLazy.value` reads
+/// `resolved` first), so the user's closure runs outside it — if that
+/// closure renders something itself, the sanitizer works there as usual.
+/// [convert] never sees an already-built string: `TypedLazy` calls it only
+/// when the type did not match.
 final class _GuardedLazyString extends TypedLazy<String> {
   final String fallbackValue;
 

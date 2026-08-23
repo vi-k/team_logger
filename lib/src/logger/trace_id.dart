@@ -1,11 +1,5 @@
 import 'logger.dart';
 
-/// Идентификатор трассировки в виде: #123 или #Group-123
-///
-/// Группа и номер могут быть заданы вручную: Trace.manual(group, num). Или
-/// можно задать только группу с автоматической нумерацией внутри неё:
-/// Trace.auto(group). Или выбрать глобальную автоматическую нумерацию:
-/// `Trace.global()`.
 /// A trace identifier: `123`, `group-123` or `group-123.suffix`.
 ///
 /// [TraceId.auto] numbering is lazy: the number is consumed on first use
@@ -15,17 +9,16 @@ import 'logger.dart';
 sealed class TraceId {
   const TraceId();
 
-  /// Ручная установка номера.
+  /// A number set by hand.
   const factory TraceId.manual(String group, int num) = _ConstTraceId;
 
-  /// Ленивая автоматическая нумерация.
+  /// Lazy automatic numbering.
   ///
-  /// Нумерация увеличивается лениво только при использовании, чтобы не считать
-  /// отключенные логи. Если необходимо зафиксировать значение, используйте
-  /// метод [resolve]. В [Log] traceId's попадают уже зафиксированными.
+  /// The number is consumed only on use, so disabled logs do not count. To
+  /// pin the value, call [resolve]; trace ids reach [Log] already pinned.
   factory TraceId.auto(String group, {int initial}) = _LazyAutoTraceId;
 
-  /// Ленивая автоматическая нумерация без группы.
+  /// Lazy automatic numbering without a group.
   ///
   /// See also [TraceId.auto].
   factory TraceId.global({int initial}) = _LazyAutoTraceId.global;
@@ -36,7 +29,7 @@ sealed class TraceId {
 
   String? get suffix;
 
-  // Добавление суффикса к идентификатору в виде: group-123.suffix
+  // Appends a suffix to the identifier: group-123.suffix
   TraceId withSuffix(String suffix);
 
   void resolve();
@@ -60,7 +53,7 @@ final class _ConstTraceId extends TraceId {
   @override
   String? get suffix => null;
 
-  // Добавление суффикса к идентификатору.
+  // Appends a suffix to the identifier.
   @override
   TraceId withSuffix(String suffix) =>
       _TraceIdWithSuffix(this, TraceId._buildSuffix(this.suffix, suffix));
