@@ -910,6 +910,56 @@ This will not only allow you to display a more readable message in the console,
 formatted using ANSI escape codes, but also make it easier to log the data to
 a database or analytics system.
 
+#### Lazy Messages and Data
+
+A log you do not print should not cost anything to build. `message`, `data`
+and `tags` each take a value or a closure, and a closure is called only if
+the log gets made at all:
+
+```dart
+log.d(
+  () => 'Report for ${expensiveSummary()}',
+  data: () => buildDiagnostics(),
+  tags: () => collectTags(),
+);
+```
+
+With the level enabled this prints exactly as if you had passed the values.
+With the level disabled none of the three closures runs — no summary, no
+diagnostics, no tags — and the log costs one comparison.
+
+That is the argument the `data` parameter makes, taken one step further:
+`log.d('Person: $person')` builds the string before the logger sees it, and
+even `log.d('Person', data: person)` builds `person` at the call site. A
+closure defers the work to the moment it is known to be needed.
+
+**The logger's `level` is what decides, and nothing else.** Filters that live
+on a publisher run later, on a log that already exists:
+
+```dart
+log.level = LogLevels.all;          // the closure will run
+log.publisher = ConsoleLogPrinter(
+  activeMinLevel: LogLevels.error,  // this only dims it afterwards
+  // ...
+);
+```
+
+The same goes for `FileLogStorage.minLevel` and for `Logger.transformer`: by
+the time they get a say, the closure has been called. Only raising the
+logger's own level keeps the work from happening.
+
+An exception thrown inside such a closure is not swallowed — it propagates
+to the line that logged:
+
+```dart
+log.i(() => throw StateError('boom')); // throws StateError at this line
+```
+
+Lazy values are ordinary values otherwise. What a closure returns is what
+the parameter would have taken directly: `data` goes through the same
+formatting, the same limits and the same redaction rules as any other value,
+and `tags` accepts a single `String` or any iterable of them.
+
 #### Deeply Nested Objects
 
 The color of the brackets changes dynamically depending on the nesting level

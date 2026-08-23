@@ -11,6 +11,5 @@
 
 ## README
 
-- [ ] lazy messages
 - [ ] output: print/log
 - [ ] zones
