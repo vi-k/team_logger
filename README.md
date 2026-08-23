@@ -69,6 +69,8 @@ below, that is where they are from.
   - [10. Redacting Logs (`Logger.transformer` and `Loggable.sanitizer`)](#10-redacting-logs-loggertransformer-and-loggablesanitizer)
   - [11. Untrusted Text and Terminal Output](#11-untrusted-text-and-terminal-output)
   - [12. Writing Your Own Publisher](#12-writing-your-own-publisher)
+  - [13. Flutter](#13-flutter)
+- [Known Limitations](#known-limitations)
 - [License](#license)
 
 ---
@@ -2238,6 +2240,48 @@ log.publisher = MultiPublisher([
 
 To hand one destination a redacted log while the others get it whole, wrap
 that one in a `TransformPublisher` — see section 10.
+
+### 13. Flutter
+
+**Which import.** `package:team_logger/team_logger.dart` pulls in no
+`dart:io` and runs everywhere Dart runs, web included.
+`package:team_logger/team_logger_io.dart` is the same API plus
+`FileLogStorage`, and it needs a file system — mobile, desktop, the VM, but
+not web.
+
+**Where to create it.** A top-level `final` is enough; Dart initializes it on
+first use, so it costs nothing until something logs. Configure it before
+`runApp`, or wherever your dependency injection puts long-lived objects.
+
+**Escape codes on iOS.** `print` mangles them there — the colors arrive as
+`\^[[31m…` litter. Either drop the colors with `LogMainTheme.noColors` or
+send the lines to `dart:developer`'s `log()`, which keeps them but shows up
+only in DevTools and the IDE debug console. Section 1, "Where the Output
+Goes", has the details and the upstream issue.
+
+**Release builds.** Gate the logger's `level` on `kDebugMode` — section 3,
+"Logs in a Release Build".
+
+**A log screen inside the app.** `LogStorage` keeps the last N logs in memory
+for exactly this; [flutter_team_logger](https://pub.dev/packages/flutter_team_logger)
+builds a viewer on top of it.
+
+---
+
+## Known Limitations
+
+- **A `config:` at the call site wraps `data` only.** The message, the error
+  text, `units` and `DateTime` are not governed by `LoggableConfig`; they are
+  settled by the application and the theme.
+- **When a redaction rule drops *everything* inside a data object, only
+  `LoggableMultiData` removes the data block.** Every other shape leaves the
+  empty container on screen — `login: User()`, `login: {}`,
+  `login: Object()`, `login: {₌₁ }` — so "rendered empty" and "everything was
+  dropped" look the same.
+- **The file size settings are rotation and retention targets, not hard
+  ceilings** — section 9 says where a session can exceed them.
+- **What a `LoggableView` renders is not disarmed** by the ANSI safe mode,
+  deliberately — section 11. The value handed *to* the view is.
 
 ---
 ## License
