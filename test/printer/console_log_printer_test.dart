@@ -36,6 +36,8 @@ bool _wellFormedUtf16(String s) {
   return (logger, lines);
 }
 
+bool _never(Log log) => false;
+
 void main() {
   group('ConsoleLogPrinter', () {
     test('default themes do not add a #log tag to every log', () {
@@ -98,6 +100,105 @@ void main() {
 
       expect(first.single.trim(), 'before');
       expect(second.single.trim(), 'other level');
+    });
+
+    test('by default output is called once per rendered line', () {
+      final lines = <String>[];
+      final log = Logger('app')
+        ..level = LogLevels.all
+        ..publisher = ConsoleLogPrinter(
+          theme: LogMainTheme.noColors,
+          rows: const [
+            LogRow(maxLength: 30, children: [LogMessage()]),
+          ],
+          output: lines.add,
+        );
+
+      log.i('a very long message that will definitely wrap across lines');
+
+      expect(lines.length, greaterThan(1));
+    });
+
+    test('oneCallPerLog delivers the whole log in a single call', () {
+      final calls = <String>[];
+      final log = Logger('app')
+        ..level = LogLevels.all
+        ..publisher = ConsoleLogPrinter(
+          theme: LogMainTheme.noColors,
+          rows: const [
+            LogRow(maxLength: 30, children: [LogMessage()]),
+          ],
+          output: calls.add,
+          oneCallPerLog: true,
+        );
+
+      log.i('a very long message that will definitely wrap across lines');
+
+      expect(calls, hasLength(1));
+      // The lines are the same lines, joined rather than sent one by one.
+      expect(calls.single.split('\n').length, greaterThan(1));
+      expect(calls.single, isNot(endsWith('\n')));
+    });
+
+    test('oneCallPerLog joins every row of the log, not just one', () {
+      final calls = <String>[];
+      final log = Logger('app')
+        ..level = LogLevels.all
+        ..publisher = ConsoleLogPrinter(
+          theme: LogMainTheme.noColors,
+          rows: const [
+            LogRow(maxLength: 40, children: [LogMessage()]),
+            LogRow(maxLength: 40, children: [LogTags()]),
+          ],
+          output: calls.add,
+          oneCallPerLog: true,
+        );
+
+      log.i('body', tags: 'mark');
+
+      expect(calls, hasLength(1));
+      expect(calls.single, contains('body'));
+      expect(calls.single, contains('#mark'));
+      expect(calls.single, contains('\n'));
+    });
+
+    test('oneCallPerLog stays quiet when the log prints nothing', () {
+      final calls = <String>[];
+      final log = Logger('app')
+        ..level = LogLevels.all
+        ..publisher = ConsoleLogPrinter(
+          theme: LogMainTheme.noColors,
+          rows: const [
+            LogRow(maxLength: 40, children: [LogTags()], when: _never),
+          ],
+          output: calls.add,
+          oneCallPerLog: true,
+        );
+
+      log.i('nothing to show');
+
+      expect(calls, isEmpty);
+    });
+
+    test('the same log renders the same text either way', () {
+      String render({required bool oneCall}) {
+        final calls = <String>[];
+        Logger('app')
+          ..level = LogLevels.all
+          ..publisher = ConsoleLogPrinter(
+            theme: LogMainTheme.noColors,
+            rows: const [
+              LogRow(maxLength: 30, children: [LogMessage()]),
+            ],
+            output: calls.add,
+            oneCallPerLog: oneCall,
+          )
+          ..i('a very long message that will definitely wrap across lines');
+
+        return calls.join('\n');
+      }
+
+      expect(render(oneCall: true), render(oneCall: false));
     });
 
     test('single-character message is printed', () {

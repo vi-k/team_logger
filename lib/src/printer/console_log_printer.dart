@@ -41,6 +41,21 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
 
   final List<LogRow> rows;
 
+  /// Отдавать лог одним вызовом [output] вместо вызова на каждую строку.
+  ///
+  /// По умолчанию `false`: принтер строчный, и строка — самостоятельная
+  /// единица (каждая повторяет номер, уровень и время, см. README). Так
+  /// удобно консоли и фильтрации в IDE, но приёмнику, у которого запись —
+  /// это одно событие (`dart:developer`, отправка наружу, группировка),
+  /// приходится собирать лог обратно, а сигнала о его границах у [output]
+  /// нет.
+  ///
+  /// С `true` строки одного лога — все строки всех его [rows], включая
+  /// перенесённые, — склеиваются через `\n` и уходят одним вызовом.
+  /// Текст при этом тот же: меняется только количество вызовов. Лог, не
+  /// напечатавший ни строки, не даёт вызова вовсе.
+  final bool oneCallPerLog;
+
   /// The sink every rendered line goes to; defaults to `print`.
   ///
   /// Replacing it takes effect on the next line, including for levels that
@@ -63,6 +78,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     this.pathSeparator = '/',
     required this.rows,
     this.output = print,
+    this.oneCallPerLog = false,
   })  : theme = theme ?? LogMainTheme.defaultActiveTheme,
         activeLevels = _buildLevels(activeLevels, activeMinLevel),
         activeNamespaces = activeNamespaces ?? {},
@@ -127,14 +143,46 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
       return;
     }
 
-    for (final row in rows) {
-      if (row.when?.call(log) ?? true) {
-        printRow(log, row, isActive, theme);
+    if (!oneCallPerLog) {
+      for (final row in rows) {
+        if (row.when?.call(log) ?? true) {
+          printRow(log, row, isActive, theme);
+        }
       }
+
+      return;
     }
+
+    // Буфер живёт только на время рендера этого лога: _write кладёт строки
+    // в него, а не в output. finally обязателен — исключение из рендера не
+    // должно оставить принтер с включённым буфером навсегда.
+    final buffer = _buffer = <String>[];
+    try {
+      for (final row in rows) {
+        if (row.when?.call(log) ?? true) {
+          printRow(log, row, isActive, theme);
+        }
+      }
+    } finally {
+      _buffer = null;
+    }
+
+    if (buffer.isNotEmpty) output(buffer.join('\n'));
   }
 
-  void _write(String line) => output(line);
+  /// Куда уходят строки, пока собирается один лог (см. [oneCallPerLog]).
+  List<String>? _buffer;
+
+  void _write(String line) {
+    final buffer = _buffer;
+    if (buffer != null) {
+      buffer.add(line);
+
+      return;
+    }
+
+    output(line);
+  }
 
   void printRow(Log log, LogRow row, bool isActive, LogMainTheme main) {
     final theme = main[log.level];

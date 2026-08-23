@@ -442,10 +442,21 @@ number, level, time and the rest — hidden by default, see "Filter logs"
 above: a line has to stand on its own, because whatever consumes it may
 timestamp, prefix or reorder it independently of its neighbours.
 
-So a `developer.log` sink makes one entry per *line*. There is no signal
-marking where a log's lines end, and `output` is the wrong seam if you need
-one entry per log — implement a `CustomLogPublisher` instead and render the
-log yourself.
+So a `developer.log` sink makes one entry per *line*, which is rarely what
+such a sink wants. Set `oneCallPerLog` when a log should arrive as one
+event:
+
+```dart
+ConsoleLogPrinter(
+  rows: const [/* ... */],
+  output: (text) => developer.log(text, name: 'app'),
+  oneCallPerLog: true,
+);
+```
+
+Every line of every row of one log — wrapped lines included — is then joined
+with `\n` and delivered in a single call. The text is the same text; only the
+number of calls changes. A log that prints nothing makes no call at all.
 
 If the destination does not render ANSI escape codes, pair the sink with
 `LogMainTheme.noColors` (see "No Colors" below) so the text arrives clean

@@ -1,5 +1,15 @@
 ## 0.7.0
 
+- `ConsoleLogPrinter.oneCallPerLog` delivers a whole log through `output` in
+  a single call instead of one call per rendered line. The printer is
+  line-oriented by default — each line repeats the number, level and time so
+  it can stand on its own in a console or an IDE filter — but a sink whose
+  unit is an event, such as `dart:developer`'s `log()`, had to reassemble the
+  log with no signal for where its lines ended. With the flag set, every line
+  of every row, wrapped lines included, is joined with `\n` and sent once.
+  The text is unchanged; only the number of calls is. A log that prints
+  nothing makes no call.
+
 - [breaking changes] A `Map` obeys `collectionMaxCount` and
   `collectionMaxStringLength`, and reports its size like any other
   collection. It obeyed neither: a list of a thousand elements folded up
