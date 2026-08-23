@@ -22,10 +22,11 @@
 - `dart test` — 616 тестов.
 - `dart analyze` — чисто в корне и в `example/`.
 - `dart format --output=none --set-exit-if-changed .` — чисто, 103 файла.
-- `dart pub publish --dry-run` — **0 предупреждений**, архив **184 КБ**
+- `dart pub publish --dry-run` — **0 предупреждений**, архив **262 КБ**
   (было 196: перевод `lib/`, `example/` и `test/` на английский убрал
   двухбайтовую кириллицу).
-- `scripts/screenshots.sh --check` — код 0, все 43 кадра байт-в-байт.
+- `scripts/screenshots.sh --check` — код 0, все 45 кадров байт-в-байт.
+- `scripts/gallery.sh --check` — чисто (4 WebP для карточки pub.dev).
 - `dart doc --validate-links` — 0 предупреждений, 0 ошибок.
 - `dart pub outdated` — пусто (замерено 2026-08-22).
 - Dart 3.6 (SDK внутри fvm-сборки Flutter 3.27): analyze чист, 503 теста
@@ -65,6 +66,7 @@ cd example && dart pub get && dart analyze && dart run example.dart
 | Раскладка по умолчанию у `ConsoleLogPrinter` | `2026-08-24[1]-default-rows-spec.md` |
 | План до 1.0 | `2026-08-24[2]-road-to-1.0.md` |
 | Курация реэкспорта `logger_builder` | `2026-08-24[3]-reexport-curation-report.md` |
+| Галерея скриншотов на pub.dev | `2026-08-24[4]-pubdev-gallery-report.md` |
 | Сжатие этого файла, куда что переехало | `2026-08-23[6]-handoff-reset.md` |
 
 Что из этого стоит помнить, не открывая записи:
@@ -136,9 +138,6 @@ README §1 с рецептом разового чтения и с подмен�
 
 **Открыто, решения владельца нет:**
 
-- находка 7 — скриншоты на карточке pub.dev: `screenshots/` закрыт
-  `.pubignore`, поля `screenshots:` нет; четыре кадра дадут +≈400 КБ к
-  архиву;
 - план до 1.0 — **составлен**, `2026-08-24[2]-road-to-1.0.md`. Развилка
   «вести `logger_builder` к 1.0 или сузить реэкспорт» снята: нужно и то, и
   другое, и одно другому не мешает. Реэкспорт **уже сужен** с 27 имён до 9

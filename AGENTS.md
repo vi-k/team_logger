@@ -176,9 +176,19 @@ dart run tool/playground.dart
 scripts/screenshots.sh                 # пересобрать переведённые группы
 scripts/screenshots.sh --only trace    # одну группу
 scripts/screenshots.sh --check         # сверить .ansi, ничего не писать
+scripts/gallery.sh                     # пересобрать gallery/*.webp
+scripts/gallery.sh --check             # сверить, что они на месте и свежие
 ```
 
-Переведены все восемь групп — 43 кадра. Вне конвейера остаётся только
+Галерея pub.dev — отдельная вещь: четыре кадра из `screenshots/`,
+пересжатые в **lossless WebP** и объявленные в `pubspec.yaml` под
+`screenshots:`. Они **попадают в архив**, в отличие от `screenshots/`,
+поэтому лежат в своём каталоге `gallery/` — `.pubignore` закрывает
+`screenshots/` целиком, а синтаксис gitignore не даёт вернуть файл из
+исключённого каталога. Формат не прихоть: те же пиксели весят 76 КБ против
+428 КБ у PNG, а платит за них каждый `pub get`.
+
+Групп девять — 45 кадров. Вне конвейера остаётся только
 `screenshots/flutter_team_logger.png`: это снимок Flutter-приложения, а не
 ANSI-вывода, и скрипт знает про него как про исключение.
 `scripts/ansi_screenshot.sh` остаётся под скриптом выше и для ручных

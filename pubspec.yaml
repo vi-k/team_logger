@@ -10,6 +10,27 @@ topics:
   - console
   - tracing
 
+# Shown as a carousel on the package page and in search results. Built from
+# the frame pipeline by `scripts/gallery.sh` — lossless WebP, so the archive
+# pays 76 KB rather than the 428 the same four PNGs would cost.
+screenshots:
+  - description: >-
+      A console log: sequence number, level, time, namespace path, trace id
+      and message in columns, with tags right-aligned in the row's tail.
+    path: gallery/quick_start_1.webp
+  - description: >-
+      Structured data in one log: nested maps, a list with its length, and
+      bracket colours that shift with the nesting depth.
+    path: gallery/gallery_1.webp
+  - description: >-
+      An object that decides how it prints itself, with a nested object, a
+      unit suffix on a number and a counted list.
+    path: gallery/gallery_2.webp
+  - description: >-
+      A trace id following an asynchronous operation, tying its logs together
+      so they can be filtered as one.
+    path: gallery/trace_1.webp
+
 environment:
   sdk: ^3.6.0
 
