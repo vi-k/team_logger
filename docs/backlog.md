@@ -15,3 +15,6 @@
   Но везде вывод идёт через картинки.
 - README: В строке "Install a formatter to make patterns work" нужно ли писать
   про pubspec.yaml?
+- README: "`n` is the locale-aware form, and since it stopped depending on
+  `intl`". Зачем писать, что перестал зависеть. Пользователь может об этом
+  ничего не знать. Стоит написать, что "не зависит".

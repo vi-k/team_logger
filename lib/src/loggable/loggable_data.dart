@@ -5,16 +5,17 @@ part of 'loggable.dart';
 final class LoggableData {
   static const _computed = _ComputedProp();
 
-  /// Собственный config контейнера или `null`, если своего у него нет.
+  /// The container's own config, or `null` when it has none.
   ///
-  /// Нужен корневой sanitizer-замене: она встаёт на место контейнера и
-  /// печатается его настройками (см. `Loggable._containerConfig`). Сам
-  /// [LoggableData] своего config не имеет — его задают билдеры.
+  /// Needed by a root sanitizer replacement: it takes the container's place
+  /// and is printed with the container's settings (see
+  /// `Loggable._containerConfig`). [LoggableData] itself has no config of
+  /// its own — the builders provide one.
   LoggableConfig? get _ownConfig => null;
 
-  /// Тип класса.
+  /// The class type.
   ///
-  /// Не используем [runtimeType], т.к.:
+  /// [runtimeType] is deliberately not used, because:
   ///
   /// > Calling `toString` on a runtime type is a non-trivial operation that
   /// > can negatively impact performance. It's better to avoid it
@@ -22,15 +23,14 @@ final class LoggableData {
   TypeProp _type;
   TypeProp get type => _type;
 
-  /// Список параметров с их значениями.
+  /// The list of properties with their values.
   ///
-  /// Если значение само является наследником [Loggable], то и оно будет
-  /// соответствующим образом преобразовано в строку или отформатировано для
-  /// отображения в UI.
+  /// A value that is itself a [Loggable] is converted to a string, or
+  /// formatted for display in a UI, the same way.
   final List<Prop<Object?>> props = [];
 
-  /// Повторное имя заменяет предыдущее свойство: строковый и JSON-вывод
-  /// ведут себя одинаково (в JSON-Map последний ключ побеждал и раньше).
+  /// A repeated name replaces the earlier property: the string and JSON
+  /// outputs behave alike (in a JSON map the last key already won).
   void _addProp(Prop<Object?> prop) {
     final existing = props.indexWhere((p) => p.name == prop.name);
     if (existing != -1) {
@@ -57,7 +57,7 @@ final class LoggableData {
     _type = _type.copyWith(showBrackets: value);
   }
 
-  /// Добавляет свойство к описанию.
+  /// Adds a property to the description.
   void prop<T extends Object?>(
     String name,
     T value, {
@@ -112,9 +112,9 @@ final class LoggableData {
     );
   }
 
-  /// Добавляет свойство в зависимости от значения.
+  /// Adds a property depending on its value.
   ///
-  /// Если значение равно `null`, то свойство невидимо (см. [hidden]).
+  /// When the value is `null` the property is hidden (see [hidden]).
   void whenNotNull<T extends Object?>(
     String name,
     T value, {
@@ -150,10 +150,10 @@ final class LoggableData {
     );
   }
 
-  /// Добавляет невидимое свойство к описанию.
+  /// Adds a hidden property to the description.
   ///
-  /// Свойства не выводится через [Loggable.objectToString], но может быть
-  /// показано в графическом интерфейсе.
+  /// The property is not printed by [Loggable.objectToString], but it can
+  /// be shown in a user interface.
   void hidden<T extends Object?>(
     String name,
     T value, {
@@ -189,11 +189,11 @@ final class LoggableData {
     );
   }
 
-  /// Добавляет вычисляемое свойство к описанию.
+  /// Adds a computed property to the description.
   ///
-  /// Свойство может быть как не привязано к реальным данным, так и привязано
-  /// к нескольким реальным свойствам. Соответственное, в графическом
-  /// интерфейсе при показе реальных данных будет опущено.
+  /// Such a property may be tied to no real data at all, or to several real
+  /// properties at once. It is therefore omitted in a user interface that
+  /// shows the real data.
   void computed(
     String name,
     Object view, {
@@ -227,7 +227,7 @@ final class LoggableData {
     );
   }
 
-  /// Добавляет свойство double к описанию, форматируя его с помощью
+  /// Adds a double property to the description, formatted with
   /// [fractionDigits]: 1.000 with fractionDigits 2 = '1.00'.
   void fixed(
     String name,
@@ -254,7 +254,7 @@ final class LoggableData {
     );
   }
 
-  /// Добавляет свойство double к описанию, округляя его до [precision]:
+  /// Adds a double property to the description, rounded to [precision]:
   /// 1.000 with precision 2 = 1.
   void round(
     String name,
@@ -286,8 +286,8 @@ final class LoggableData {
   Object? toJson({
     LoggableJsonConfig config = const LoggableJsonConfig(),
   }) {
-    // Не передаём units дочерним элементам: units описывают объект целиком
-    // и попадают в ":u" на его уровне.
+    // Units are not passed down to children: they describe the object as a
+    // whole and land in ":u" at its own level.
     final propConfig = config.copyWith(units: null);
 
     final className = _type.typeName ?? _type.value.toString();
@@ -295,8 +295,8 @@ final class LoggableData {
 
     final Object props;
     if (!Loggable._sanitizing) {
-      // Прежний путь: без правила выбрасывать нечего, промежуточный
-      // список пар не нужен.
+      // The old path: with no rule there is nothing to drop, so the
+      // intermediate list of pairs is not needed.
       MapEntry<String, Object?> entryOf(Prop<Object?> p) =>
           p.toMapEntry(config: propConfig);
 
@@ -309,8 +309,9 @@ final class LoggableData {
           ? propsList.map(jsonOf).toList()
           : Map.fromEntries(propsList.map(entryOf));
     } else {
-      // Санитайз каждого свойства ровно один раз: drop исключает его из
-      // props целиком (запись отсутствует / элемент списка пропущен).
+      // Each property is sanitized exactly once: a drop removes it from
+      // props entirely (the entry is absent, or the list element is
+      // skipped).
       final kept = <(Prop<Object?>, Object?)>[];
       for (final p in propsList) {
         final sanitized = p._sanitized();
@@ -325,9 +326,9 @@ final class LoggableData {
         return e.$1.showName ? {entry.key: entry.value} : entry.value;
       }
 
-      // Форму (список или Map) определяют уцелевшие свойства: если
-      // единственное безымянное свойство выброшено, списочная форма
-      // больше не нужна.
+      // The surviving properties decide the shape (a list or a map): once
+      // the only unnamed property is dropped, the list form is no longer
+      // needed.
       props = kept.any((e) => !e.$1.showName)
           ? kept.map(jsonOf).toList()
           : Map.fromEntries(kept.map(entryOf));
@@ -341,9 +342,9 @@ final class LoggableData {
     };
   }
 
-  /// Рендер БЕЗ корневого предложения: обходчик, дойдя сюда, уже
-  /// предложил этот узел правилу. Корень предлагает [toString] — прямой
-  /// пользовательский путь, мимо обходчиков.
+  /// Renders WITHOUT offering the root: by the time the walker reaches
+  /// here it has already offered this node to the rule. The root is offered
+  /// by [toString] — the direct user path, which bypasses the walkers.
   String toLogString({
     LogTheme theme = LogTheme.noColors,
     int depth = 0,
@@ -357,8 +358,8 @@ final class LoggableData {
       return theme.data.nameStyle(valueFormat?.call(name) ?? name);
     }
 
-    // Санитайз каждого свойства ровно один раз; drop убирает свойство из
-    // вывода целиком (без повисшего разделителя).
+    // Each property is sanitized exactly once; a drop removes it from the
+    // output entirely, leaving no dangling separator.
     String? prop2str(Prop<Object?> p) {
       final sanitized = p._sanitized();
       if (Loggable._isDropped(sanitized)) return null;
@@ -386,9 +387,9 @@ final class LoggableData {
     return buf.toString();
   }
 
-  /// Как и у [Loggable.toString]: прямой пользовательский путь
-  /// (интерполяция, `print`, отладчик) обязан предложить правилу корень
-  /// — свойства на нём санитайзятся и так.
+  /// As with [Loggable.toString]: the direct user path (interpolation,
+  /// `print`, a debugger) has to offer the root to the rule — its
+  /// properties are sanitized on that path anyway.
   @override
   String toString() => Loggable._rootToString(this, toLogString);
 }
@@ -410,15 +411,16 @@ final class _NotSanitized {
 final class Prop<T extends Object?> {
   static const noView = LoggableNoView._();
 
-  /// Сентинел «санитайз ещё не считали» для параметра `sanitized` в
-  /// [toLogString]/[toMapEntry]. Отличаем «вызывающий не передал результат»
-  /// от «санитайзер заменил значение на null» — `null` сам по себе валидная
-  /// замена и не должен читаться как «не считали».
+  /// The "not sanitized yet" sentinel for the `sanitized` argument of
+  /// [toLogString]/[toMapEntry]. It tells "the caller passed no result"
+  /// apart from "the sanitizer replaced the value with null" — `null` is a
+  /// valid replacement in its own right and must not read as "not
+  /// computed".
   ///
-  /// Собственный приватный тип, а не `const Object()`: все `const Object()`
-  /// в программе — один и тот же объект, поэтому санитайзер, вернувший
-  /// `const Object()` как замену, был бы прочитан как «вызывающий ничего не
-  /// передал», и напечатался бы оригинал.
+  /// A private type of its own rather than `const Object()`: every
+  /// `const Object()` in a program is the same object, so a sanitizer
+  /// returning `const Object()` as a replacement would be read as "the
+  /// caller passed nothing" and the original would be printed.
   static const Object _notSanitized = _NotSanitized();
 
   final String name;
@@ -437,36 +439,38 @@ final class Prop<T extends Object?> {
     this.config = const LoggableConfig(),
   });
 
-  /// Значение, которое реально рендерится: `view`, если он задан, иначе
-  /// `value`. Санитайзер видит именно его — иначе секрет во `view`
-  /// прошёл бы мимо правил: реализацию [LoggableView] рисует её
-  /// собственный конвертер, и сам объект `view` в
-  /// [Loggable.objectToString]/[Loggable.objectToJson] не уходит.
+  /// The value that actually gets rendered: `view` when one is set,
+  /// otherwise `value`. The sanitizer sees exactly this one — otherwise a
+  /// secret inside a `view` would slip past the rules: a [LoggableView]
+  /// implementation is drawn by its own converter, and the `view` object
+  /// never reaches
+  /// [Loggable.objectToString]/[Loggable.objectToJson].
   ///
-  /// Это верно только для таких `view`. Сырой [Loggable] или
-  /// [LoggableWrapper] в роли `view` в обходчики как раз ЗАХОДИТ: его
-  /// `toString` — это `logClassInfo().toLogString()` и
-  /// [Loggable.objectToString] соответственно. Поэтому рендер `view`
-  /// обязан идти под сегментом свойства (см. [toLogString] и
-  /// [toMapEntry]): без него вложенный обход стартовал бы с пустого
-  /// пути — и предложил бы своё значение правилу второй раз, уже как
-  /// корень.
+  /// That holds only for such a `view`. A bare [Loggable] or
+  /// [LoggableWrapper] used as a `view` DOES enter the walkers: its
+  /// `toString` is `logClassInfo().toLogString()` and
+  /// [Loggable.objectToString] respectively. Rendering a `view` therefore
+  /// has to happen under the property's segment (see [toLogString] and
+  /// [toMapEntry]): without it the nested walk would start from an empty
+  /// path — and would offer its value to the rule a second time, this time
+  /// as a root.
   Object? get _renderedValue => view is LoggableNoView ? value : view;
 
-  /// Результат санитайза свойства: исходное [_renderedValue], замена или
-  /// [Sanitize.drop]. Вызывать ровно один раз на свойство — результат
-  /// передаётся в [toLogString]/[toMapEntry] параметром `sanitized`,
-  /// иначе правило сработает на одно и то же свойство дважды.
+  /// The result of sanitizing the property: the original
+  /// [_renderedValue], a replacement, or [Sanitize.drop]. Call it exactly
+  /// once per property — the result is handed to
+  /// [toLogString]/[toMapEntry] as the `sanitized` argument, or the rule
+  /// would fire on the same property twice.
   Object? _sanitized() => Loggable._sanitizeChild(name, name, _renderedValue);
 
-  /// Результат санитайза для рендера: переданный вызывающим либо,
-  /// если аргумент опущен, посчитанный здесь.
+  /// The sanitize result to render with: the one the caller passed, or,
+  /// when the argument is omitted, the one computed here.
   ///
-  /// [LoggableData] всегда передаёт `sanitized:` — она обязана позвать
-  /// правило один раз на свойство, чтобы уметь выбросить свойство
-  /// целиком при [Sanitize.drop]. Но [LoggableData.props] публичен, и
-  /// `p.toLogString()` можно вызвать напрямую: без этого fallback такой
-  /// вызов печатал бы несанитизированное значение.
+  /// [LoggableData] always passes `sanitized:` — it has to call the rule
+  /// once per property to be able to drop the property entirely on
+  /// [Sanitize.drop]. But [LoggableData.props] is public and
+  /// `p.toLogString()` can be called directly: without this fallback such
+  /// a call would print an unsanitized value.
   Object? _effectiveSanitized(Object? sanitized) =>
       identical(sanitized, _notSanitized) && Loggable._sanitizing
           ? _sanitized()
@@ -479,9 +483,10 @@ final class Prop<T extends Object?> {
     final effectiveConfig = this.config.mergeWithJsonConfig(config);
     final effectiveSanitized = _effectiveSanitized(sanitized);
 
-    // Замена рендерится как обычное значение под сегментом свойства: units
-    // и LoggableView рассчитаны на оригинал и к подставленному значению не
-    // применяются — иначе часть оригинала просочилась бы через них.
+    // A replacement renders as an ordinary value under the property's
+    // segment: units and LoggableView are meant for the original and are
+    // not applied to a substituted value — part of the original would leak
+    // through them otherwise.
     if (!identical(effectiveSanitized, _notSanitized) &&
         !identical(effectiveSanitized, _renderedValue)) {
       final propJson = Loggable._withSegment(
@@ -495,16 +500,17 @@ final class Prop<T extends Object?> {
       return MapEntry(showName ? name : '@$name', propJson);
     }
 
-    // Как и раньше: units применяются к значению ровно один раз —
-    // [Loggable.objectToJson] делает это сам, [LoggableView] сам управляет
-    // своими units, и только «сырой» view оборачивается здесь.
+    // As before: units are applied to a value exactly once —
+    // [Loggable.objectToJson] does it itself, [LoggableView] manages its
+    // own units, and only a bare view is wrapped here.
     //
-    // Сегмент свойства держится в стеке во ВСЕХ ветках, включая обе
-    // «видовые»: большинство view в обходчики не заходят, но `Loggable`
-    // в качестве view и конвертер [LoggableView.convert], зовущий
-    // [Loggable.objectToJson], — заходят. Без сегмента такой вложенный
-    // обход стартовал бы с пустого пути: путь свойства терялся бы, а сам
-    // аргумент предлагался бы правилу второй раз — уже как корень.
+    // The property's segment stays on the stack in EVERY branch, both
+    // view ones included: most views do not enter the walkers, but a
+    // `Loggable` used as a view, and a [LoggableView.convert] converter
+    // calling [Loggable.objectToJson], do. Without the segment such a
+    // nested walk would start from an empty path: the property's path
+    // would be lost, and the argument itself would be offered to the rule
+    // a second time, as a root.
     final propJson = switch (view) {
       LoggableNoView() => Loggable._withSegment(
           name,
@@ -549,9 +555,9 @@ final class Prop<T extends Object?> {
     final prefix =
         showName ? '${name2str()}${depthTheme.punctuation(':')} ' : '';
 
-    // Замена рендерится как обычное значение под сегментом свойства: units
-    // и LoggableView рассчитаны на оригинал и к подставленному значению не
-    // применяются.
+    // A replacement renders as an ordinary value under the property's
+    // segment: units and LoggableView are meant for the original and are
+    // not applied to a substituted value.
     if (!identical(effectiveSanitized, _notSanitized) &&
         !identical(effectiveSanitized, _renderedValue)) {
       final replacement = Loggable._withSegment(
@@ -564,19 +570,19 @@ final class Prop<T extends Object?> {
         ),
       );
 
-      // Замена уже отрендерена: её листья прошли форматтер внутри
-      // objectToString. Второй проход поверх стилизованной строки
-      // экранировал бы собственные коды темы.
+      // The replacement is already rendered: its leaves went through the
+      // formatter inside objectToString. A second pass over the styled
+      // string would escape the theme's own codes.
       return '$prefix$replacement';
     }
 
-    // Сегмент свойства держится в стеке во ВСЕХ ветках: большинство view
-    // в обходчики не заходят, но `Loggable` в качестве view (его
-    // `toString` зовёт [Loggable.objectToString]) и конвертер
-    // [LoggableView.convert], делающий то же самое, — заходят. Без
-    // сегмента такой вложенный обход стартовал бы с пустого пути: путь
-    // свойства терялся бы, а сам аргумент предлагался бы правилу второй
-    // раз — уже как корень.
+    // The property's segment stays on the stack in EVERY branch: most
+    // views do not enter the walkers, but a `Loggable` used as a view (its
+    // `toString` calls [Loggable.objectToString]) and a
+    // [LoggableView.convert] converter doing the same do. Without the
+    // segment such a nested walk would start from an empty path: the
+    // property's path would be lost, and the argument itself would be
+    // offered to the rule a second time, as a root.
     final effectiveView = switch (view) {
       LoggableNoView() => null,
       final LoggableView view => Loggable._withSegment(
@@ -589,15 +595,16 @@ final class Prop<T extends Object?> {
               '$view${Loggable.unitsToString(effectiveConfig.resolvedUnits, theme)}',
         ),
     };
-    // Форматтер применяется только к тексту view: он произвольный и до
-    // сюда ничего не проходил. Ветка objectToString уже отрендерена —
-    // повторный проход по ней и был двойным форматированием.
+    // The formatter is applied to the view's text only: it is arbitrary
+    // and has been through nothing so far. The objectToString branch is
+    // already rendered — a second pass over it was the double formatting.
     //
-    // Безопасный режим здесь выключен намеренно: view — точка расширения
-    // рендеринга, ей передана тема, и `LoggableMultiView`/`unitsToString`
-    // кладут в результат собственные стили пакета. Обезвреживать надо
-    // значение, которое view интерполирует, а не собранный им текст, — это
-    // и делает `_LoggableView`.
+    // The safe mode is off here deliberately: a view is a rendering
+    // extension point, it was handed the theme, and
+    // `LoggableMultiView`/`unitsToString` put the package's own styling
+    // into its result. What has to be disarmed is the value the view
+    // interpolates, not the text it assembled — and `_LoggableView` does
+    // exactly that.
     final styledValue = effectiveView != null
         ? theme.formatValue(effectiveView, escapeAnsiCodes: false)
         : Loggable._withSegment(
@@ -699,12 +706,12 @@ final class _LoggableMapBuilder extends LoggableData {
   }) {
     final effectiveConfig = this.config.mergeWithJsonConfig(config);
 
-    // Не передаём units дочерним элементам: units описывают объект целиком
-    // и попадают в ":u" на его уровне.
+    // Units are not passed down to children: they describe the object as a
+    // whole and land in ":u" at its own level.
     final propConfig = effectiveConfig.copyWith(units: null);
 
-    // Санитайз каждого свойства ровно один раз; drop убирает запись из
-    // Map целиком.
+    // Each property is sanitized exactly once; a drop removes the entry
+    // from the map entirely.
     MapEntry<String, Object?>? prop2entry(Prop<Object?> p) {
       final sanitized = p._sanitized();
       if (Loggable._isDropped(sanitized)) return null;
@@ -734,8 +741,8 @@ final class _LoggableMapBuilder extends LoggableData {
     final effectiveConfig = this.config.merge(config);
     final depthTheme = theme.depthTheme(depth);
 
-    // Санитайз каждого свойства ровно один раз; drop убирает свойство из
-    // вывода целиком.
+    // Each property is sanitized exactly once; a drop removes the property
+    // from the output entirely.
     String? prop2str(Prop<Object?> p) {
       final sanitized = p._sanitized();
       if (Loggable._isDropped(sanitized)) return null;
