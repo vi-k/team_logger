@@ -50,7 +50,7 @@ void main() {
 
       expect(
         Loggable.objectToString(map),
-        '{_Account(iban: "<masked>"): "primary"}',
+        '{₌₁ _Account(iban: "<masked>"): "primary"}',
       );
       expect(
         Loggable.objectToJson(map),
@@ -90,7 +90,7 @@ void main() {
 
       expect(
         Loggable.objectToString(map),
-        '{_ThrowingKey(iban: "DE89"): "primary"}',
+        '{₌₁ _ThrowingKey(iban: "DE89"): "primary"}',
       );
     });
 
@@ -142,7 +142,10 @@ void main() {
         {'pw': 'hunter2'}: 'primary',
       };
 
-      expect(Loggable.objectToString(map), '{{pw: "<masked>"}: "primary"}');
+      expect(
+        Loggable.objectToString(map),
+        '{₌₁ {₌₁ pw: "<masked>"}: "primary"}',
+      );
       expect(Loggable.objectToJson(map), {'{pw: hunter2}': 'primary'});
     });
 
@@ -155,7 +158,7 @@ void main() {
 
       expect(
         Loggable.objectToString(map),
-        '{_Account(iban: "<masked>"): "primary"}',
+        '{₌₁ _Account(iban: "<masked>"): "primary"}',
       );
       expect(
         Loggable.objectToJson(map),

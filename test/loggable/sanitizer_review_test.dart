@@ -39,7 +39,7 @@ void main() {
         return ctx.value;
       };
 
-      expect(Loggable.objectToString({'a': 1}), '{a: 1}');
+      expect(Loggable.objectToString({'a': 1}), '{₌₁ a: 1}');
       expect(rootCalls, 1);
     });
 
@@ -74,7 +74,7 @@ void main() {
         Loggable.objectToString({
           'card': {'pan': '4111', 'cvv': '123'},
         }),
-        '{card: {inner: "x"}}',
+        '{₌₁ card: {₌₁ inner: "x"}}',
       );
       // 'pan'/'cvv' — дети оригинала — не предлагались, 'inner' — ребёнок
       // замены — предлагался.
@@ -104,7 +104,7 @@ void main() {
       Loggable.sanitizer = (ctx) => ctx.value == 'hunter2' ? '***' : ctx.value;
 
       final data = {'password': Loggable.from('hunter2')};
-      expect(Loggable.objectToString(data), '{password: "***"}');
+      expect(Loggable.objectToString(data), '{₌₁ password: "***"}');
       expect(Loggable.objectToJson(data), {'password': '***'});
     });
 
@@ -114,6 +114,7 @@ void main() {
       final data = Loggable.mapBuilder()
         ..prop('password', Loggable.from('hunter2'));
 
+      // mapBuilder — структура свойств, а не коллекция, счётчика нет.
       expect(Loggable.objectToString(data), '{password: "***"}');
       expect(Loggable.objectToJson(data), {'password': '***'});
     });
@@ -137,7 +138,7 @@ void main() {
       final data = {
         'n': Loggable.from(1, config: const LoggableConfig(units: 'kg')),
       };
-      expect(Loggable.objectToString(data), '{n: 1kg}');
+      expect(Loggable.objectToString(data), '{₌₁ n: 1kg}');
     });
 
     test('a wrapper value is offered exactly once', () {
@@ -464,7 +465,7 @@ void main() {
       final data = Loggable.mapBuilder()
         ..prop('user', 0, view: Loggable.from({'password': 'hunter2'}));
 
-      expect(Loggable.objectToString(data), '{user: {password: "***"}}');
+      expect(Loggable.objectToString(data), '{user: {₌₁ password: "***"}}');
       expect(
         Loggable.objectToJson(data).toString(),
         isNot(contains('hunter2')),
@@ -482,7 +483,7 @@ void main() {
 
       expect(
         Loggable.objectToString(data),
-        '{card: {pan: "4111"}, pan: "***"}',
+        '{card: {₌₁ pan: "4111"}, pan: "***"}',
       );
     });
 

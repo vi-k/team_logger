@@ -979,6 +979,28 @@ For string rendering, `collectionMaxCount` must be non-negative and
 `collectionMaxStringLength`, when set, must be positive. Invalid limits throw
 `ArgumentError` at the rendering boundary.
 
+A `Map` obeys the same two limits, and reports its size the same way:
+
+```dart
+log.d(
+  'Map',
+  data: {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5},
+  config: const LoggableConfig(collectionMaxCount: 3),
+);
+// Map: {₌₅ a: 1, b: 2, …, e: 5}
+```
+
+The first entries and the last one survive a cut, as for a list — a map is
+ordered and can be walked twice. Two details are worth knowing when a
+redaction rule is installed: the limit counts the entries that survive it,
+so a dropped entry does not use up a slot, and the reported size is the size
+of the map rather than of the output — a dropped entry leaves no other
+trace. `collectionShowIndexes` does not apply: entries have keys.
+
+`Loggable.mapBuilder()` renders with the same braces but is a structure of
+properties rather than a collection, so the limits and the count do not
+apply to it.
+
 Notice the `Iterable` above: it is truncated to `(₀:1.2, ₁:2.3, ₂:3.4, …)`
 rather than to `(₌₅ ₀:1.2, ₁:2.3, …, ₄:5.6)`. A `List` or a `Set` is walked
 freely — its length and its last element are cheap — but a bare `Iterable`
@@ -1719,7 +1741,7 @@ log.i(
     'card': {'pan': '4111111111111234'},
   },
 );
-// checkout: {user: "ann", card: {pan: "**** **** **** 1234"}}
+// checkout: {₌₂ user: "ann", card: {₌₁ pan: "**** **** **** 1234"}}
 ```
 
 `ctx` (a `SanitizeContext`) also carries `path` (`user.card.pan`) and
@@ -1815,8 +1837,8 @@ there is nothing left to form a command out of:
 
 ```dart
 log.i('\x1B[2Jforged');                       // [CSI 2 ED]forged
-log.i('m', data: {'ua': '\x1B[31mred'});      // m: {ua: "[CSI 31 SGR]red"}
-log.i('m', data: {'\x1B[31mk': 1});           // m: {[CSI 31 SGR]k: 1}
+log.i('m', data: {'ua': '\x1B[31mred'});    // m: {₌₁ ua: "[CSI 31 SGR]red"}
+log.i('m', data: {'\x1B[31mk': 1});         // m: {₌₁ [CSI 31 SGR]k: 1}
 ```
 
 You see what arrived instead of losing it or running it. Ordinary text is

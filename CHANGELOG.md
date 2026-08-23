@@ -1,5 +1,21 @@
 ## 0.7.0
 
+- [breaking changes] A `Map` obeys `collectionMaxCount` and
+  `collectionMaxStringLength`, and reports its size like any other
+  collection. It obeyed neither: a list of a thousand elements folded up
+  while a map of a thousand keys went into the log whole, in the console and
+  in the JSONL file alike, and nothing an application could set would stop
+  it. Truncation keeps the first entries and the last one, as for a list.
+  Every map now carries the count marker — `{₌₅ a: 1, …, e: 5}` — because
+  `collectionShowCount` means one thing across collections;
+  `collectionShowCount: false` takes it off. `collectionShowIndexes` does not
+  apply: entries have keys. With a redaction rule installed, the limit counts
+  the entries that survive it and the reported size stays the size of the
+  map, which is the only trace a dropped entry leaves. In JSON the shape
+  changes only when the map is truncated, the way a list already behaves:
+  `{":k": "map", ":l": 5, ":v": {…}}`. `Loggable.mapBuilder()` is a structure
+  of properties rather than a collection and is unaffected.
+
 - `LoggableConfig.iterableEfficientLength` opts a bare `Iterable` into the
   rendering a `List` gets: the element count and the last element, rather
   than the leading elements and an ellipsis. An `Iterable` that is neither a

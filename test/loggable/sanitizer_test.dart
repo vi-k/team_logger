@@ -64,7 +64,10 @@ void main() {
       Loggable.sanitizer = (ctx) => ctx.name == 'password' ? '***' : ctx.value;
 
       const data = {'user': 'ann', 'password': 'hunter2'};
-      expect(Loggable.objectToString(data), '{user: "ann", password: "***"}');
+      expect(
+        Loggable.objectToString(data),
+        '{₌₂ user: "ann", password: "***"}',
+      );
       expect(Loggable.objectToJson(data), {'user': 'ann', 'password': '***'});
     });
 
@@ -73,7 +76,7 @@ void main() {
           (ctx) => ctx.name == 'password' ? Sanitize.drop : ctx.value;
 
       const data = {'a': 1, 'password': 'hunter2', 'c': 3};
-      expect(Loggable.objectToString(data), '{a: 1, c: 3}');
+      expect(Loggable.objectToString(data), '{₌₃ a: 1, c: 3}');
       expect(Loggable.objectToJson(data), {'a': 1, 'c': 3});
     });
 
@@ -111,7 +114,7 @@ void main() {
         Loggable.objectToString({
           'card': {'pan': '4111', 'cvv': '123'},
         }),
-        '{card: "<redacted>"}',
+        '{₌₁ card: "<redacted>"}',
       );
       expect(names, [null, 'card']);
     });
@@ -154,7 +157,7 @@ void main() {
         final droppedText = Loggable.objectToString(Sanitize.drop);
         expect(
           Loggable.objectToString(data),
-          '{a: 1, b: $droppedText, c: 3}',
+          '{₌₃ a: 1, b: $droppedText, c: 3}',
         );
 
         final droppedJson = Loggable.objectToJson(Sanitize.drop);

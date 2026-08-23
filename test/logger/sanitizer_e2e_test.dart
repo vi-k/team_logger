@@ -547,7 +547,7 @@ void main() {
     test('a Loggable error is rendered the same without a rule', () {
       expect(
         _printError({'k': 1}, _Boom()),
-        'login: {k: 1}: _Boom(code: "E42")',
+        'login: {₌₁ k: 1}: _Boom(code: "E42")',
       );
     });
 

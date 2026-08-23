@@ -1885,20 +1885,218 @@ abstract mixin class Loggable {
     String end = '}',
     LoggableConfig config = const LoggableConfig(),
   }) {
-    final depthTheme = theme.depthTheme(depth);
-    final body = map.entries
-        .map(
-          (e) => _mapEntryToString(
-            e,
-            theme: theme,
-            depth: depth,
-            config: config,
-          ),
-        )
-        .whereType<String>()
-        .join(depthTheme.punctuation(', '));
+    final maxCount = config.resolvedCollectionMaxCount;
+    final maxLength = config.resolvedCollectionMaxStringLength;
 
-    return '${depthTheme.brackets(start)}$body${depthTheme.brackets(end)}';
+    _validateIterableToStringArguments(
+      maxCount: maxCount,
+      maxLength: maxLength,
+      start: start,
+      end: end,
+    );
+
+    final depthTheme = theme.depthTheme(depth);
+    final showCount = config.resolvedCollectionShowCount;
+
+    final buf = StringBuffer(depthTheme.brackets(start));
+
+    // Ни длина, ни последняя запись в этом режиме не нужны.
+    if (!showCount && maxCount == null && maxLength == null) {
+      var isFirst = true;
+      for (final entry in map.entries) {
+        final item = _mapEntryToString(
+          entry,
+          theme: theme,
+          depth: depth,
+          config: config,
+        );
+        if (item == null) continue;
+
+        if (!isFirst) buf.write(depthTheme.punctuation(', '));
+        buf.write(item);
+        isFirst = false;
+      }
+      buf.write(depthTheme.brackets(end));
+
+      return buf.toString();
+    }
+
+    final count = map.length;
+    var reservedLength = start.length + end.length;
+
+    if (showCount) {
+      final countText = '${theme.formatCount(count)}${count > 0 ? ' ' : ''}';
+      reservedLength += countText.length;
+      buf.write(depthTheme.description(countText));
+    }
+
+    _addMapEntriesToBuf(
+      buf,
+      map,
+      theme: theme,
+      depth: depth,
+      depthTheme: depthTheme,
+      config: config,
+      count: count,
+      maxCount: maxCount,
+      maxLength:
+          maxLength == null ? null : math.max(maxLength - reservedLength, 0),
+    );
+
+    buf.write(depthTheme.brackets(end));
+
+    return buf.toString();
+  }
+
+  /// Пишет записи `Map` с теми же правилами обрезки, что и у списка:
+  /// приоритет у первых записей и последней, вместо изъятого — многоточие.
+  ///
+  /// Отдельная реализация, а не общая с
+  /// [_addEfficientLengthIterableItemsToBuf], из-за санитайзера: у списка
+  /// `Sanitize.drop` оставляет маркер `<dropped>` и позиция сохраняется, а у
+  /// `Map` запись исчезает совсем. Поэтому лимит здесь считает **выжившие**
+  /// записи, а заявленная длина остаётся длиной исходной `Map` — иначе
+  /// удалённые правилом записи не оставили бы после себя никакого следа.
+  static void _addMapEntriesToBuf(
+    StringBuffer buf,
+    Map<Object?, Object?> map, {
+    required LogTheme theme,
+    required int depth,
+    required LogDepthTheme depthTheme,
+    required LoggableConfig config,
+    required int count,
+    required int? maxCount,
+    required int? maxLength,
+  }) {
+    String? entry2str(MapEntry<Object?, Object?> entry) => _mapEntryToString(
+          entry,
+          theme: theme,
+          depth: depth,
+          config: config,
+        );
+
+    bool hasSpaceFor(int len) => maxLength == null || len <= maxLength;
+
+    const delimiterStr = ', ';
+    const delimiterSize = delimiterStr.length;
+    late final delimiter = depthTheme.punctuation(delimiterStr);
+
+    final ellipsisStr = theme.main.ellipsis;
+    final ellipsisSize = ellipsisStr.length;
+    late final ellipsis = depthTheme.punctuation(ellipsisStr);
+    late final delimiterAndEllipsis =
+        depthTheme.punctuation('$delimiterStr$ellipsisStr');
+
+    if (count == 0) return;
+
+    // Ни одной записи показать нельзя: {₌ₙ …}
+    if (maxCount != null && maxCount <= 0) {
+      buf.write(ellipsis);
+
+      return;
+    }
+
+    final iterator = map.entries.iterator;
+
+    /// Следующая выжившая запись или `null`, если их больше нет.
+    String? nextItem() {
+      while (iterator.moveNext()) {
+        if (entry2str(iterator.current) case final item?) return item;
+      }
+
+      return null;
+    }
+
+    final first = nextItem();
+    // Всё вычеркнуто правилом: {₌ₙ}
+    if (first == null) return;
+
+    final firstSize = first.lengthWithoutEscapeCodes;
+    // Первая запись не помещается — показываем только многоточие, но лишь
+    // если сама она длиннее многоточия.
+    if (!hasSpaceFor(firstSize) && firstSize > ellipsisSize) {
+      buf.write(ellipsis);
+
+      return;
+    }
+
+    final displayedCount = maxCount == null ? count : math.min(maxCount, count);
+    final truncated = displayedCount < count;
+
+    // Хвост рендерится лениво: при displayedCount == 1 его в выводе нет, а
+    // рендер — это ещё и санитайз, то есть правилу предлагалась бы запись,
+    // отсечённая лимитом по количеству.
+    late final last = truncated ? entry2str(map.entries.last) : null;
+
+    if (!truncated) {
+      // Показываем всё, что выжило, пока хватает места.
+      buf.write(first);
+      var usedSize = firstSize;
+      for (var item = nextItem(); item != null; item = nextItem()) {
+        final itemSize = delimiterSize + item.lengthWithoutEscapeCodes;
+        if (!hasSpaceFor(usedSize + itemSize)) {
+          if (hasSpaceFor(usedSize + delimiterSize + ellipsisSize)) {
+            buf.write(delimiterAndEllipsis);
+          }
+
+          return;
+        }
+
+        buf
+          ..write(delimiter)
+          ..write(item);
+        usedSize += itemSize;
+      }
+
+      return;
+    }
+
+    // Место под многоточие и хвост бронируется заранее: они важнее середины.
+    var tailSize = delimiterSize + ellipsisSize;
+    if (last case final item?) {
+      tailSize += delimiterSize + item.lengthWithoutEscapeCodes;
+    }
+
+    if (!hasSpaceFor(firstSize + delimiterSize + ellipsisSize)) {
+      buf.write(ellipsis);
+
+      return;
+    }
+
+    buf.write(first);
+
+    void writeTail() {
+      buf.write(delimiterAndEllipsis);
+      if (last case final item?) {
+        buf
+          ..write(delimiter)
+          ..write(item);
+      }
+    }
+
+    // Одна запись плюс многоточие: {₌ₙ a: 1, …}
+    if (displayedCount == 1 || !hasSpaceFor(firstSize + tailSize)) {
+      buf.write(delimiterAndEllipsis);
+
+      return;
+    }
+
+    var usedSize = firstSize + tailSize;
+    // Середина: записи между первой и хвостом, пока хватает места.
+    for (var shown = 1; shown < displayedCount - 1; shown++) {
+      final item = nextItem();
+      if (item == null) break;
+
+      final itemSize = delimiterSize + item.lengthWithoutEscapeCodes;
+      if (!hasSpaceFor(usedSize + itemSize)) break;
+
+      buf
+        ..write(delimiter)
+        ..write(item);
+      usedSize += itemSize;
+    }
+
+    writeTail();
   }
 
   static Map<String, Object?> _mapToJson(
@@ -1911,7 +2109,9 @@ abstract mixin class Loggable {
     // Собираем циклом (а не map.map), чтобы уметь пропускать записи,
     // санитизированные до Sanitize.drop.
     final result = <String, Object?>{};
-    for (final entry in map.entries) {
+
+    /// Кладёт запись в [result]; `false` — запись вычеркнута правилом.
+    bool addEntry(MapEntry<Object?, Object?> entry) {
       // Ключ рендерится один раз (см. [_mapEntryToString]): его текст —
       // и ключ в JSON, и сегмент пути с именем для правила.
       final String? name;
@@ -1928,7 +2128,7 @@ abstract mixin class Loggable {
 
       final segment = name ?? 'null';
       final value = _sanitizeChild(segment, name, entry.value);
-      if (_isDropped(value)) continue;
+      if (_isDropped(value)) return false;
 
       final jsonKey = _escapeServiceKey(segment);
       if (result.containsKey(jsonKey)) {
@@ -1939,11 +2139,41 @@ abstract mixin class Loggable {
         segment,
         () => objectToJson(value, config: itemConfig),
       );
+
+      return true;
     }
 
-    return switch (config.resolvedUnits) {
-      null => result,
-      final units => {...result, _unitsKey: units}
+    final count = map.length;
+    final maxCount = config.resolvedCollectionMaxCount;
+
+    // Целая `Map` остаётся обычным JSON-объектом — форму меняет только
+    // обрезка, ровно как у списка (см. [listToJson]).
+    if (maxCount == null || count <= maxCount) {
+      map.entries.forEach(addEntry);
+
+      return switch (config.resolvedUnits) {
+        null => result,
+        final units => {...result, _unitsKey: units}
+      };
+    }
+
+    // Приоритет тот же, что в строковом выводе: первые записи и последняя.
+    // Лимит считает выжившие записи, а `:l` остаётся длиной исходной `Map`.
+    if (maxCount > 0) {
+      final iterator = map.entries.iterator;
+      var shown = 0;
+      while (shown < maxCount - 1 && iterator.moveNext()) {
+        if (addEntry(iterator.current)) shown++;
+      }
+
+      if (maxCount > 1) addEntry(map.entries.last);
+    }
+
+    return {
+      _kindKey: 'map',
+      _lengthKey: count,
+      _valueKey: result,
+      if (config.resolvedUnits case final units?) _unitsKey: units,
     };
   }
 

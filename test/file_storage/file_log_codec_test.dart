@@ -265,7 +265,7 @@ void main() {
       );
 
       final map = _decode(FileLogCodec().encode(log));
-      expect(map['data'], '{req: "ok"}');
+      expect(map['data'], '{₌₂ req: "ok"}');
     });
 
     test('the error and the tags are unchanged without a rule', () {

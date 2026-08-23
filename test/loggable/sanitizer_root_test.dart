@@ -274,6 +274,8 @@ void main() {
       expect('$user', '_User(name: "ann", password: "***")');
       expect(
         '${Loggable.mapBuilder()..prop('password', 'hunter2')}',
+        // mapBuilder — структура свойств, а не коллекция: лимиты к ней не
+        // применяются, счётчика записей у неё нет.
         '{password: "***"}',
       );
     });

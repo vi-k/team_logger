@@ -126,7 +126,7 @@ void main() {
         (log) => log.i('m', data: {'ua': '$_esc[31mred'}),
       );
 
-      expect(_payload(row), 'm: {ua: "[CSI 31 SGR]red"}');
+      expect(_payload(row), 'm: {₌₁ ua: "[CSI 31 SGR]red"}');
     });
 
     test('a Loggable property is disarmed', () {
@@ -147,7 +147,7 @@ void main() {
         (log) => log.i('m', data: {'$_esc[31mk': 1}),
       );
 
-      expect(_payload(row), 'm: {[CSI 31 SGR]k: 1}');
+      expect(_payload(row), 'm: {₌₁ [CSI 31 SGR]k: 1}');
     });
 
     test('an error text is disarmed', () {
@@ -204,7 +204,7 @@ void main() {
         (log) => log.i('nothing to see', data: {'a': 'plain'}),
       );
 
-      expect(_payload(row), 'nothing to see: {a: "plain"}');
+      expect(_payload(row), 'nothing to see: {₌₁ a: "plain"}');
     });
   });
 
@@ -247,7 +247,7 @@ void main() {
         ),
       );
 
-      expect(_payload(row), 'm: {ua: "[CSI 31 SGR]red"}');
+      expect(_payload(row), 'm: {₌₁ ua: "[CSI 31 SGR]red"}');
     });
 
     test('a container cannot opt out under a forced policy either', () {
@@ -264,7 +264,7 @@ void main() {
         ),
       );
 
-      expect(_payload(row), 'm: {ua: "[CSI 31 SGR]red"}');
+      expect(_payload(row), 'm: {₌₁ ua: "[CSI 31 SGR]red"}');
     });
   });
 
