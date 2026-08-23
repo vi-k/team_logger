@@ -75,6 +75,7 @@ BBCode и настраиваемые темы оформления.
   - [9. Запись логов в файлы (`FileLogStorage`)](#9-запись-логов-в-файлы-filelogstorage)
   - [10. Редактирование логов (`Logger.transformer` и `Loggable.sanitizer`)](#10-редактирование-логов-loggertransformer-и-loggablesanitizer)
   - [11. Недоверенный текст и вывод в терминал](#11-недоверенный-текст-и-вывод-в-терминал)
+  - [12. Свой publisher](#12-свой-publisher)
 - [Лицензия](#лицензия)
 
 ---
@@ -916,6 +917,33 @@ void main() {
 
 Эта задача выполнится перед каждой сборкой приложения и при необходимости
 создаст `main_dev.dart`.
+
+#### Логи в релизной сборке
+
+Отладочная точка входа выше делает вывод громче. Что поедет в релиз,
+решается там же — тем, что оставит настроенным боевая точка входа.
+
+Экономит работу только `level`: его смотрят до того, как лог построен,
+поэтому поднятый в релизе уровень не даёт вообще создать строку сообщения,
+объект `data` и `tags` — при условии, что они переданы замыканиями (см.
+«Ленивые сообщения и данные»). Все фильтры на стороне publisher'а —
+`activeMinLevel`, `FileLogStorage.minLevel`, `Logger.transformer` —
+работают с уже существующим логом.
+
+```dart
+import 'package:flutter/foundation.dart' show kDebugMode;
+
+final log = Logger('app')
+  ..level = kDebugMode ? LogLevels.all : LogLevels.warning
+  ..publisher = ConsoleLogPrinter(rows: const [/* ... */]);
+```
+
+Вне Flutter тот же переключатель — `const bool.fromEnvironment('dart.vm.product')`,
+он `true` в AOT-сборке релиза. `LogLevels.off` заглушает логгер целиком.
+
+На этапе компиляции не вырезается ничего: строка `log.d(...)` в релизе
+остаётся вызовом — просто попадает в функцию, которая сразу возвращается.
+Поэтому дорогой аргумент прячут за замыкание, а не за `if`.
 
 ---
 
@@ -2143,6 +2171,79 @@ log.d('m', data: untrusted,
 записывает `ESC` как escape `\u001b`, так что `cat` и `tail` были безопасны
 всегда. Опасен был читатель, который расшифровывает строку и печатает
 сообщение в терминал, — и теперь безопасен и он.
+
+### 12. Свой publisher
+
+`ConsoleLogPrinter`, `LogStorage` и `FileLogStorage` — одно и то же по сути:
+`CustomLogPublisher<Log>`, а это один метод:
+
+```dart
+abstract interface class CustomLogPublisher<Log extends CustomLog> {
+  void publish(Log log);
+}
+```
+
+Для чего-то небольшого хватает фабрики из функции:
+
+```dart
+log.publisher = CustomLogPublisher<Log>(
+  (log) => myTelemetry.add(log.levelName, log.message),
+);
+```
+
+Класс — когда у приёмника есть что хранить: батч, очередь, сокет.
+
+```dart
+final class TelemetryPublisher implements CustomLogPublisher<Log> {
+  final _batch = <Map<String, Object?>>[];
+
+  @override
+  void publish(Log log) {
+    if (log.level < LogLevels.warning) return;
+
+    _batch.add({
+      'at': log.time.toIso8601String(),
+      'level': log.levelName,
+      'path': log.path,
+      'message': log.message,
+      if (log.hasData) 'data': Loggable.objectToJson(log.data),
+      if (log.error != null) 'error': '${log.error}',
+    });
+
+    if (_batch.length >= 50) _flush();
+  }
+
+  void _flush() { /* отправить и очистить */ }
+}
+```
+
+У `Log` есть `time`, `num`, `path`, `message`, `data`, `tags`, `traceIds`,
+`level` вместе с `levelName`/`shortLevelName`, `error`, `stackTrace` и
+`zone`, в которой лог создан. `Loggable.objectToJson` превращает `data` в
+JSON-совместимые значения с теми же лимитами и тем же редактированием, что
+и в консоли; ровно ту форму, что пишет `FileLogStorage`, даёт
+`FileLogCodec`.
+
+**`publish` синхронный.** Его никто не ждёт, поэтому это неподходящее место
+для ожидания сокета, HTTP-вызова или файла. Ставьте работу в очередь и
+разгружайте её так, как это делает `FileLogStorage`, и сообщайте о
+потерянном, а не теряйте молча.
+
+**`publish` не должен бросать.** Внутри `MultiPublisher` исключение
+изолируется, и остальные publisher'ы лог получат; publisher сам по себе
+пробросит его в строку, которая логировала.
+
+Подключается как любой другой — один или рядом с консолью:
+
+```dart
+log.publisher = MultiPublisher([
+  ConsoleLogPrinter(rows: const [/* ... */]),
+  TelemetryPublisher(),
+]);
+```
+
+Чтобы одному приёмнику доставался отредактированный лог, а остальным —
+целый, заверните этот один в `TransformPublisher` (см. раздел 10).
 
 ---
 ## Лицензия

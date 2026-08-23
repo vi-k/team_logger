@@ -68,6 +68,7 @@ below, that is where they are from.
   - [9. Saving Logs to Files (`FileLogStorage`)](#9-saving-logs-to-files-filelogstorage)
   - [10. Redacting Logs (`Logger.transformer` and `Loggable.sanitizer`)](#10-redacting-logs-loggertransformer-and-loggablesanitizer)
   - [11. Untrusted Text and Terminal Output](#11-untrusted-text-and-terminal-output)
+  - [12. Writing Your Own Publisher](#12-writing-your-own-publisher)
 - [License](#license)
 
 ---
@@ -916,6 +917,35 @@ void main() {
 
 This task will run before each application build and create `main_dev.dart` if
 necessary.
+
+#### Logs in a Release Build
+
+The dev entry point above turns the output up. What ships is decided the same
+way — by what the production entry point leaves set.
+
+`level` is the gate that actually saves work: it is consulted before the log
+is built, so raising it in a release build keeps message strings, `data`
+objects and `tags` from being constructed at all, provided they were passed
+as closures (see "Lazy Messages and Data"). Every publisher-side filter —
+`activeMinLevel`, `FileLogStorage.minLevel`, `Logger.transformer` — runs on
+a log that already exists.
+
+```dart
+import 'package:flutter/foundation.dart' show kDebugMode;
+
+final log = Logger('app')
+  ..level = kDebugMode ? LogLevels.all : LogLevels.warning
+  ..publisher = ConsoleLogPrinter(rows: const [/* ... */]);
+```
+
+Outside Flutter the same switch is `const bool.fromEnvironment('dart.vm.product')`,
+which is `true` in an AOT release build. `LogLevels.off` silences a logger
+completely.
+
+Nothing is stripped at compile time: a `log.d(...)` line in a release build is
+still a call — it just reaches a function that returns immediately. That is
+the reason to put an expensive argument behind a closure rather than behind
+an `if`.
 
 ---
 
@@ -2136,6 +2166,78 @@ the JSONL line is already disarmed. The file was never the dangerous part —
 `jsonEncode` writes ESC as a `\u001b` escape, so `cat` and `tail` were
 always safe. The danger was a reader that decodes the line and prints the
 message to a terminal, and that reader is safe now too.
+
+### 12. Writing Your Own Publisher
+
+`ConsoleLogPrinter`, `LogStorage` and `FileLogStorage` are all the same kind
+of thing — a `CustomLogPublisher<Log>`, which is one method:
+
+```dart
+abstract interface class CustomLogPublisher<Log extends CustomLog> {
+  void publish(Log log);
+}
+```
+
+For something small the function factory is enough:
+
+```dart
+log.publisher = CustomLogPublisher<Log>(
+  (log) => myTelemetry.add(log.levelName, log.message),
+);
+```
+
+A class when the destination has state to keep — a batch, a queue, a socket:
+
+```dart
+final class TelemetryPublisher implements CustomLogPublisher<Log> {
+  final _batch = <Map<String, Object?>>[];
+
+  @override
+  void publish(Log log) {
+    if (log.level < LogLevels.warning) return;
+
+    _batch.add({
+      'at': log.time.toIso8601String(),
+      'level': log.levelName,
+      'path': log.path,
+      'message': log.message,
+      if (log.hasData) 'data': Loggable.objectToJson(log.data),
+      if (log.error != null) 'error': '${log.error}',
+    });
+
+    if (_batch.length >= 50) _flush();
+  }
+
+  void _flush() { /* send and clear */ }
+}
+```
+
+A `Log` carries `time`, `num`, `path`, `message`, `data`, `tags`, `traceIds`,
+`level` with `levelName`/`shortLevelName`, `error`, `stackTrace`, and the
+`zone` it was made in. `Loggable.objectToJson` turns `data` into JSON-safe
+values under the same limits and the same redaction the console gets; for the
+exact shape `FileLogStorage` writes, `FileLogCodec` is what produces it.
+
+**`publish` is synchronous.** Nothing awaits it, so it is the wrong place to
+wait on a socket, an HTTP call or a file. Queue the work and let it drain the
+way `FileLogStorage` does, and report what was dropped instead of losing it
+quietly.
+
+**`publish` should not throw.** Inside a `MultiPublisher` the exception is
+isolated and the other publishers still receive the log; a publisher used on
+its own propagates it to the line that logged.
+
+Attach it like any other publisher, alone or beside the console:
+
+```dart
+log.publisher = MultiPublisher([
+  ConsoleLogPrinter(rows: const [/* ... */]),
+  TelemetryPublisher(),
+]);
+```
+
+To hand one destination a redacted log while the others get it whole, wrap
+that one in a `TransformPublisher` — see section 10.
 
 ---
 ## License
