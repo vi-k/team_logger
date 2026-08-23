@@ -86,10 +86,16 @@ cd example && dart pub get && dart analyze && dart run example.dart
 `tool/playground_data.dart` (`address_ru`, `address_kk`): это данные, а не
 комментарии, и они там затем, чтобы playground рисовал нелатиницу.
 
-Не тронуты как не-код: `AGENTS.md` (документ для агентов),
-`.claude/settings.json` (текст хука про `docs/handoff.md`),
-`.vscode/launch.json` (имя конфигурации запуска). Решения владельца по ним
-нет.
+**`AGENTS.md` остаётся по-русски — решено владельцем 2026-08-23.** Он
+документ для владельца и агентов, а не артефакт пакета. Правило записано
+поимённо в `AGENTS.md` и `docs/conventions.md`: по-русски ровно три места —
+`docs/`, `README.ru.md`, `AGENTS.md` (плюс `CLAUDE.md`, который только
+подключает его ссылкой).
+
+Решения владельца пока нет по двум файлам, и оба не код: `.claude/settings.json`
+(текст хука, печатающего заголовок к `docs/handoff.md`) и
+`.vscode/launch.json` (имя конфигурации запуска `playground (не
+публикуется)`). Ни один в архив не идёт.
 
 ## Ревью глазами пользователя — findings без решений
 
