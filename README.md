@@ -263,6 +263,13 @@ logs. Such lines are also easier to filter: when filtering, the IDE will show
 you only those lines containing the text you're looking for, rather than the
 entire message if it spans multiple lines.
 
+The same property makes this the layout to choose when an AI agent reads the
+logs. One log is one line, so a grep or a filter returns whole records rather
+than fragments, and nothing has to be reconstructed from the neighbouring
+lines to understand a match. A wrapped message gives the agent the opposite:
+a hit on a middle line, with the message it belongs to spread across lines
+before and after it.
+
 #### Filter logs
 
 `team_logger` makes it a little easier to search for and filter messages by
