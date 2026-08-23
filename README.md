@@ -383,8 +383,8 @@ final log = Logger('app')
           LogLevelName.short(),
           LogTime.onlyTime(),
           LogPath(
-            // We make the space for the namespace path expand as new data is
-            // added, but we do not limit its growth
+            // The space for the namespace path widens as longer paths
+            // arrive and never narrows again — up to 20 columns.
             constraints: LogConstraints.growable(max: 20),
           ),
           LogTraceId(),
@@ -402,7 +402,7 @@ final log = Logger('app')
 
 `ConsoleLogPrinter` writes through its `output` parameter, which defaults to
 `print`. Replace it to send lines elsewhere — `dart:developer`'s `log()` in a
-Flutter app, a buffer in a test, a socket, a file:
+Flutter app, a buffer in a test, an in-memory ring for a debug screen:
 
 ```dart
 import 'dart:developer' as developer;
@@ -418,6 +418,14 @@ final log = Logger('app')
 `output` can be replaced at any time, and the replacement takes effect from
 the next line for every level at once — handy for swapping the sink in a
 test.
+
+**It is synchronous** — `void Function(String)`, with no future to await —
+which makes it the wrong place for anything that has to wait: a socket, an
+HTTP call, a file. Writing to those from here either blocks the call that
+logged or starts unawaited work whose ordering and failures nobody sees.
+Delivery that waits belongs in a publisher that can queue, batch and report
+what it lost: `FileLogStorage` is exactly that, and `CustomLogPublisher` is
+the seam for anything else.
 
 **It is called once per rendered line, not once per log.** A message that
 wraps costs one call per line, and a layout with two `LogRow`s costs two:
