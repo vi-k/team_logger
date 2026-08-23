@@ -12,12 +12,13 @@ void main(List<String> args) => runFrames(frames, args);
 
 late Logger log;
 
-/// Собирает логгер приложения; [when] решает, какие логи попадут в кадр.
+/// Builds the application's logger; [when] decides which logs reach the
+/// frame.
 ///
-/// Кадры 2–4 показывают один и тот же прогон, из которого напечатана
-/// только часть логов. Отсеивает именно строка раскладки ([LogRow.when]),
-/// а не логгер: логи создаются все, поэтому их номера в кадре сохраняют
-/// исходный порядок.
+/// Frames 2-4 show one and the same run with only part of its logs printed.
+/// What filters them is the layout row ([LogRow.when]), not the logger:
+/// every log is still created, so the numbers in a frame keep their
+/// original order.
 void _initLog({bool Function(Log log)? when}) {
   log = Logger('app', tags: {'log'})
     ..level = LogLevels.all
@@ -43,7 +44,7 @@ void _initLog({bool Function(Log log)? when}) {
     );
 }
 
-/// Один платёж целиком: старт, дочерние логгеры, trace-зона.
+/// One payment end to end: the start, the child loggers, the trace zone.
 Future<void> _quickStart() async {
   _initLog();
   await _payment();
@@ -56,21 +57,21 @@ Future<void> _quickStart() async {
 ╰─────────────────────────────────────────────────── maxLength: 120 ───────────────────────────────────────────────────╯'''));
 }
 
-/// Тот же прогон, из которого принтер оставил один лог по номеру.
+/// The same run, with the printer keeping one log by its number.
 Future<void> _filterByNum() async {
   print(_filterBox('(4)'));
   _initLog(when: (log) => log.num == 4);
   await _payment();
 }
 
-/// …по группе trace id.
+/// ...by trace id group.
 Future<void> _filterByTraceId() async {
   print(_filterBox('{payment-1}'));
   _initLog(when: (log) => log.traceIds.isNotEmpty);
   await _payment();
 }
 
-/// …по тегу.
+/// ...by tag.
 Future<void> _filterByTag() async {
   print(_filterBox('#http'));
   _initLog(when: (log) => log.tags.contains('http'));
@@ -110,7 +111,7 @@ Future<void> _request(int amount, String currency) async {
   );
 }
 
-/// Рамка «Filter: …» над кадром: показывает, чем отфильтрован прогон.
+/// The "Filter: ..." box above a frame: what the run was filtered by.
 String _filterBox(String value) => Styles.rgb122(
       '                                                                                  ╭────────────────────────────────────╮\n'
       '                                                                          Filter: │ ${value.padRight(35)}│\n'

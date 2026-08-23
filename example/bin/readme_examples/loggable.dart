@@ -22,14 +22,14 @@ final frames = <String, LogFrame>{
 
 void main(List<String> args) => runFrames(frames, args);
 
-/// Три способа описать один и тот же класс.
+/// Three ways to describe the same class.
 void _person() {
   person1.run();
   person2.run();
   person3.run();
 }
 
-/// Полное и короткое представление значения.
+/// The full and the short rendering of a value.
 void _fullShortView() {
   point1.run();
   speed1.run();
@@ -37,17 +37,17 @@ void _fullShortView() {
   speed2.run();
 }
 
-/// Несколько представлений одного значения сразу.
+/// Several renderings of one value at once.
 void _multiView() {
   route.run();
 }
 
-/// Описание чужого класса снаружи.
+/// Describing someone else's class from the outside.
 void _mapBuilder() {
   not_loggable1.run();
 }
 
-/// Конвертер типа, зарегистрированный глобально.
+/// A type converter registered globally.
 void _typeConverter() {
   not_loggable2.run();
 }

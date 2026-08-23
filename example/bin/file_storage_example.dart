@@ -42,10 +42,10 @@ Future<void> main() async {
     stackTrace: StackTrace.current,
   );
 
-  // Всё, что опубликовано, гарантированно на диске после flush.
+  // Everything published is guaranteed to be on disk after flush.
   await storage.flush();
 
-  // Список сессий в папке (включая текущую).
+  // The sessions in the directory, the current one included.
   final sessions = await storage.sessions.list();
   for (final session in sessions) {
     final current = session.id == storage.sessionId ? ' (current)' : '';
@@ -59,7 +59,8 @@ Future<void> main() async {
     );
   }
 
-  // Один потоковый GZIP на все сессии; границы отмечены их meta-строками.
+  // One streamed GZIP for every session; their meta lines mark the
+  // boundaries.
   final gzipFile =
       File('${storage.directory}/../team_logger_example_logs.jsonl.gz');
   await storage.sessions.gzipTo(gzipFile);

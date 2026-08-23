@@ -25,7 +25,7 @@ final frames = <String, LogFrame>{
 
 void main(List<String> args) => runFrames(frames, args);
 
-/// Раскладка строки лога из отдельных элементов.
+/// A log row laid out from separate blocks.
 void _logLayout() {
   initLog(
     rows: [
@@ -47,7 +47,7 @@ void _logLayout() {
   log.d('User info', traceId: TraceId.auto('user'), data: _person);
 }
 
-/// Всё в одну строку, без переноса.
+/// Everything on one line, with no wrapping.
 void _singleLine() {
   initLog(
     rows: [
@@ -67,7 +67,7 @@ void _singleLine() {
   log.d('User info', traceId: TraceId.auto('user'), data: _person);
 }
 
-/// Повторяющаяся служебная часть на строках продолжения.
+/// The repeated service part on continuation lines.
 void _hiddenKeyInfo() {
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(hiddenStyle: Styles.rgb050),
@@ -75,13 +75,13 @@ void _hiddenKeyInfo() {
   log.d('User info', traceId: TraceId.auto('user'), data: _person);
 }
 
-/// Стек внутри сообщения.
+/// The stack trace inside the message.
 void _stackTrace() {
   initLog();
   someOperation();
 }
 
-/// Стек отдельной строкой со своей раскладкой.
+/// The stack trace on a row of its own, with its own layout.
 void _separateStackTrace() {
   initLog(
     rows: [
@@ -115,7 +115,7 @@ void _separateStackTrace() {
   someOperation();
 }
 
-/// Ограничения ширины колонок.
+/// Column width constraints.
 void _logConstraints() {
   initLog(
     level: LogLevels.debug,
@@ -167,13 +167,13 @@ void someOperation() {
   }
 }
 
-/// Стек до машинерии съёмки.
+/// The stack down to the screenshot machinery.
 ///
-/// Кадр исполняется из `runFrames` внутри `withClock`, и эти три кадра
-/// (`runZoned`, `withClock`, `runFrames`) попадают в стек. К тому, что
-/// показывает эта картинка — как раскладывается стек-трейс, — они
-/// отношения не имеют, поэтому отрезаются. В приложении на их месте были
-/// бы кадры его собственного фреймворка.
+/// A frame runs from `runFrames` inside `withClock`, so those three frames
+/// (`runZoned`, `withClock`, `runFrames`) end up on the stack. They have
+/// nothing to do with what this picture shows — how a stack trace is laid
+/// out — so they are cut off. In an application their place would be taken
+/// by its own framework's frames.
 StackTrace _appFrames(StackTrace stackTrace) {
   final frames = Trace.from(stackTrace)
       .frames
@@ -183,7 +183,7 @@ StackTrace _appFrames(StackTrace stackTrace) {
       )
       .toList();
 
-  // `runZoned` из `dart:async` стоит ровно перед ними.
+  // `runZoned` from `dart:async` sits right in front of them.
   while (frames.isNotEmpty && frames.last.isCore) {
     frames.removeLast();
   }

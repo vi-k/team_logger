@@ -12,7 +12,7 @@ final frames = <String, LogFrame>{
 
 void main(List<String> args) => runFrames(frames, args);
 
-/// Готовые палитры и своя, собранная из семени.
+/// The ready-made palettes and one of your own, built from a seed.
 void _colorTheme() {
   initLog();
   log.i('color theme', data: _person);
@@ -37,7 +37,7 @@ void _colorTheme() {
   log.i('color theme', data: _person);
 }
 
-/// Раскраска скобок по глубине.
+/// Colouring the brackets by depth.
 void _depthThemes() {
   const deeplyNested = [
     123,
@@ -95,7 +95,7 @@ void _depthThemes() {
   log.i('depth themes', data: deeplyNested);
 }
 
-/// Бесцветная тема и показ самих escape-кодов.
+/// A colorless theme, and showing the escape codes themselves.
 void _noColorTheme() {
   initLog(theme: LogMainTheme.noColors);
   log.d('no colors', data: _person);

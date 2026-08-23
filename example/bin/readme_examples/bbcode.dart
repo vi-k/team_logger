@@ -13,7 +13,7 @@ final frames = <String, LogFrame>{
 
 void main(List<String> args) => runFrames(frames, args);
 
-/// Встроенные bb-коды.
+/// The built-in BBCode tags.
 void _bbCodes() {
   initLog();
   log.d('This is a [b]bold[/b] text');
@@ -25,7 +25,7 @@ void _bbCodes() {
   log.d('This is a [signal]signal[/signal] to get attention');
 }
 
-/// Свои теги оформления.
+/// Styling tags of your own.
 void _userDefinedTags() {
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(
@@ -43,7 +43,7 @@ void _userDefinedTags() {
   log.d('This is a [u]underline[/u] text');
 }
 
-/// Стиль, вычисляемый по теме.
+/// A style computed from the theme.
 void _logLazyStyle() {
   initLog(
     theme: LogMainTheme.defaultActiveTheme.copyWith(
@@ -55,7 +55,7 @@ void _logLazyStyle() {
   log.d('This is [fatal]a fatal error[/fatal]');
 }
 
-/// Бесцветная тема: теги остаются, оформления нет.
+/// A colorless theme: the tags stay, the styling does not.
 void _noColors() {
   initLog(theme: LogMainTheme.noColors);
   log.d('This is a [b]bold[/b] text');
@@ -64,7 +64,7 @@ void _noColors() {
   log.d('This is a [u]underline[/u] text');
 }
 
-/// Теги погашены поимённо.
+/// The tags are switched off by name.
 void _noColorsNoTags() {
   initLog(
     theme: LogMainTheme.noColors.copyWith(
@@ -82,7 +82,7 @@ void _noColorsNoTags() {
   log.d('This is a [u]underline[/u] text');
 }
 
-/// Готовая тема `noColorsNoTags` — то же самое одной строкой.
+/// The ready-made `noColorsNoTags` theme — the same in one line.
 void _noColorsNoTagsTheme() {
   initLog(theme: LogMainTheme.noColorsNoTags);
   log.d('This is a [b]bold[/b] text');

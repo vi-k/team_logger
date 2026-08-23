@@ -5,13 +5,14 @@ import 'package:clock/clock.dart';
 
 typedef LogFrame = FutureOr<void> Function();
 
-/// Точка входа файла-группы примеров README.
+/// The entry point of a README example group file.
 ///
-/// - `--list` — печатает имена кадров, по одному на строку;
-/// - `<имя кадра>` — исполняет один кадр под фиксированными часами;
-/// - без аргументов — исполняет все кадры подряд, с заголовками.
+/// - `--list` prints the frame names, one per line;
+/// - `<frame name>` runs one frame under a fixed clock;
+/// - with no arguments every frame runs in turn, with headings.
 ///
-/// Имя кадра — имя картинки в `screenshots/` без расширения.
+/// A frame's name is the name of its picture in `screenshots/`, without the
+/// extension.
 Future<void> runFrames(Map<String, LogFrame> frames, List<String> args) async {
   if (args.contains('--list')) {
     frames.keys.forEach(print);
@@ -40,14 +41,15 @@ Future<void> runFrames(Map<String, LogFrame> frames, List<String> args) async {
   await withClock(_frameClock(), frame);
 }
 
-/// Часы кадра: старт в фиксированной точке, шаг на каждое обращение.
+/// A frame's clock: it starts at a fixed point and ticks on every read.
 ///
-/// Время в логах растёт, как в настоящем прогоне, но пересъёмка даёт тот
-/// же вывод — поэтому `.ansi` рядом с картинкой не «дрожит», а
-/// `scripts/screenshots.sh --check` может сравнивать его как текст.
+/// Time in the logs advances as it would in a real run, yet re-shooting
+/// gives the same output — which is why the `.ansi` beside a picture does
+/// not jitter and `scripts/screenshots.sh --check` can compare it as text.
 ///
-/// Шаг привязан к обращению к часам, а не к логу: если пакет спросит
-/// время дважды на один лог, соседние строки разойдутся на два шага.
+/// The tick is tied to reading the clock, not to a log: if the package asks
+/// for the time twice for one log, neighbouring lines drift apart by two
+/// ticks.
 Clock _frameClock() {
   var tick = 0;
   final base = DateTime(2026, 3, 14, 9, 26, 53, 589);

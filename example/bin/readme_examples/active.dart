@@ -14,13 +14,13 @@ final frames = <String, LogFrame>{
 
 void main(List<String> args) => runFrames(frames, args);
 
-/// Неактивные логи печатаются приглушённой темой.
+/// Inactive logs are printed with the dimmed theme.
 void _inactiveTheme() {
   initLog(inactiveTheme: LogMainTheme.defaultInactiveTheme);
   printLogs();
 }
 
-/// Активны логи от уровня и выше.
+/// Logs from a level upwards are active.
 void _byLevel() {
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
@@ -29,7 +29,7 @@ void _byLevel() {
   printLogs();
 }
 
-/// Активно одно пространство имён.
+/// One namespace is active.
 void _byNamespace() {
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
@@ -38,7 +38,7 @@ void _byNamespace() {
   printLogs();
 }
 
-/// Активны две группы trace id.
+/// Two trace id groups are active.
 void _byTrace() {
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
@@ -47,7 +47,7 @@ void _byTrace() {
   printLogs();
 }
 
-/// Активны логи с тегом.
+/// Logs carrying a tag are active.
 void _byTag() {
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,
@@ -56,7 +56,7 @@ void _byTag() {
   printLogs();
 }
 
-/// Активность решает колбэк.
+/// A callback decides what is active.
 void _byCallback() {
   initLog(
     inactiveTheme: LogMainTheme.defaultInactiveTheme,

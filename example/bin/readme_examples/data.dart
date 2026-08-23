@@ -18,13 +18,13 @@ final frames = <String, LogFrame>{
 
 void main(List<String> args) => runFrames(frames, args);
 
-/// Объект в сообщении и объект в `data`.
+/// An object in the message and an object in `data`.
 void _personData() {
   log.d('Person: $_person');
   log.d('Person', data: _person);
 }
 
-/// Вложенность и раскраска по глубине.
+/// Nesting and the colouring by depth.
 void _deeplyNested() {
   log.d(
     'deeply nested',
@@ -36,7 +36,7 @@ void _deeplyNested() {
   );
 }
 
-/// Несколько именованных секций в одном логе.
+/// Several named sections in one log.
 void _multiData() {
   log.d(
     'Add new user',
@@ -47,7 +47,7 @@ void _multiData() {
   );
 }
 
-/// Обрезка коллекций и показ длины.
+/// Truncating collections and showing their length.
 void _collections() {
   log.d(
     'List',
@@ -72,7 +72,7 @@ void _collections() {
   );
 }
 
-/// Обрезка `Map`: те же лимиты и тот же счётчик, что у списка.
+/// Truncating a `Map`: the same limits and the same count as a list.
 void _map() {
   log.d(
     'Map',
@@ -81,7 +81,7 @@ void _map() {
   );
 }
 
-/// Голый `Iterable`: по умолчанию один проход, с флагом — как у списка.
+/// A bare `Iterable`: one pass by default, list-like with the flag.
 void _iterableEfficientLength() {
   log.d(
     'Iterable',
@@ -99,7 +99,7 @@ void _iterableEfficientLength() {
   );
 }
 
-/// Enum: сокращённая и полная запись.
+/// Enums: the shorthand and the full form.
 void _enums() {
   log.d(
     'Enum',
@@ -113,7 +113,7 @@ void _enums() {
   );
 }
 
-/// Числа: шаблон исполняет форматтер темы.
+/// Numbers: the theme's formatter executes the pattern.
 void _numbers() {
   log.d(
     'Float number with fixed precision',
@@ -133,7 +133,7 @@ void _numbers() {
   );
 }
 
-/// Строки: в кавычках и без.
+/// Strings: quoted and unquoted.
 void _strings() {
   log.d(
     'String',

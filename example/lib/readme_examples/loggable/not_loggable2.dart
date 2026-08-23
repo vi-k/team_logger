@@ -24,6 +24,6 @@ void run() {
 
   log.d('NotLoggableObject (myConverter)', data: notLoggableObject);
 
-  // Конвертер снимается по целевому типу, а не по типу конвертера.
+  // A converter is removed by its target type, not by the converter's.
   Loggable.unregisterTypeConverter<NotLoggableObject>();
 }

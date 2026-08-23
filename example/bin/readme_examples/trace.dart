@@ -11,8 +11,8 @@ final frames = <String, LogFrame>{
 
 void main(List<String> args) => runFrames(frames, args);
 
-/// `log.trace` вокруг асинхронного куска: оба лога внутри подхватывают
-/// один и тот же trace id.
+/// `log.trace` around an asynchronous stretch: both logs inside pick up
+/// the same trace id.
 Future<void> _searchTrace() async {
   final searchTrace = TraceId.auto('search'); // resolves to 'search-1'
 
@@ -23,14 +23,14 @@ Future<void> _searchTrace() async {
   });
 }
 
-/// Три способа задать trace id.
+/// Three ways to set a trace id.
 void _traceIdConfigurations() {
   log.d('Global', traceId: TraceId.global());
   log.d('Auto', traceId: TraceId.auto('group'));
   log.d('Manual', traceId: const TraceId.manual('group', 123));
 }
 
-/// Повторы запроса под одним id с суффиксом.
+/// Retries of one request under a single id with a suffix.
 Future<void> _traceIdWithSuffix() => _request(Uri.parse('https://example.com'));
 
 Future<void> _request(Uri uri) async {
@@ -46,7 +46,7 @@ Future<void> _request(Uri uri) async {
   }
 }
 
-/// Нумерация ленива: выключенный уровень номер не тратит.
+/// Numbering is lazy: a disabled level consumes no number.
 void _laziness() {
   log.level = LogLevels.all;
   log.d('Debug message', traceId: TraceId.auto('lazy')); // lazy-1
