@@ -91,17 +91,27 @@ The smallest thing that prints:
 ```dart
 final log = Logger('app')
   ..level = LogLevels.all
-  ..publisher = ConsoleLogPrinter(
-    rows: const [LogRow.singleLine(children: [LogMessage()])],
-  );
+  ..publisher = ConsoleLogPrinter();
 
 log.i('hello');
-// hello
+// (1) [i] 21:03:44.912 [app] hello
+```
+
+Neither the layout nor the theme has to be stated. `ConsoleLogPrinter.defaultRows`
+is one row 120 columns wide carrying the sequence number, the level, the time,
+the namespace path, the trace ids and the message, with the tags right-aligned
+in its `tail` — the layout the next example builds by hand. `theme` defaults to
+`LogMainTheme.defaultActiveTheme` the same way.
+
+For one line and nothing else, say so:
+
+```dart
+ConsoleLogPrinter(rows: const [LogRow.singleLine(children: [LogMessage()])]);
 ```
 
 `LogRow` requires a `maxLength` — the width it wraps at. `LogRow.singleLine`
 is the variant without one: no width limit, no wrapping, one line per log.
-Everything else on this page adds to those five lines.
+Everything else on this page adds to those four lines.
 
 The following example configures theme, builds a custom console row layout,
 creates child loggers, and executes code in a trace zone.

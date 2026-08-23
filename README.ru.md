@@ -97,18 +97,28 @@ Logger('app').i('nothing happens'); // ни вывода, ни предупре�
 ```dart
 final log = Logger('app')
   ..level = LogLevels.all
-  ..publisher = ConsoleLogPrinter(
-    rows: const [LogRow.singleLine(children: [LogMessage()])],
-  );
+  ..publisher = ConsoleLogPrinter();
 
 log.i('hello');
-// hello
+// (1) [i] 21:03:44.912 [app] hello
+```
+
+Ни раскладку, ни тему называть не обязательно. `ConsoleLogPrinter.defaultRows` —
+одна строка шириной 120 столбцов с номером, уровнем, временем, путём-неймспейсом,
+trace id и сообщением; теги прижаты вправо в её `tail`. Это ровно та раскладка,
+которую следующий пример собирает руками. `theme` точно так же по умолчанию
+равна `LogMainTheme.defaultActiveTheme`.
+
+Если нужна одна строка и ничего больше — скажите это явно:
+
+```dart
+ConsoleLogPrinter(rows: const [LogRow.singleLine(children: [LogMessage()])]);
 ```
 
 `LogRow` требует `maxLength` — ширину, по которой переносить.
 `LogRow.singleLine` — вариант без неё: ширина не ограничена, переносов нет,
 одна строка на лог. Всё остальное на этой странице — надстройка над этими
-пятью строчками.
+четырьмя строчками.
 
 Пример ниже настраивает тему, собирает свою раскладку строки консоли,
 создаёт дочерние логгеры и выполняет код в зоне трассировки.

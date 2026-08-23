@@ -41,6 +41,13 @@
    отдельная мысль про `ConsoleLogPrinter.simple()` — она открыта, решения
    владельца нет.
 
+   **Вердикт (2026-08-24): закрыто полностью.** Владелец решил делать не
+   `simple()`, а умолчание для `rows`: `ConsoleLogPrinter()` теперь
+   собирается сам, `rows` по умолчанию `ConsoleLogPrinter.defaultRows`
+   (120 столбцов, раскладка Quick Start). Спека —
+   `2026-08-24[1]-default-rows-spec.md`. Второй затвор из находки, `level`,
+   остаётся: логгер по-прежнему надо включить.
+
 2. **Реэкспорт `logger_builder` не попадает в API-справочник.** `dart doc`:
    `MultiPublisher`, `TransformPublisher`, `AsyncPublisher`,
    `CustomLogPublisher`, `Lazy`, `Levels` отсутствуют и в `index.json`, и на

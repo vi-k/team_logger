@@ -1,5 +1,17 @@
 ## 0.7.0
 
+- `ConsoleLogPrinter` no longer requires `rows`. `ConsoleLogPrinter()` now
+  builds a working printer: `rows` defaults to `ConsoleLogPrinter.defaultRows`,
+  one row 120 columns wide carrying the sequence number, the short level name,
+  the time, the namespace path, the trace ids and the message, with the tags
+  right-aligned in its `tail` — the layout the README's Quick Start builds by
+  hand, so the two agree. It was the only required parameter left, while
+  `theme` had defaulted to `LogMainTheme.defaultActiveTheme` all along; the
+  asymmetry meant nothing could be printed before a layout had been written
+  out. 120 is a choice rather than a measurement: this library carries no
+  `dart:io` and cannot see the terminal's real width. Existing code is
+  unaffected — a required named parameter becoming optional breaks nothing.
+
 - `ConsoleLogPrinter.oneCallPerLog` delivers a whole log through `output` in
   a single call instead of one call per rendered line. The printer is
   line-oriented by default — each line repeats the number, level and time so

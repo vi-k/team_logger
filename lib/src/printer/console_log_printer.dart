@@ -8,7 +8,14 @@ import '../logger/logger.dart';
 import '../theme/log_main_theme.dart';
 import 'log_block.dart';
 import 'log_divider.dart';
+import 'log_level_name.dart';
+import 'log_message.dart';
+import 'log_num.dart';
+import 'log_path.dart';
 import 'log_row.dart';
+import 'log_tags.dart';
+import 'log_time.dart';
+import 'log_trace_id.dart';
 
 /// The main console publisher: prints logs using a data-driven row layout.
 ///
@@ -40,6 +47,33 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
   final String pathSeparator;
 
   final List<LogRow> rows;
+
+  /// The layout used when [rows] is not given: one row 120 columns wide,
+  /// carrying the sequence number, the short level name, the time, the
+  /// namespace path, the trace ids and the message, with the tags in a
+  /// right-aligned [LogRow.tail].
+  ///
+  /// A printer is usable without stating a layout for the same reason it is
+  /// usable without stating a [theme]: both are opinions the package is
+  /// willing to hold until an application has one of its own. This is the
+  /// layout the README's Quick Start builds by hand, so the two agree.
+  ///
+  /// 120 is a choice, not a measurement — the terminal's real width is not
+  /// visible from here, since this library carries no `dart:io`.
+  static const List<LogRow> defaultRows = [
+    LogRow(
+      maxLength: 120,
+      children: [
+        LogNum(),
+        LogLevelName.short(),
+        LogTime.onlyTime(),
+        LogPath(),
+        LogTraceId(),
+        LogMessage(),
+      ],
+      tail: [LogTags()],
+    ),
+  ];
 
   /// Deliver a log in one [output] call instead of one call per line.
   ///
@@ -76,7 +110,7 @@ final class ConsoleLogPrinter implements CustomLogPublisher<Log> {
     Set<String>? activeTags,
     this.isLogActive,
     this.pathSeparator = '/',
-    required this.rows,
+    this.rows = defaultRows,
     this.output = print,
     this.oneCallPerLog = false,
   })  : theme = theme ?? LogMainTheme.defaultActiveTheme,
