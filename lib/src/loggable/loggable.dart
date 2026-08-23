@@ -205,17 +205,17 @@ abstract mixin class Loggable {
 
   /// Applies the sanitizer to a child, knowing its position.
   ///
-  /// Возвращает исходное значение (не трогали), замену или
-  /// [Sanitize.drop]. Вызывать ровно один раз на значение: обходчики
-  /// для не-корневых значений санитайзер не применяют.
+  /// Returns the original value (left alone), a replacement, or
+  /// [Sanitize.drop]. Call it exactly once per value: the walkers do not
+  /// apply the sanitizer to non-root values themselves.
   ///
-  /// [LoggableWrapper] разворачивается: правилу показывается завёрнутое
-  /// значение, а не обёртка, — как и в корне (см. [objectToString]),
-  /// иначе `Loggable.from(password)` в позиции свойства, записи [Map]
-  /// или элемента коллекции прошёл бы мимо правил по содержимому. Если
-  /// правило вернуло содержимое без изменений, рендерится ИСХОДНАЯ
-  /// обёртка — её `config` должен уцелеть; замена рендерится как обычное
-  /// значение (так же, как в правиле для `view`).
+  /// A [LoggableWrapper] is unwrapped: the rule is shown the wrapped value
+  /// rather than the wrapper, as at the root (see [objectToString]), or
+  /// `Loggable.from(password)` in a property, a [Map] entry or a collection
+  /// element would slip past content-based rules. When the rule returns the
+  /// contents unchanged, the ORIGINAL wrapper is rendered — its `config`
+  /// has to survive; a replacement renders as an ordinary value (the same
+  /// as in the rule for `view`).
   static Object? _sanitizeChild(Object segment, String? name, Object? value) {
     final sanitizer = Loggable.sanitizer;
     if (sanitizer == null) return value;
@@ -243,8 +243,8 @@ abstract mixin class Loggable {
     return identical(result, offered) ? value : result;
   }
 
-  /// Рендерит ребёнка, держа его сегмент в стеке пути, — чтобы у
-  /// вложенных значений путь был полным.
+  /// Renders a child while holding its segment on the path stack, so that
+  /// nested values get a complete path.
   static T _withSegment<T>(Object segment, T Function() render) {
     if (!_sanitizing) return render();
 
@@ -259,29 +259,29 @@ abstract mixin class Loggable {
     }
   }
 
-  /// `true`, если [value] — маркер [Sanitize.drop] от АКТИВНОГО
-  /// санитайзера.
+  /// `true` when [value] is the [Sanitize.drop] marker from an ACTIVE
+  /// sanitizer.
   ///
-  /// Без установленного санитайзера [Sanitize.drop] — обычные
-  /// пользовательские данные: без этой проверки, будучи публичным
-  /// API, он мог бы случайно затереть чужую запись в выводе. Общий
-  /// предикат, чтобы обходчики Map/коллекций/свойств не повторяли эту
-  /// проверку (и потенциальную ошибку) каждый на свой лад.
+  /// With no sanitizer installed, [Sanitize.drop] is ordinary user data:
+  /// being public API, without this check it could accidentally wipe
+  /// somebody's entry out of the output. A shared predicate, so that the
+  /// map, collection and property walkers do not each repeat this check —
+  /// and its potential mistake — in their own way.
   static bool _isDropped(Object? value) =>
       _sanitizing && identical(value, Sanitize.drop);
 
-  /// Санитайз корня: у корня нет ни имени, ни сегмента пути.
+  /// Sanitizing the root: the root has neither a name nor a path segment.
   ///
-  /// Возвращает [Sanitize.drop], замену или исходный объект. Повторного
-  /// применения не происходит: рекурсивный вызов с заменой выполняется
-  /// внутри [_withSegment], поэтому стек уже не пуст.
+  /// Returns [Sanitize.drop], a replacement, or the original object. It is
+  /// never applied twice: the recursive call with the replacement runs
+  /// inside [_withSegment], so the stack is no longer empty by then.
   ///
-  /// Само правило тоже вызывается под заглушкой: без неё рендер изнутри
-  /// правила (в том числе неявный — `'${ctx.value}'` для [Loggable] и
-  /// компании) снова увидел бы пустой стек, снова позвал бы правило и
-  /// ушёл бы в бесконечную рекурсию. Правилу рендерить по-прежнему
-  /// нельзя (см. [sanitizer]), но зависание — слишком дорогая цена за
-  /// нарушение контракта.
+  /// The rule itself is called under the guard as well: without it,
+  /// rendering from inside the rule — including implicitly, via
+  /// `'${ctx.value}'` for [Loggable] and company — would see an empty stack
+  /// again, call the rule again, and recurse forever. The rule still must
+  /// not render (see [sanitizer]), but a hang is too high a price for
+  /// breaking that contract.
   static Object? _sanitizeRoot(Object? obj) {
     final sanitizer = Loggable.sanitizer;
     if (sanitizer == null) return obj;
@@ -292,26 +292,26 @@ abstract mixin class Loggable {
     );
   }
 
-  /// Предлагает правилу КОРНЕВОЕ значение и, если правило его тронуло,
-  /// возвращает готовый строковый вывод вместе с признаком дропа.
+  /// Offers the ROOT value to the rule and, when the rule touched it,
+  /// returns the finished string output together with a drop flag.
   ///
-  /// `null` означает «рендерить самому вызывающему»: правило значение не
-  /// тронуло, санитайзера нет, либо это вообще не корень — стек
-  /// сегментов не пуст, а значит значение уже предложено правилу по
-  /// своей позиции.
+  /// `null` means "the caller renders it itself": the rule left the value
+  /// alone, there is no sanitizer, or this is not a root at all — the
+  /// segment stack is not empty, so the value has already been offered to
+  /// the rule by its own position.
   ///
-  /// `dropped` отдаётся отдельным полем, а не пустым `text`: замена
-  /// вправе легитимно отрендериться в пустую строку (`Loggable.builder`
-  /// без свойств, пустая [LoggableMultiData]), и по пустоте текста дроп
-  /// от неё не отличить — а блок данных в принтере пропадает только у
-  /// дропа.
+  /// `dropped` is a field of its own rather than an empty `text`: a
+  /// replacement may legitimately render to an empty string
+  /// (`Loggable.builder` with no properties, an empty [LoggableMultiData]),
+  /// and emptiness alone cannot tell a drop from that — while the printer's
+  /// data block disappears only on a drop.
   ///
-  /// ЕДИНСТВЕННАЯ точка корневого предложения для строкового вывода. Её
-  /// зовёт [objectToString], и её же ОБЯЗАНЫ звать альтернативные
-  /// рендереры multi-data (`LoggableMultiData.toString` и `LogMessage` в
-  /// принтере): они входят сразу в [forEachMultiDataEntry], поэтому без
-  /// этого вызова корень не предлагался бы правилу вовсе — на консоли
-  /// печаталось бы то, что в JSONL-файле правило выбрасывает.
+  /// THE SINGLE point of the root offer for the string output. It is called
+  /// by [objectToString], and the alternative multi-data renderers
+  /// (`LoggableMultiData.toString` and `LogMessage` in the printer) MUST
+  /// call it as well: they enter [forEachMultiDataEntry] directly, so
+  /// without this call the root would never be offered to the rule — and
+  /// the console would print what the rule drops from the JSONL file.
   @internal
   static ({String text, bool dropped})? sanitizeRootToString(
     Object? obj, {
@@ -325,8 +325,9 @@ abstract mixin class Loggable {
     if (identical(sanitized, Sanitize.drop)) return (text: '', dropped: true);
     if (identical(sanitized, obj)) return null;
 
-    // Сегмент-заглушка держит стек непустым: к замене санитайзер
-    // повторно не применится. В depth/path он не учитывается.
+    // The guard segment keeps the stack non-empty: the sanitizer will not
+    // be applied to the replacement a second time. It does not count
+    // towards depth or path.
     return (
       text: _withSegment(
         _rootGuardSegment,
@@ -341,26 +342,28 @@ abstract mixin class Loggable {
     );
   }
 
-  /// Конфигурация, которой рендерится ЗАМЕНА корня.
+  /// The configuration a ROOT REPLACEMENT is rendered with.
   ///
-  /// Замена встаёт на место контейнера, поэтому форматируется его
-  /// настройками: у [LoggableMultiData] свой `config`, и обходчик его не
-  /// видит — ему передан только окружающий. Без этого мержа рендереры
-  /// расходились бы: `LoggableMultiData.toString` и `LogMessage`
-  /// передают сюда `data.config` сами (для них мерж идемпотентен), а
-  /// [objectToString]/[objectToJson] печатали бы замену без лимитов
-  /// контейнера — то есть JSONL расходился бы с консолью.
+  /// The replacement takes the container's place, so it is formatted with
+  /// the container's settings: [LoggableMultiData] has a `config` of its
+  /// own, and the walker cannot see it — only the surrounding one was
+  /// passed in. Without this merge the renderers would diverge:
+  /// `LoggableMultiData.toString` and `LogMessage` pass `data.config` here
+  /// themselves (for them the merge is idempotent), while
+  /// [objectToString]/[objectToJson] would print the replacement without
+  /// the container's limits — and the JSONL would disagree with the
+  /// console.
   ///
-  /// `units` при этом снимаются: единицы описывают исходную величину, а
-  /// замена ею не является. Ровно то же делает свойство (см.
-  /// `Prop.toLogString`), и корень обязан вести себя так же. Остальные
-  /// поля конфига описывают не значение, а способ печати
-  /// (`collectionMaxCount`, `stringInQuotes`, форматы чисел) — они
-  /// наследуются.
+  /// `units` are stripped in the process: units describe the original
+  /// quantity, and a replacement is not that quantity. A property does
+  /// exactly the same (see `Prop.toLogString`), and the root has to behave
+  /// alike. The remaining config fields describe not the value but the way
+  /// it is printed (`collectionMaxCount`, `stringInQuotes`, the number
+  /// formats) — those are inherited.
   static LoggableConfig _rootConfig(Object? obj, LoggableConfig config) =>
       (_containerConfig(obj)?.merge(config) ?? config).withoutUnits();
 
-  /// То же, что [_rootConfig], но для JSON-вывода.
+  /// The same as [_rootConfig], but for the JSON output.
   static LoggableJsonConfig _rootJsonConfig(
     Object? obj,
     LoggableJsonConfig config,
@@ -368,40 +371,42 @@ abstract mixin class Loggable {
       (_containerConfig(obj)?.mergeWithJsonConfig(config) ?? config)
           .copyWith(units: null);
 
-  /// Собственный config контейнера, стоящего в корне, или `null`.
+  /// The own config of the container standing at the root, or `null`.
   ///
-  /// Единая точка для [_rootConfig] и [_rootJsonConfig]: контейнеров с
-  /// собственным config несколько, и раньше общий код видел только
-  /// [LoggableMultiData]. У билдеров config лежит в приватном поле
-  /// подкласса, поэтому спрашиваем его через [LoggableData._ownConfig].
+  /// A single point for [_rootConfig] and [_rootJsonConfig]: there is more
+  /// than one container with a config of its own, and the shared code used
+  /// to see only [LoggableMultiData]. The builders keep their config in a
+  /// private field of the subclass, so it is asked for through
+  /// [LoggableData._ownConfig].
   ///
-  /// `LoggableWrapper` сюда не попадает намеренно: он разворачивает себя
-  /// до обхода (`toString`/`toJson` зовут `objectToString`/`objectToJson`
-  /// на своих данных со своим config), поэтому правилу предлагается уже
-  /// содержимое, а не обёртка.
+  /// `LoggableWrapper` deliberately does not reach here: it unwraps itself
+  /// before the walk (`toString`/`toJson` call
+  /// `objectToString`/`objectToJson` on their data with their config), so
+  /// what the rule is offered is already the contents, not the wrapper.
   static LoggableConfig? _containerConfig(Object? obj) => switch (obj) {
         LoggableMultiData() => obj.config,
         LoggableData() => obj._ownConfig,
         _ => null,
       };
 
-  /// Рендерит КОРНЕВОЕ значение и сообщает, отбросило ли его правило.
+  /// Renders the ROOT value and reports whether the rule dropped it.
   ///
-  /// Принтеру мало готового текста: пустая строка бывает и законным
-  /// рендером (пустой [LoggableMultiData], `Loggable.builder` без
-  /// свойств), и результатом [Sanitize.drop], — а двоеточие блока данных
-  /// должно пропадать только во втором случае. Снаружи их не различить:
-  /// корневое предложение живёт внутри [sanitizeRootToString], а звать её
-  /// второй раз нельзя — правило сработало бы на корень дважды. Поэтому
-  /// сигнал отдаёт тот, кто предложил.
+  /// Finished text is not enough for the printer: an empty string can be a
+  /// legitimate render (an empty [LoggableMultiData], a `Loggable.builder`
+  /// with no properties) as well as the result of [Sanitize.drop] — and the
+  /// data block's colon must disappear only in the second case. The two
+  /// cannot be told apart from outside: the root offer lives inside
+  /// [sanitizeRootToString], and calling that a second time is not allowed —
+  /// the rule would fire on the root twice. So whoever made the offer
+  /// reports the signal.
   ///
-  /// Корень предлагается ровно один раз: если правило его не тронуло,
-  /// значение рендерится под заглушкой, и [objectToString] не предложит
-  /// его повторно.
+  /// The root is offered exactly once: when the rule leaves it alone, the
+  /// value is rendered under the guard and [objectToString] will not offer
+  /// it again.
   ///
-  /// Зовут её `LogMessage` в принтере и `FileLogCodec`: у обоих блок
-  /// данных при дропе должен исчезать целиком, а не превращаться в
-  /// пустую строку.
+  /// The callers are `LogMessage` in the printer and `FileLogCodec`: for
+  /// both, a dropped data block has to vanish entirely rather than turn
+  /// into an empty string.
   @internal
   static ({String text, bool dropped}) renderRoot(
     Object? obj, {
@@ -415,9 +420,9 @@ abstract mixin class Loggable {
       );
     }
 
-    // Обёртка разворачивается ДО корневого предложения — как в
-    // [objectToString]: правилу показывается завёрнутое значение, а не
-    // упаковка параметров рендера.
+    // The wrapper is unwrapped BEFORE the root offer — as in
+    // [objectToString]: the rule is shown the wrapped value, not the
+    // packaging of render parameters.
     var value = obj;
     var effective = config;
     while (value is LoggableWrapper) {
@@ -430,9 +435,9 @@ abstract mixin class Loggable {
       return rendered;
     }
 
-    // Корень уже предложен строкой выше, поэтому рендерится под
-    // заглушкой: без неё [objectToString] увидел бы пустой стек и
-    // предложил бы то же значение второй раз.
+    // The root was already offered a line above, so it renders under the
+    // guard: without it [objectToString] would see an empty stack and offer
+    // the same value a second time.
     return (
       text: _withSegment(
         _rootGuardSegment,
@@ -442,12 +447,12 @@ abstract mixin class Loggable {
     );
   }
 
-  /// То же, что [renderRoot], но для JSON-вывода.
+  /// The same as [renderRoot], but for the JSON output.
   ///
-  /// [objectToJson] на отброшенном корне отдаёт `null`, а `null` — ещё и
-  /// законное значение: по нему одному дроп не опознать. `FileLogCodec`
-  /// же обязан в этом случае не писать ключ `data` вовсе — ровно как
-  /// принтер убирает блок данных.
+  /// [objectToJson] returns `null` for a dropped root, and `null` is also a
+  /// legitimate value: a drop cannot be recognised from it alone. Yet
+  /// `FileLogCodec` has to leave out the `data` key entirely in that case —
+  /// exactly as the printer removes the data block.
   @internal
   static ({Object? json, bool dropped}) renderRootJson(
     Object? obj, {
@@ -467,8 +472,8 @@ abstract mixin class Loggable {
     final sanitized = _sanitizeRoot(value);
     if (identical(sanitized, Sanitize.drop)) return (json: null, dropped: true);
 
-    // Заглушка держится на весь рендер корня — и замены, и нетронутого
-    // значения (см. [objectToJson]).
+    // The guard is held for the whole root render — both of a replacement
+    // and of an untouched value (see [objectToJson]).
     return (
       json: _withSegment(
         _rootGuardSegment,
@@ -483,66 +488,67 @@ abstract mixin class Loggable {
     );
   }
 
-  /// Выполняет [render] с ПОДАВЛЕННЫМ корневым предложением: то, что
-  /// библиотека печатает внутри, правилу как корень не показывается.
+  /// Runs [render] with the root offer SUPPRESSED: what the library prints
+  /// inside is not shown to the rule as a root.
   ///
-  /// Нужно там, где библиотека сама зовёт `toString()` у
-  /// пользовательского объекта, НЕ входящего в `data`:
+  /// Needed where the library itself calls `toString()` on a user object
+  /// that is NOT part of `data`:
   ///
-  /// - `error` — в принтере (`LogMessage`) и в `FileLogCodec`;
-  /// - `stackTrace` — там же; в принтере через ЛЕНИВЫЙ `Trace.from`,
-  ///   поэтому подавление обязано накрывать и чтение фреймов;
-  /// - теги — `LazyTags.convert`, вместе с диагностикой невалидного
-  ///   значения;
-  /// - `message` и имя неймспейса — `_GuardedLazyString.convert`.
+  /// - `error` — in the printer (`LogMessage`) and in `FileLogCodec`;
+  /// - `stackTrace` — the same two; in the printer through a LAZY
+  ///   `Trace.from`, so the suppression has to cover reading the frames as
+  ///   well;
+  /// - the tags — `LazyTags.convert`, together with diagnosing an invalid
+  ///   value;
+  /// - `message` and the namespace name — `_GuardedLazyString.convert`.
   ///
-  /// Область действия санитайзера — только значения внутри `data` (см.
-  /// [sanitizer]), и корневое предложение, которое делает `toString()`
-  /// у [Loggable] и [LoggableData], до этих значений доходить не должно:
-  /// правило по `depth == 0` иначе стирало бы ошибку (оставляя висящее
-  /// двоеточие) или текст лога, а `Log.tags` и `Logger.path` — переписывало
-  /// бы; последние два вообще не рендер: они кэшируются, участвуют в
-  /// фильтрах `activeTags`/`activeNamespaces` и именно их видят
-  /// publisher'ы, ничего не рисующие.
+  /// The sanitizer's scope is values inside `data` only (see [sanitizer]),
+  /// and the root offer that `toString()` on [Loggable] and [LoggableData]
+  /// makes must not reach these values: a `depth == 0` rule would otherwise
+  /// erase the error (leaving a dangling colon) or the log's text, and
+  /// would rewrite `Log.tags` and `Logger.path`. The last two are not a
+  /// render at all: they are cached, they feed the
+  /// `activeTags`/`activeNamespaces` filters, and they are what publishers
+  /// that draw nothing see.
   ///
-  /// Оборачивать надо ТО МЕСТО, где значение реально приводится к строке,
-  /// а не то, где создан ленивый холдер: `Trace.from` и `TypedLazy`
-  /// стрингуют значение при первом чтении, которое случается позже.
-  /// Пользовательское замыкание (ленивое сообщение, ленивое имя) при этом
-  /// остаётся СНАРУЖИ подавления — внутри него санитайзер работает как
-  /// обычно.
+  /// What has to be wrapped is THE PLACE where the value is actually turned
+  /// into a string, not the place where the lazy holder was created:
+  /// `Trace.from` and `TypedLazy` stringify on first read, which happens
+  /// later. The user's closure (a lazy message, a lazy name) stays OUTSIDE
+  /// the suppression — inside it the sanitizer works as usual.
   ///
-  /// Позиции вложенных значений не меняются: заглушка не входит ни в
-  /// путь, ни в счёт глубины, — свойства такого объекта предлагаются
-  /// правилу ровно как и раньше.
+  /// The positions of nested values do not change: the guard counts
+  /// towards neither the path nor the depth, so such an object's properties
+  /// are offered to the rule exactly as before.
   @internal
   static T renderOutsideSanitizerScope<T>(T Function() render) =>
       _withSegment(_rootGuardSegment, render);
 
-  /// Обходит записи [LoggableMultiData], применяя санитайзер к каждой по
-  /// её ключу ровно один раз, и вызывает [render] для уцелевших.
+  /// Walks the entries of a [LoggableMultiData], applying the sanitizer to
+  /// each one by its key exactly once, and calls [render] for the
+  /// survivors.
   ///
-  /// ЕДИНСТВЕННАЯ точка санитайза записей multi-data. Секции рисуют
-  /// четыре разных места ([_multiDataToString], [_multiDataToJson],
-  /// `LoggableMultiData.toString` и `LogMessage` в принтере — у каждого
-  /// свои разделители и переносы строк), но позицию значения знает
-  /// только этот хелпер: рендерер, обошедший его стороной, отдал бы
-  /// значение обходчику как КОРЕНЬ — без имени, без сегмента пути и мимо
-  /// правила.
+  /// THE SINGLE point where multi-data entries are sanitized. Four
+  /// different places draw the sections ([_multiDataToString],
+  /// [_multiDataToJson], `LoggableMultiData.toString` and `LogMessage` in
+  /// the printer — each with its own separators and line breaks), but only
+  /// this helper knows a value's position: a renderer that went around it
+  /// would hand the value to the walker as a ROOT — with no name, no path
+  /// segment and past the rule.
   ///
-  /// Корень — не забота этого хелпера: рендереры, для которых multi-data
-  /// и есть корневое значение, обязаны сначала позвать
+  /// The root is not this helper's business: renderers for which the
+  /// multi-data is itself the root value have to first call
   /// [sanitizeRootToString].
   ///
-  /// [render] получает уже санитизированное значение и обязан рендерить
-  /// его только внутри вызова: сегмент ключа держится в стеке пути,
-  /// чтобы у вложенных значений путь был полным.
+  /// [render] is given an already sanitized value and must render it only
+  /// inside the call: the key's segment is held on the path stack so that
+  /// nested values get a complete path.
   ///
-  /// Возвращает `true`, если хотя бы одну запись правило отбросило.
-  /// Нужно принтеру: multi-data, у которой выброшены ВСЕ секции, не
-  /// должна оставлять висящую метку `login: ` без содержимого, а пустая
-  /// сама по себе multi-data двоеточие сохраняет. Различать эти два
-  /// случая по пустоте текста нельзя — только по факту дропа.
+  /// Returns `true` when the rule dropped at least one entry. The printer
+  /// needs it: a multi-data with ALL of its sections dropped must not leave
+  /// a dangling `login: ` label with nothing after it, while a multi-data
+  /// that is empty in its own right keeps the colon. Emptiness of the text
+  /// cannot tell those two apart — only the fact of a drop can.
   @internal
   static bool forEachMultiDataEntry(
     LoggableMultiData data,
@@ -562,26 +568,26 @@ abstract mixin class Loggable {
     return dropped;
   }
 
-  /// Метод должен заполнить [data] описанием исследуемого класса.
+  /// The method has to fill [data] with a description of the class.
   void collectLoggableData(LoggableData data);
 
-  /// Оборачивает объект для возможности передачи параметров логирования.
+  /// Wraps an object so that logging parameters can be passed with it.
   ///
-  /// Имеет смысл использовать только для примитивных типов, enums, коллекций
-  /// и [Loggable] с целью передачи параметров логирования. Для других
-  /// объектов, не поддерживающих [Loggable] напрямую, используйте
+  /// Worth using only for primitives, enums, collections and [Loggable], to
+  /// carry logging parameters. For other objects that do not support
+  /// [Loggable] directly, use
   /// [Loggable.builder].
   ///
-  /// В случае [Loggable] позволяет передать параметры, не установленные самим
-  /// объектом.
+  /// For a [Loggable] it allows passing parameters the object itself did
+  /// not set.
   static LoggableWrapper from(
     Object? obj, {
     LoggableConfig config = const LoggableConfig(),
   }) =>
       LoggableWrapper(obj, config: config);
 
-  /// Позволяет создать [LoggableData] для любого объекта, изначально
-  /// не поддерживающего [Loggable].
+  /// Builds a [LoggableData] for any object that does not support
+  /// [Loggable] to begin with.
   ///
   /// ```dart
   /// const obj = NotLoggableData(a: 'abc', b: [1, 2, 3]);
@@ -594,8 +600,8 @@ abstract mixin class Loggable {
   /// // object: NotLoggableData(a: "abc", b: [₌₃ ₀:1, …, ₂:3])
   /// ```
   ///
-  /// В определённых случаях, возможно, вы захотите не показывать имя класса
-  /// или скобки. Для этого используйте параметры [showName] и [showBrackets]:
+  /// In some cases you may want to hide the class name or the brackets.
+  /// Use the [showName] and [showBrackets] parameters for that:
   ///
   /// ```dart
   /// final point = Point(lat: 27.988056, lon: 86.925278);
@@ -622,7 +628,7 @@ abstract mixin class Loggable {
         config: config,
       );
 
-  /// Позволяет создать из [LoggableData] структуру, схожую с [Map].
+  /// Builds a [Map]-like structure out of a [LoggableData].
   ///
   /// ```dart
   /// log.d('map', data: {'a': 1, 'b': 2, 'c': 3});
@@ -653,8 +659,9 @@ abstract mixin class Loggable {
     _converters[T] = converter as LoggableTypeConverter<Object?>;
   }
 
-  /// Снимает конвертер по целевому типу [T] (тому же, что и при
-  /// регистрации), а не по типу конвертера. Неверный [T] — тихий no-op.
+  /// Removes a converter by its target type [T] (the same one used to
+  /// register it), not by the converter's type. A wrong [T] is a silent
+  /// no-op.
   static void unregisterTypeConverter<T>() {
     _converters.remove(T);
   }
@@ -666,19 +673,18 @@ abstract mixin class Loggable {
     return data;
   }
 
-  /// Класс, подмешавший [Loggable], тем самым принял, что его `toString`
-  /// — это рендеринг лога: свойства здесь санитайзятся так же, как в
-  /// [objectToString], поэтому и сам объект в корневой позиции
-  /// предлагается правилу (см. [_rootToString]).
+  /// A class that mixes in [Loggable] has thereby accepted that its
+  /// `toString` IS log rendering: its properties are sanitized here just as
+  /// in [objectToString], so the object itself is offered to the rule in
+  /// the root position too (see [_rootToString]).
   @override
   String toString() => _rootToString(this, () => logClassInfo().toLogString());
 
-  /// Объекты, находящиеся в процессе форматирования в текущей цепочке
-  /// рекурсии, — защита от циклических структур (по аналогии с
-  /// `_toStringVisiting` в SDK).
+  /// Objects being formatted in the current recursion chain — protection
+  /// against cyclic structures (after the SDK's `_toStringVisiting`).
   static final List<Object> _visiting = <Object>[];
 
-  /// Примитивы не могут содержать ссылок и не требуют защиты от циклов.
+  /// Primitives cannot hold references and need no cycle protection.
   static bool _canContainCycle(Object obj) => switch (obj) {
         bool() ||
         num() ||
@@ -690,7 +696,8 @@ abstract mixin class Loggable {
         _ => true,
       };
 
-  /// Индекс объекта в стеке форматирования или -1, если объект не в стеке.
+  /// The object's index in the formatting stack, or -1 when it is not on
+  /// the stack.
   static int _visitingIndexOf(Object obj) {
     for (var i = 0; i < _visiting.length; i++) {
       if (identical(_visiting[i], obj)) return i;
@@ -699,12 +706,14 @@ abstract mixin class Loggable {
     return -1;
   }
 
-  /// Количество уровней вверх до предка [ancestorIndex] в стеке.
+  /// How many levels up the ancestor at [ancestorIndex] sits on the
+  /// stack.
   static int _cycleLevelsUp(int ancestorIndex) =>
       _visiting.length - ancestorIndex;
 
-  /// Пользовательские ключи, начинающиеся с ':', экранируются дополнительным
-  /// ':' — иначе они были бы неотличимы от служебных (':k', ':v', ...).
+  /// User keys starting with ':' are escaped with one more ':' — otherwise
+  /// they would be indistinguishable from the service ones (':k', ':v',
+  /// ...).
   static String _escapeServiceKey(String key) =>
       key.startsWith(':') ? ':$key' : key;
 
