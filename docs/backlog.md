@@ -13,3 +13,5 @@
 - README: про Map и Iterable ты напечатал результат в виде
   // Map: {₌₅ a: 1, b: 2, …, e: 5}
   Но везде вывод идёт через картинки.
+- README: В строке "Install a formatter to make patterns work" нужно ли писать
+  про pubspec.yaml?

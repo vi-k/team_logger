@@ -16,17 +16,17 @@ final class LoggableMultiData {
     String Function(String key)? keyFormatter,
     String Function(String value)? valueFormatter,
   }) {
-    // Корень предлагаем правилу тем же хелпером, что и обходчики: этот
-    // метод в них не заходит, поэтому без вызова сам объект данных
-    // правилу не показывался бы вовсе.
+    // The root is offered to the rule through the same helper the walkers
+    // use: this method does not enter them, so without the call the data
+    // object itself would never be shown to the rule at all.
     if (Loggable.sanitizeRootToString(this, config: config)
         case final rendered?) {
       return rendered.text;
     }
 
-    // Секции — через общий хелпер, а не по data.entries напрямую: иначе
-    // значение секции ушло бы в обходчик как корень — мимо правил по
-    // имени и с потерей префикса пути (см.
+    // Sections go through the shared helper rather than data.entries
+    // directly: otherwise a section's value would reach the walker as a
+    // root — past name-based rules and losing the path prefix (see
     // [Loggable.forEachMultiDataEntry]).
     final parts = <String>[];
     Loggable.forEachMultiDataEntry(this, (key, value) {

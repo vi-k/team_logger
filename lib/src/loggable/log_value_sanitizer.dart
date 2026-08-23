@@ -1,27 +1,27 @@
 part of 'loggable.dart';
 
-/// Обрабатывает одно выводимое значение внутри `data`.
+/// Handles one value on its way into the output of `data`.
 ///
-/// Возврат значения, идентичного [SanitizeContext.value], означает «не
-/// трогал». Любое другое значение подставляется вместо исходного:
-/// **внутрь оригинала обход не идёт**, его дети правилу не предлагаются
-/// вовсе. Но сама замена рендерится как обычное значение — то есть её
-/// собственные дети предлагаются правилу наравне с любыми другими.
-/// Возврат [Sanitize.drop] убирает значение из вывода (см.
+/// Returning a value identical to [SanitizeContext.value] means "left
+/// alone". Anything else is substituted for the original: **the original
+/// is not walked into**, and its children are never offered to the rule.
+/// The replacement, however, renders as an ordinary value — its own
+/// children are offered to the rule like any others. Returning
+/// [Sanitize.drop] removes the value from the output (see
 /// [Loggable.sanitizer]).
 ///
-/// Отсюда следует, что правило, возвращающее контейнер, внутри которого
-/// лежит значение, снова подходящее под то же правило, зациклится:
+/// It follows that a rule returning a container that holds a value which
+/// matches the same rule again will recurse forever:
 ///
 /// ```dart
-/// // Так нельзя: замена содержит 'secret', правило сработает на неё
-/// // снова и будет подставлять контейнер бесконечно.
+/// // Do not do this: the replacement contains 'secret', the rule fires on
+/// // it again, and it substitutes the container endlessly.
 /// Loggable.sanitizer = (ctx) =>
 ///     ctx.value == 'secret' ? {'was': 'secret'} : ctx.value;
 /// ```
 ///
-/// Правило обязано быть тотальным: исключение из него выходит в
-/// publisher (см. спеку, раздел «Ошибки»).
+/// The rule must be total: an exception from it escapes into the publisher
+/// (see the spec, "Errors").
 typedef LogValueSanitizer = Object? Function(SanitizeContext ctx);
 
 final class _SanitizeDrop {
@@ -31,7 +31,7 @@ final class _SanitizeDrop {
   String toString() => '<dropped>';
 }
 
-/// Тип сегмента-заглушки корневой позиции; см.
+/// Type of the guard segment for the root position; see
 /// [Loggable._rootGuardSegment].
 final class _SanitizeGuardSegment {
   const _SanitizeGuardSegment();
@@ -40,76 +40,77 @@ final class _SanitizeGuardSegment {
   String toString() => '<sanitize-guard>';
 }
 
-/// Маркеры для [LogValueSanitizer].
+/// Markers for [LogValueSanitizer].
 abstract final class Sanitize {
-  /// Убирает значение из вывода.
+  /// Removes the value from the output.
   ///
-  /// Свойство, запись [Map] или запись `LoggableMultiData` не выводятся
-  /// вовсе; в корне вывод пустой. В позиции элемента коллекции
-  /// работает как замена на `'<dropped>'`: длина коллекции печатается и
-  /// должна остаться честной.
+  /// A property, a [Map] entry or a `LoggableMultiData` section is not
+  /// printed at all; at the root the output is empty. In a collection
+  /// element position it works as a replacement with `'<dropped>'`: the
+  /// collection's length is printed and has to stay honest.
   ///
-  /// Свойство убирается, когда рендерит его контейнер — `LoggableData`.
-  /// У отдельно взятого `Prop` (список `LoggableData.props` публичен, и
-  /// `p.toLogString()`/`p.toMapEntry()` можно звать поштучно) контейнера
-  /// нет: он печатает тот же маркер `'<dropped>'`, что и элемент
-  /// коллекции, — позиция, которая структурно не может удалить сама
-  /// себя, оставила бы вызывающему висящий разделитель.
+  /// A property is removed by whoever renders it — its `LoggableData`
+  /// container. A `Prop` taken on its own has no container (the
+  /// `LoggableData.props` list is public, and `p.toLogString()` /
+  /// `p.toMapEntry()` can be called one by one), so it prints the same
+  /// `'<dropped>'` marker a collection element does: a position that
+  /// structurally cannot remove itself would leave the caller with a
+  /// dangling separator.
   static const Object drop = _SanitizeDrop._();
 }
 
-/// Позиция значения при выводе.
+/// A value's position in the output.
 ///
-/// Контекст действителен только во время вызова санитайзера: [path]
-/// собирается по текущему состоянию обхода.
+/// The context is valid only for the duration of the sanitizer call:
+/// [path] is built from the current state of the walk.
 final class SanitizeContext {
-  /// Имя свойства, ключ [Map] или записи `LoggableMultiData`; `null`
-  /// для элементов коллекций и для корневого значения.
+  /// A property name, a [Map] key or a `LoggableMultiData` section name;
+  /// `null` for collection elements and for the root value.
   final String? name;
 
-  /// Значение, которое реально попадёт в вывод.
+  /// The value that will actually reach the output.
   ///
-  /// Для свойства с `view` это сам объект `view`, а НЕ текст, который он
-  /// нарисует: реализации [LoggableView] формируют вывод собственным
-  /// конвертером, и такой объект `view` в
-  /// [Loggable.objectToString]/[Loggable.objectToJson] не уходит (см.
-  /// спеку, раздел «Правило view»). Сырой [Loggable] или
-  /// [LoggableWrapper] в роли `view`, наоборот, в обходчики заходит —
-  /// но правилу он всё равно предлагается ровно один раз, здесь, а его
-  /// содержимое — под путём этого свойства. Если конвертер зовёт
-  /// обходчики сам — зовёт он их тоже уже для своих внутренних
-  /// значений. Слепое пятно, о котором надо знать: правило по
-  /// содержимому
+  /// For a property with a `view` this is the `view` object itself, NOT the
+  /// text it draws: [LoggableView] implementations build their output with
+  /// a converter of their own, and such a `view` object never reaches
+  /// [Loggable.objectToString]/[Loggable.objectToJson] (see the spec, "The
+  /// view rule"). A bare [Loggable] or [LoggableWrapper] used as a `view`
+  /// does enter the walkers — but it is still offered to the rule exactly
+  /// once, here, and its contents come under this property's path. Where
+  /// the converter calls the walkers itself, it calls them for its own
+  /// inner values.
+  ///
+  /// The blind spot to know about: a rule matching on content
   ///
   /// ```dart
-  /// (ctx) => '$data'.contains('4111') ? '***' : ctx.value
+  /// (ctx) => '\$data'.contains('4111') ? '***' : ctx.value
   /// ```
   ///
-  /// для `prop('card', pan, view: LoggableView.convert(...))` не
-  /// сработает — оно увидит объект view, а напечатан будет результат
-  /// конвертера. Позиция при этом предлагается правилу ровно один раз,
-  /// поэтому правила по [name] и [path] работают: такие свойства
-  /// редактируйте по имени или пути.
+  /// will not fire for `prop('card', pan, view: LoggableView.convert(...))`
+  /// — it sees the view object, while what gets printed is the converter's
+  /// result. The position is still offered to the rule exactly once, so
+  /// rules on [name] and [path] do work: redact such properties by name or
+  /// by path.
   ///
-  /// [LoggableWrapper], наоборот, прозрачен: правилу предлагается
-  /// завёрнутое значение, а не обёртка.
+  /// [LoggableWrapper], by contrast, is transparent: the rule is offered
+  /// the wrapped value, not the wrapper.
   final Object? value;
 
-  /// Глубина: 0 — корневое значение.
+  /// Depth: 0 is the root value.
   final int depth;
 
   final List<Object> _segments;
 
   const SanitizeContext._(this.name, this.value, this.depth, this._segments);
 
-  /// Путь от корня: `user.card.number`, `items[0].pan`.
+  /// The path from the root: `user.card.number`, `items[0].pan`.
   ///
-  /// Собирается лениво: правило, смотрящее только на [name], не платит
-  /// за сборку строки.
+  /// Built lazily: a rule that looks only at [name] does not pay for
+  /// assembling the string.
   String get path {
     final buf = StringBuffer();
     for (final segment in _segments) {
-      // Заглушка корневой позиции — не часть пути.
+      // The root position's guard segment is not part of the path.
       if (identical(segment, Loggable._rootGuardSegment)) continue;
       if (segment is int) {
         buf.write('[$segment]');

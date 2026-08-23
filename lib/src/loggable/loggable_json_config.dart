@@ -3,17 +3,18 @@ import 'package:meta/meta.dart';
 import 'loggable.dart';
 import 'loggable_config.dart';
 
-/// Конфигурация для [objectToJson].
+/// Configuration for [objectToJson].
 ///
-/// [collectionMaxCount] - максимальное количество элементов в коллекции
-/// (для [List], [Set] и [Iterable]). Если равно null, нет ограничений.
+/// [collectionMaxCount] - the maximum number of elements in a collection
+/// (for [List], [Set], [Map] and [Iterable]). No limit when null.
 ///
-/// Обратите внимание! Все параметры действуют рекурсивно не только на сам
-/// объект, но и на все вложенные в него объекты. При этом установленные
-/// параметры сбросить в null уже нельзя.
-/// [iterableEfficientLength] - то же утверждение, что и в
-/// `LoggableConfig`: у голого [Iterable] длина и последний элемент дёшевы,
-/// и его можно печатать с `":l"` вместо `":trim"`.
+/// [iterableEfficientLength] - the same assertion as in `LoggableConfig`:
+/// a bare [Iterable] has a cheap length and last element, so it can be
+/// printed with `":l"` instead of `":trim"`.
+///
+/// Note that every setting applies recursively, to the object itself and
+/// to everything nested inside it, and that a setting once given cannot be
+/// reset to null.
 abstract base class LoggableJsonConfig with Loggable {
   final int? collectionMaxCount;
   final String? units;
@@ -37,11 +38,12 @@ abstract base class LoggableJsonConfig with Loggable {
     bool? iterableEfficientLength,
   });
 
-  /// Значения с наложенной цепочкой `default ← этот конфиг ← force`.
+  /// The values with the `default ← this config ← force` chain applied.
   ///
-  /// Слои общие со строковым выводом: политика у приложения одна, и
-  /// заводить для JSON вторую пару статик значило бы позволить им
-  /// разойтись. Из `LoggableConfig` берутся те поля, которые здесь есть.
+  /// The layers are shared with the string output: an application has one
+  /// policy, and a second pair of statics for JSON would be a licence for
+  /// the two to drift apart. The fields that exist here are taken from
+  /// `LoggableConfig`.
   @internal
   int? get resolvedCollectionMaxCount =>
       Loggable.forceConfig.collectionMaxCount ??
@@ -69,14 +71,14 @@ abstract base class LoggableJsonConfig with Loggable {
   }
 }
 
-/// Маркер «параметр не передан» для [_LoggableJsonConfig.copyWith].
+/// The "argument not passed" marker for [_LoggableJsonConfig.copyWith].
 ///
-/// Собственный приватный тип, а не `const Object()`: все `const Object()`
-/// в программе — один и тот же объект. Здесь маркер сравнивается только
-/// с параметрами по умолчанию внутри пакета, так что коллизия сейчас не
-/// достижима, — но именно такая коллизия уже была настоящим багом в
-/// другом месте (см. [Prop._notSanitized]), поэтому тот же приватный тип
-/// используется и тут, а не только там, где он уже эксплуатируем.
+/// A private type of its own rather than `const Object()`: every
+/// `const Object()` in a program is the same object. Here the marker is
+/// only ever compared against the package's own default arguments, so a
+/// collision is not reachable today — but exactly that collision was a
+/// real bug elsewhere (see [Prop._notSanitized]), so the same private type
+/// is used here too, not only where it is already exploitable.
 final class _Undefined {
   const _Undefined();
 }
