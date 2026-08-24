@@ -42,7 +42,13 @@ final class LoggableData {
 
   LoggableData._(this._type);
 
-  String get name => _type.name;
+  /// The name shown in the class position of the output: the one given to
+  /// the builder or written through this setter, and the type itself when
+  /// there is none.
+  ///
+  /// Deliberately not [TypeProp.name]: that is the property's own key
+  /// (`'type'`), while the class name lives in [TypeProp.typeName].
+  String get name => _type.typeName ?? _type.value.toString();
   set name(String value) {
     _type = _type.copyWith(name: value);
   }
@@ -290,7 +296,7 @@ final class LoggableData {
     // whole and land in ":u" at its own level.
     final propConfig = config.copyWith(units: null);
 
-    final className = _type.typeName ?? _type.value.toString();
+    final className = name;
     final propsList = this.props.where((p) => !p.hidden).toList();
 
     final Object props;
@@ -353,10 +359,7 @@ final class LoggableData {
   }) {
     final depthTheme = theme.depthTheme(depth);
 
-    String name2str() {
-      final name = _type.typeName ?? _type.value.toString();
-      return theme.data.nameStyle(valueFormat?.call(name) ?? name);
-    }
+    String name2str() => theme.data.nameStyle(valueFormat?.call(name) ?? name);
 
     // Each property is sanitized exactly once; a drop removes it from the
     // output entirely, leaving no dangling separator.

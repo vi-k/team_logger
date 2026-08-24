@@ -1,3 +1,15 @@
+## 0.7.1
+
+- `LoggableData.name` returned the string `'type'` for every object instead
+  of the class name. The getter read `TypeProp.name` — the property's own
+  key, which its constructor sets to `'type'` — while the setter writes the
+  class name into `TypeProp.typeName`. Only the getter was wrong: the
+  package renders the class position from `typeName ?? type` itself, so the
+  output was always right and the defect showed only when the getter was
+  read from outside. It now returns exactly what the output shows: the name
+  given to the builder or written through the setter, and the type itself
+  when there is none.
+
 ## 0.7.0
 
 - [breaking changes] Three names leave the public API, found by the review
